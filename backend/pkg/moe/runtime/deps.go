@@ -27,10 +27,10 @@ type SmartOpts struct {
 	MinIntervalHours     int
 }
 
-// DefaultSmartOpts 默认智能发送间隔。
+// DefaultSmartOpts 默认智能发送调度参数。
 func DefaultSmartOpts() SmartOpts {
 	return SmartOpts{
 		RetryIntervalMinutes: 30,
-		MinIntervalHours:     2,
+		MinIntervalHours:     0,
 	}
 }

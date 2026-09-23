@@ -3,6 +3,8 @@ package companionbiz
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -145,6 +147,65 @@ func TestChatStreamReportsUnconfiguredModel(t *testing.T) {
 		context.Background(), 7, "hello", nil, "", "text",
 	); err == nil {
 		t.Fatal("ChatStreamWithInputMode() error = nil, want model configuration error")
+	}
+}
+
+func TestChatStreamStopsWhenUserHistoryCannotBePersisted(t *testing.T) {
+	store := newFakeStore()
+	store.chatLogErr = errors.New("database unavailable")
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	_, err := engine.ChatStreamWithInputMode(
+		context.Background(), 7, "hello", nil, "", "text",
+	)
+	if err == nil || !strings.Contains(err.Error(), "persist user chat message") {
+		t.Fatalf("ChatStreamWithInputMode() error = %v, want user history persistence error", err)
+	}
+	if len(store.logs) != 0 {
+		t.Fatalf("chat logs = %+v, want none after failed user write", store.logs)
+	}
+}
+
+func TestChatStreamReturnsReplyWhenAssistantHistoryCannotBePersisted(t *testing.T) {
+	store := newFakeStore()
+	store.chatLogErr = errors.New("database unavailable")
+	store.chatLogErrAt = 2
+	engine := NewEngine(store, nil, llminference.Config{
+		BaseURL:      "",
+		APIStyle:     llminference.APIOpenAI,
+		Timeout:      time.Second,
+		DefaultModel: "test",
+	}, "")
+
+	inference := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer inference.Close()
+
+	reply, err := engine.ChatStreamWithInputMode(
+		context.Background(),
+		7,
+		"hi",
+		nil,
+		"",
+		"text",
+		&llminference.Config{
+			BaseURL:      inference.URL,
+			APIStyle:     llminference.APIOpenAI,
+			Timeout:      time.Second,
+			DefaultModel: "test",
+		},
+	)
+	if reply != "hello" {
+		t.Fatalf("reply = %q, want generated response preserved", reply)
+	}
+	if err == nil || !strings.Contains(err.Error(), "persist assistant reply") {
+		t.Fatalf("ChatStreamWithInputMode() error = %v, want assistant persistence error", err)
+	}
+	if len(store.logs) != 1 || store.logs[0].Role != "user" {
+		t.Fatalf("chat logs = %+v, want only persisted user message", store.logs)
 	}
 }
 
@@ -1000,6 +1061,9 @@ type fakeStore struct {
 	logs                  []model.CompanionChatLog
 	relationshipEvents    []model.CompanionRelationshipEvent
 	relationshipEventsErr error
+	chatLogErr            error
+	chatLogErrAt          int
+	chatLogCalls          int
 	companionEvents       []model.CompanionEvent
 	conflicts             []model.CompanionMemoryConflict
 }
@@ -1299,6 +1363,10 @@ func (s *fakeStore) AppendChatLog(_ context.Context, chatLog *model.CompanionCha
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	s.chatLogCalls++
+	if s.chatLogErr != nil && (s.chatLogErrAt == 0 || s.chatLogCalls == s.chatLogErrAt) {
+		return s.chatLogErr
+	}
 	s.logs = append(s.logs, *chatLog)
 	return nil
 }

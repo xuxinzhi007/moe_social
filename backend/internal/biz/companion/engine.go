@@ -960,11 +960,13 @@ func (e *Engine) ChatStreamWithInputMode(
 	isFirstChat := companionContext.IsFirstChat
 
 	// 4. 保存用户消息
-	_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
+	if err := e.store.AppendChatLog(ctx, &model.CompanionChatLog{
 		UserID:  userID,
 		Role:    "user",
 		Content: userMessage,
-	})
+	}); err != nil {
+		return "", fmt.Errorf("companion: persist user chat message: %w", err)
+	}
 
 	// 5. 构建 messages 并流式调用 LLM
 	msgs := buildMessagesWithContext(
@@ -990,11 +992,13 @@ func (e *Engine) ChatStreamWithInputMode(
 				chatCompletionPersistTimeout,
 			)
 			defer cancel()
-			_ = e.store.AppendChatLog(persistCtx, &model.CompanionChatLog{
+			if persistErr := e.store.AppendChatLog(persistCtx, &model.CompanionChatLog{
 				UserID:  userID,
 				Role:    "assistant",
 				Content: fullReply,
-			})
+			}); persistErr != nil {
+				return fullReply, fmt.Errorf("companion: persist partial assistant reply: %w", persistErr)
+			}
 			if bumpErr := e.BumpIntimacy(persistCtx, userID, IntimacyDeltaChat); bumpErr != nil {
 				log.Printf("[companion] bump intimacy after partial chat user=%d: %v", userID, bumpErr)
 			}
@@ -1014,11 +1018,13 @@ func (e *Engine) ChatStreamWithInputMode(
 	defer cancel()
 
 	// 6. 保存助手回复
-	_ = e.store.AppendChatLog(persistCtx, &model.CompanionChatLog{
+	if err := e.store.AppendChatLog(persistCtx, &model.CompanionChatLog{
 		UserID:  userID,
 		Role:    "assistant",
 		Content: fullReply,
-	})
+	}); err != nil {
+		return fullReply, fmt.Errorf("companion: persist assistant reply: %w", err)
+	}
 
 	// 7. 异步提取记忆（不阻塞响应）
 	go e.asyncExtractMemory(userID, userMessage, fullReply, profile, config, modelName)

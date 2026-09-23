@@ -198,7 +198,6 @@ private_message:
 moe:
   enabled: true
   default_capability_tier: s2
-  bot_post_daily_limit_default: 5
   # API 进程内 Bot 定时发帖（cron + smart 模式）
   bot_scheduler_enabled: true
   bot_scheduler_tick_seconds: 60
@@ -207,7 +206,7 @@ moe:
   dream_scheduler_tick_seconds: 300
   # 智能发送：LLM 判断此刻是否发帖
   bot_smart_retry_minutes: 30
-  bot_smart_min_interval_hours: 2
+  bot_smart_min_interval_hours: 0 # 默认不额外限制两次发帖的间隔
   # 活世界引擎的 tick / flush 节奏（秒）。原先是 moewiring/api_life.go 里的编译期常量，
   # 调一次要重新编译整个后端；缺省 300 秒，写 0 或省略等同缺省。
   life_tick_seconds: 300

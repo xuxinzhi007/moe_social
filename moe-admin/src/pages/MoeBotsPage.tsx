@@ -57,13 +57,13 @@ const emptyForm = {
   bot_user_id: '',
   capability_tier: 's2',
   model_name: 'qwen2',
-  post_quota_daily: 5,
+  post_quota_daily: 0,
   enabled: true,
   tools_enabled: true,
   system_prompt: '',
   post_rules: DEFAULT_POST_RULES,
   post_schedule_mode: 'manual',
-  schedule_cron: '0 */6 * * *',
+  schedule_cron: '',
 }
 
 export function MoeBotsPage() {
@@ -103,19 +103,23 @@ export function MoeBotsPage() {
   }, [load])
 
   function openEdit(row: MoeRuntimeRow) {
+    const scheduleMode = row.post_schedule_mode || 'manual'
     setForm({
       agent_key: row.agent_key,
       display_name: row.display_name,
       bot_user_id: row.bot_user_id,
       capability_tier: row.capability_tier || 's2',
       model_name: row.model_name || '',
-      post_quota_daily: row.post_quota_daily || 5,
+      post_quota_daily: row.post_quota_daily ?? 0,
       enabled: row.enabled,
       tools_enabled: row.tools_enabled,
       system_prompt: row.system_prompt || '',
       post_rules: row.post_rules || DEFAULT_POST_RULES,
-      post_schedule_mode: row.post_schedule_mode || 'manual',
-      schedule_cron: row.schedule_cron || '0 */6 * * *',
+      post_schedule_mode: scheduleMode,
+      schedule_cron:
+        scheduleMode === 'smart'
+          ? row.schedule_cron || ''
+          : row.schedule_cron || '0 */6 * * *',
     })
     setFormError('')
     setDrawerOpen(true)
@@ -252,7 +256,8 @@ export function MoeBotsPage() {
       {
         key: 'quota',
         header: '今日/配额',
-        render: (row) => `${row.posts_today} / ${row.post_quota_daily}`,
+        render: (row) =>
+          `${row.posts_today} / ${row.post_quota_daily > 0 ? row.post_quota_daily : '不限'}`,
       },
       {
         key: 'status',
@@ -363,7 +368,17 @@ export function MoeBotsPage() {
         <FormField label="发帖调度">
           <select
             value={form.post_schedule_mode}
-            onChange={(e) => setForm({ ...form, post_schedule_mode: e.target.value })}
+            onChange={(e) => {
+              const mode = e.target.value
+              setForm({
+                ...form,
+                post_schedule_mode: mode,
+                schedule_cron:
+                  mode === 'smart'
+                    ? ''
+                    : form.schedule_cron || '0 */6 * * *',
+              })
+            }}
           >
             <option value="manual">手动（仅 run-once / 后台试跑）</option>
             <option value="cron">定时（cron 表达式）</option>
@@ -372,7 +387,13 @@ export function MoeBotsPage() {
         </FormField>
         {form.post_schedule_mode === 'cron' || form.post_schedule_mode === 'smart' ? (
           <>
-            <FormField label="cron 表达式（分 时 日 月 周）">
+            <FormField
+              label={
+                form.post_schedule_mode === 'smart'
+                  ? '可选评估 cron（留空则按智能重试周期运行）'
+                  : 'cron 表达式（分 时 日 月 周）'
+              }
+            >
               <input
                 value={form.schedule_cron}
                 onChange={(e) => setForm({ ...form, schedule_cron: e.target.value })}
@@ -402,15 +423,15 @@ export function MoeBotsPage() {
             placeholder="例如 qwen2.5:3b-instruct；需与推理端模型名一致"
           />
         </FormField>
-        <FormField label="每日发帖配额">
+        <FormField label="每日发帖配额（0 表示不限）">
           <input
             type="number"
-            min={1}
+            min={0}
             value={form.post_quota_daily}
             onChange={(e) =>
               setForm({
                 ...form,
-                post_quota_daily: Number(e.target.value) || 5,
+                post_quota_daily: Number(e.target.value) || 0,
               })
             }
           />

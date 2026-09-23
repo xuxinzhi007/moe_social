@@ -3,6 +3,7 @@ package companionhttp
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -78,6 +79,18 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {
+		if strings.TrimSpace(fullReply) != "" {
+			log.Printf("[companion] chat reply generated but history persistence failed user=%d: %v", userID, err)
+			payload := map[string]any{
+				"text":          strings.TrimSpace(fullReply),
+				"history_saved": false,
+				"warning":       "回复已生成，但这轮没有保存到聊天历史中。",
+			}
+			if writeErr := apicomm.WriteSSE(w, "done", payload); writeErr != nil {
+				return fmt.Errorf("write companion chat done with history warning: %w", writeErr)
+			}
+			return nil
+		}
 		detail := strings.TrimSpace(err.Error())
 		if len(detail) > 500 {
 			detail = detail[:500] + "…"

@@ -59,9 +59,9 @@ func UpsertRuntime(ctx context.Context, store MoeStore, p UpsertRuntimeParams) (
 	if tier == "" {
 		tier = "s2"
 	}
-	quota := p.PostQuotaDaily
-	if quota <= 0 {
-		quota = 5
+	quota, err := normalizePostQuotaDaily(p.PostQuotaDaily)
+	if err != nil {
+		return model.MoeAgentRuntime{}, err
 	}
 	rt := &model.MoeAgentRuntime{
 		AgentKey:          strings.TrimSpace(p.AgentKey),
@@ -86,6 +86,13 @@ func UpsertRuntime(ctx context.Context, store MoeStore, p UpsertRuntimeParams) (
 	_ = st.MarkUserAsBot(ctx, p.BotUserID, rt.AgentKey)
 	saved, _ := st.GetRuntimeByAgentKey(ctx, rt.AgentKey)
 	return saved, nil
+}
+
+func normalizePostQuotaDaily(quota int) (int, error) {
+	if quota < 0 {
+		return 0, fmt.Errorf("每日发帖配额不能小于 0")
+	}
+	return quota, nil
 }
 
 // ParseBotUserID 解析管理端 bot_user_id 字符串。
