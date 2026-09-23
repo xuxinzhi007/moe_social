@@ -45,6 +45,10 @@
 
 不要把整段对话原文长期塞进 system prompt；应 **提取 durable 事实 + 摘要旧对话**（`summarizeMessages` 已有）。
 
+### Companion 回合后的持久记忆提取
+
+正式 AI 伙伴使用独立的 `companion_chat_logs` / `companion_memories` 数据，不与上表中的通用用户记忆接口混为一谈。完整成功回合的助手回复与 `companion_memory_extraction_jobs` 任务在同一数据库事务中写入；单进程后台 worker 串行提取，任务只保存聊天记录 ID，不复制对话正文。失败任务按指数退避重试，进程退出后由租约过期回收。设计、部署迁移和回滚步骤见 [AI 生成与记忆提取可靠性调整](./ai-generation-and-memory-reliability.md)。
+
 ## 产品目标对齐
 
 | 目标 | 实现路径 |
@@ -66,6 +70,7 @@
 - 发帖成功或试跑被拒时：`brain.AnalyzeAndTagContent` 用 **规则 + 可选 LLM** 打标签，写入 `moe_bot_episodes.tags_json` 与 `moe_agent_topic_stats`（按 agent 累计场景/活动/主题使用次数）。  
 - 生成前注入 `BuildTopicDiversityBlock`：列出 DB 中「近期过多」话题，并给出可换角度建议。  
 - 可选配置 `moe.topic_analyze_model`（默认回退 `llm_inference.memory_model`）；LLM 不可用或 0.5B 解析失败时 **自动仅用规则**，不阻塞发帖。
+- 被拒候选的话题归档只走规则分析，避免为失败候选追加一次本地模型调用；生成质量检查对本地与远程模型一致，不增加 Provider 开关。
 
 ## 记忆 RPG（管理台游戏化层）
 

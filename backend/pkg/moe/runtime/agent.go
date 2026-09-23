@@ -57,6 +57,7 @@ func RunAgent(ctx context.Context, deps Deps, agentKey string, trigger RunTrigge
 		bundle := rec.Bundle(metrics)
 		if len(genAttempts) > 0 {
 			bundle.GenerateAttempts = genAttempts
+			bundle.CreativeDirectionIndex = genAttempts[len(genAttempts)-1].DirectionIndex
 		}
 		delta, feedback := ComputeStabilityDelta(ok, genAttempts, postQuality)
 		if score, err := brain.ApplyStabilityDelta(deps.DB, agentKey, delta); err == nil {

@@ -295,7 +295,8 @@ func NoteRejectedContent(ctx context.Context, deps Deps, agentKey, content, mood
 	if deps.DB == nil || strings.TrimSpace(agentKey) == "" || strings.TrimSpace(content) == "" {
 		return
 	}
-	tags := AnalyzeAndTagContent(ctx, deps, agentKey, content, moodTag, styleScore)
+	tags := append(ExtractTags(content, moodTag, styleScore), AnalyzeTopicsRules(content).Tags...)
+	tags = dedupeTags(tags)
 	_ = UpsertTopicStatsFromTags(ctx, deps.DB, agentKey, tags, content, "reject")
 }
 

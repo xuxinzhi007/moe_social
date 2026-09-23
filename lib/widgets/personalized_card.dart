@@ -31,6 +31,8 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
   @override
   void initState() {
     super.initState();
+    _user = AuthService.currentUserProfileNotifier.value;
+    AuthService.currentUserProfileNotifier.addListener(_onUserProfileChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       unawaited(_loadUserInfo());
       try {
@@ -45,11 +47,17 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
     });
   }
 
+  void _onUserProfileChanged() {
+    if (!mounted) return;
+    setState(() {
+      _user = AuthService.currentUserProfileNotifier.value;
+    });
+  }
+
   Future<void> _loadUserInfo() async {
     try {
       final user = await AuthService.getUserInfo();
       if (!mounted) return;
-      setState(() => _user = user);
       final levelProvider =
           Provider.of<UserLevelProvider>(context, listen: false);
       if (levelProvider.userLevel == null && user.id.isNotEmpty) {
@@ -81,6 +89,13 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
     } finally {
       if (mounted) setState(() => _isLoadingWeather = false);
     }
+  }
+
+  @override
+  void dispose() {
+    AuthService.currentUserProfileNotifier
+        .removeListener(_onUserProfileChanged);
+    super.dispose();
   }
 
   String _greeting() {
@@ -134,6 +149,7 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
               child: Row(
                 children: [
                   NetworkAvatarImage(
+                    key: ValueKey(_user?.avatar),
                     imageUrl: _user?.avatar,
                     radius: 18,
                     backgroundColor: MoeTokens.surface0,

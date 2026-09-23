@@ -128,9 +128,6 @@ class HomeFeedViewModel extends ChangeNotifier {
     }
   }
 
-  String feedRevealKey(String postId) =>
-      '${_mode.name}_${_activeTopic?.id ?? 'all'}_$postId';
-
   Future<void> bootstrap() async {
     await Future.wait([
       fetchPosts(resetContent: true),
@@ -233,7 +230,7 @@ class HomeFeedViewModel extends ChangeNotifier {
     if (clearTopic) _activeTopic = null;
     _queryRevision++;
     notifyListeners();
-    unawaited(fetchPosts(resetContent: true));
+    _fetchPostsForSelection();
   }
 
   void selectTopic(TopicTag? tag, {required HomeFeedMode fallbackMode}) {
@@ -246,7 +243,12 @@ class HomeFeedViewModel extends ChangeNotifier {
     }
     _queryRevision++;
     notifyListeners();
-    unawaited(fetchPosts(resetContent: true));
+    _fetchPostsForSelection();
+  }
+
+  void _fetchPostsForSelection() {
+    // Selection failures stay visible through feedError and the inline retry UI.
+    unawaited(fetchPosts(resetContent: true).catchError((_) {}));
   }
 
   void insertCreatedPost(Post post) {
@@ -304,7 +306,7 @@ class HomeFeedViewModel extends ChangeNotifier {
       _lastUpdatedAt = DateTime.now();
       _refreshAvailableTags(notify: false);
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || requestRevision != _queryRevision) return;
       _feedError = e;
       _hasMore = false;
       rethrow;
@@ -364,7 +366,7 @@ class HomeFeedViewModel extends ChangeNotifier {
       _lastUpdatedAt = DateTime.now();
       _refreshAvailableTags(notify: false);
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || requestRevision != _queryRevision) return;
       _loadMoreErrorMessage =
           MoeErrorCopy.resolve(e, scene: MoeErrorScene.feed).subtitle;
       rethrow;

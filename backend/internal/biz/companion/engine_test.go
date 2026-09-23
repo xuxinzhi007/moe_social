@@ -3,6 +3,7 @@ package companionbiz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -206,6 +207,134 @@ func TestChatStreamReturnsReplyWhenAssistantHistoryCannotBePersisted(t *testing.
 	}
 	if len(store.logs) != 1 || store.logs[0].Role != "user" {
 		t.Fatalf("chat logs = %+v, want only persisted user message", store.logs)
+	}
+}
+
+func TestChatStreamQueuesMemoryExtractionWithPersistedTurn(t *testing.T) {
+	store := newFakeStore()
+	inference := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer inference.Close()
+
+	config := llminference.Config{
+		BaseURL:      inference.URL,
+		APIStyle:     llminference.APIOpenAI,
+		Timeout:      time.Second,
+		DefaultModel: "test",
+	}
+	engine := NewEngine(store, nil, config, "test")
+	reply, err := engine.ChatStreamWithInputMode(context.Background(), 7, "hi", nil, "", "text")
+	if err != nil {
+		t.Fatalf("ChatStreamWithInputMode() error = %v", err)
+	}
+	if reply != "hello" {
+		t.Fatalf("reply = %q, want hello", reply)
+	}
+	if len(store.logs) != 2 || len(store.memoryJobs) != 1 {
+		t.Fatalf("logs=%d jobs=%d, want two logs and one durable job", len(store.logs), len(store.memoryJobs))
+	}
+	job := store.memoryJobs[0]
+	if job.UserID != 7 || job.UserChatLogID != store.logs[0].ID ||
+		job.AssistantChatLogID != store.logs[1].ID ||
+		job.Status != model.CompanionMemoryExtractionQueued {
+		t.Fatalf("job=%+v logs=%+v, want persisted user/assistant references", job, store.logs)
+	}
+}
+
+func TestMemoryExtractionWorkerRetriesAndCompletesJob(t *testing.T) {
+	store := newFakeStore()
+	store.logs = []model.CompanionChatLog{
+		{ID: 1, UserID: 7, Role: "user", Content: "我喜欢青提"},
+		{ID: 2, UserID: 7, Role: "assistant", Content: "我会记得"},
+	}
+	store.memoryJobs = []model.CompanionMemoryExtractionJob{{
+		ID:                 1,
+		UserID:             7,
+		UserChatLogID:      1,
+		AssistantChatLogID: 2,
+		Status:             model.CompanionMemoryExtractionQueued,
+		NextAttemptAt:      time.Now().Add(-time.Second),
+	}}
+
+	var callCount int
+	inference := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		if callCount == 1 {
+			http.Error(w, "temporary inference failure", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(
+			w,
+			`{"choices":[{"message":{"role":"assistant","content":%q}}]}`,
+			`[{"content":"用户喜欢青提","memory_type":"preference","importance":1,"memory_key":"favorite_fruit","confidence":0.9}]`,
+		)
+	}))
+	defer inference.Close()
+
+	engine := NewEngine(store, nil, llminference.Config{
+		BaseURL:      inference.URL,
+		APIStyle:     llminference.APIOpenAI,
+		Timeout:      time.Second,
+		DefaultModel: "test",
+	}, "test")
+
+	processed, err := engine.processNextMemoryExtractionJob(context.Background())
+	if err != nil || !processed {
+		t.Fatalf("first process = (%v, %v), want one failed-but-scheduled job", processed, err)
+	}
+	if store.memoryJobs[0].Status != model.CompanionMemoryExtractionRetrying ||
+		store.memoryJobs[0].AttemptCount != 1 || store.memoryJobs[0].LastError == "" {
+		t.Fatalf("job after failure=%+v, want observable retry state", store.memoryJobs[0])
+	}
+	processed, err = engine.processNextMemoryExtractionJob(context.Background())
+	if err != nil || processed {
+		t.Fatalf("process before retry time = (%v, %v), want no work", processed, err)
+	}
+
+	store.mu.Lock()
+	store.memoryJobs[0].NextAttemptAt = time.Now().Add(-time.Second)
+	store.mu.Unlock()
+	processed, err = engine.processNextMemoryExtractionJob(context.Background())
+	if err != nil || !processed {
+		t.Fatalf("retry process = (%v, %v), want completed job", processed, err)
+	}
+	if callCount != 2 || len(store.memories) != 1 {
+		t.Fatalf("model calls=%d memories=%d, want 2 calls and one memory", callCount, len(store.memories))
+	}
+	memory := store.memories[0]
+	if memory.SourceChatLogID != 2 || memory.MemoryKey != "favorite_fruit" {
+		t.Fatalf("memory=%+v, want source chat log 2 and stable key", memory)
+	}
+	if store.memoryJobs[0].Status != model.CompanionMemoryExtractionCompleted ||
+		store.memoryJobs[0].CompletedAt == nil {
+		t.Fatalf("completed job=%+v", store.memoryJobs[0])
+	}
+
+	processed, err = engine.processNextMemoryExtractionJob(context.Background())
+	if err != nil || processed || len(store.memories) != 1 {
+		t.Fatalf("process completed job = (%v, %v), memories=%d", processed, err, len(store.memories))
+	}
+}
+
+func TestMemoryExtractionRetryDelayUsesCappedBackoff(t *testing.T) {
+	tests := []struct {
+		attempt int
+		want    time.Duration
+	}{
+		{attempt: 1, want: 15 * time.Second},
+		{attempt: 2, want: 30 * time.Second},
+		{attempt: 3, want: time.Minute},
+		{attempt: 8, want: 30 * time.Minute},
+		{attempt: 20, want: 30 * time.Minute},
+	}
+	for _, test := range tests {
+		if got := memoryExtractionRetryDelay(test.attempt); got != test.want {
+			t.Errorf("memoryExtractionRetryDelay(%d) = %v, want %v", test.attempt, got, test.want)
+		}
 	}
 }
 
@@ -1059,6 +1188,7 @@ type fakeStore struct {
 	profiles              map[uint]*model.CompanionProfile
 	memories              []model.CompanionMemory
 	logs                  []model.CompanionChatLog
+	memoryJobs            []model.CompanionMemoryExtractionJob
 	relationshipEvents    []model.CompanionRelationshipEvent
 	relationshipEventsErr error
 	chatLogErr            error
@@ -1184,6 +1314,22 @@ func (s *fakeStore) ListActiveMemories(_ context.Context, userID uint, limit int
 	}
 	if limit > 0 && len(out) > limit {
 		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (s *fakeStore) ListMemoriesBySourceChatLogID(
+	_ context.Context,
+	userID, chatLogID uint,
+) ([]model.CompanionMemory, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	out := make([]model.CompanionMemory, 0)
+	for _, memory := range s.memories {
+		if memory.UserID == userID && memory.SourceChatLogID == chatLogID {
+			out = append(out, memory)
+		}
 	}
 	return out, nil
 }
@@ -1367,7 +1513,31 @@ func (s *fakeStore) AppendChatLog(_ context.Context, chatLog *model.CompanionCha
 	if s.chatLogErr != nil && (s.chatLogErrAt == 0 || s.chatLogCalls == s.chatLogErrAt) {
 		return s.chatLogErr
 	}
+	chatLog.ID = uint(len(s.logs) + 1)
 	s.logs = append(s.logs, *chatLog)
+	return nil
+}
+
+func (s *fakeStore) AppendAssistantReplyWithMemoryJob(
+	_ context.Context,
+	reply *model.CompanionChatLog,
+	job *model.CompanionMemoryExtractionJob,
+) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.chatLogCalls++
+	if s.chatLogErr != nil && (s.chatLogErrAt == 0 || s.chatLogCalls == s.chatLogErrAt) {
+		return s.chatLogErr
+	}
+	reply.ID = uint(len(s.logs) + 1)
+	s.logs = append(s.logs, *reply)
+	job.UserID = reply.UserID
+	job.AssistantChatLogID = reply.ID
+	job.Status = model.CompanionMemoryExtractionQueued
+	job.NextAttemptAt = time.Now()
+	job.ID = uint(len(s.memoryJobs) + 1)
+	s.memoryJobs = append(s.memoryJobs, *job)
 	return nil
 }
 
@@ -1388,6 +1558,102 @@ func (s *fakeStore) ListRecentChatLogs(_ context.Context, userID uint, limit int
 		out = out[len(out)-limit:]
 	}
 	return out, nil
+}
+
+func (s *fakeStore) GetChatLogByID(
+	_ context.Context,
+	userID, chatLogID uint,
+) (*model.CompanionChatLog, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for index := range s.logs {
+		if s.logs[index].ID == chatLogID && s.logs[index].UserID == userID {
+			row := s.logs[index]
+			return &row, nil
+		}
+	}
+	return nil, nil
+}
+
+func (s *fakeStore) ClaimNextMemoryExtractionJob(
+	_ context.Context,
+	now, leaseUntil time.Time,
+) (*model.CompanionMemoryExtractionJob, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for index := range s.memoryJobs {
+		job := &s.memoryJobs[index]
+		ready := (job.Status == model.CompanionMemoryExtractionQueued ||
+			job.Status == model.CompanionMemoryExtractionRetrying) &&
+			!job.NextAttemptAt.After(now)
+		expired := job.Status == model.CompanionMemoryExtractionRunning &&
+			(job.LeaseUntil == nil || !job.LeaseUntil.After(now))
+		if !ready && !expired {
+			continue
+		}
+		job.Status = model.CompanionMemoryExtractionRunning
+		job.AttemptCount++
+		job.LeaseUntil = &leaseUntil
+		job.UpdatedAt = now
+		jobCopy := *job
+		return &jobCopy, nil
+	}
+	return nil, nil
+}
+
+func (s *fakeStore) CompleteMemoryExtractionJob(
+	_ context.Context,
+	jobID uint,
+	attemptCount int,
+	completedAt time.Time,
+) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for index := range s.memoryJobs {
+		job := &s.memoryJobs[index]
+		if job.ID != jobID ||
+			job.Status != model.CompanionMemoryExtractionRunning ||
+			job.AttemptCount != attemptCount {
+			continue
+		}
+		job.Status = model.CompanionMemoryExtractionCompleted
+		job.LeaseUntil = nil
+		job.LastError = ""
+		job.CompletedAt = &completedAt
+		job.UpdatedAt = completedAt
+		return nil
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (s *fakeStore) RetryMemoryExtractionJob(
+	_ context.Context,
+	jobID uint,
+	attemptCount int,
+	retryAt time.Time,
+	lastError string,
+) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for index := range s.memoryJobs {
+		job := &s.memoryJobs[index]
+		if job.ID != jobID ||
+			job.Status != model.CompanionMemoryExtractionRunning ||
+			job.AttemptCount != attemptCount {
+			continue
+		}
+		job.Status = model.CompanionMemoryExtractionRetrying
+		job.NextAttemptAt = retryAt
+		job.LeaseUntil = nil
+		job.LastError = lastError
+		job.UpdatedAt = time.Now()
+		return nil
+	}
+	return gorm.ErrRecordNotFound
 }
 
 func (s *fakeStore) CreateRelationshipEvent(_ context.Context, event *model.CompanionRelationshipEvent) error {

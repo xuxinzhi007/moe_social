@@ -62,12 +62,13 @@ func (s *AppService) Hub() *companionbiz.CompanionWSHub {
 	return s.hub
 }
 
-// Start 启动后台任务（记忆清理 + 问候广播）。
+// Start starts background cleanup, memory extraction, and greeting tasks.
 func (s *AppService) Start(ctx context.Context) {
 	if s == nil || s.engine == nil {
 		return
 	}
 	s.engine.StartCleanup(ctx)
+	s.engine.StartMemoryExtractionWorker(ctx)
 	s.engine.StartGreetingTicker(ctx)
 }
 
@@ -78,4 +79,5 @@ func (s *AppService) Stop() {
 	}
 	s.engine.StopCleanup()
 	s.engine.StopGreetingTicker()
+	s.engine.StopMemoryExtractionWorker()
 }

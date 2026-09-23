@@ -6,6 +6,11 @@ import (
 
 	"backend/model"
 	"backend/pkg/llminference"
+	"backend/pkg/moe/brain"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func TestParsePostGenJSON(t *testing.T) {
@@ -93,5 +98,118 @@ func TestSanitizePersona(t *testing.T) {
 	got := sanitizePersona("简短友善的社区引导语，发一条不超过 80 字的动态。", rt)
 	if strings.Contains(got, "80 字") {
 		t.Fatalf("placeholder should be replaced: %s", got)
+	}
+}
+
+func TestReviewPostCandidateRejectsLowQualityContent(t *testing.T) {
+	_, outcome, note := reviewPostCandidate(
+		GeneratedPost{Content: "宁静"},
+		model.MoeAgentRuntime{},
+		nil,
+		nil,
+		nil,
+		true,
+	)
+	if outcome != GenOutcomeQuality || !strings.Contains(note, "质量分") {
+		t.Fatalf("review outcome=%q note=%q, want quality rejection", outcome, note)
+	}
+}
+
+func TestReviewPostCandidateRejectsForbiddenTags(t *testing.T) {
+	content := "周末把手绘线稿补完了，边缘比昨天整齐很多，准备继续试试新的配色。"
+	_, outcome, note := reviewPostCandidate(
+		GeneratedPost{Content: content, MoodTag: "happy"},
+		model.MoeAgentRuntime{},
+		nil,
+		nil,
+		[]string{"topic:手绘"},
+		true,
+	)
+	if outcome != GenOutcomeForbidden || !strings.Contains(note, "topic:手绘") {
+		t.Fatalf("review outcome=%q note=%q, want forbidden topic", outcome, note)
+	}
+}
+
+func TestPickBestNovelFallbackAllowsOnlyQualitySemanticOverlap(t *testing.T) {
+	recent := []model.Post{{
+		Content: "今天收拾画桌的时候，发现线稿的袖口比例不对，只好把右手那部分重新画了一遍。",
+	}}
+	semanticCandidate := GeneratedPost{
+		Content: "今天收拾画桌的时候，发现线稿的袖口比例不对，顺手把画笔按颜色重新排了一遍，抽屉也终于能关上了。",
+		MoodTag: "happy",
+	}
+	if contentTooSimilar(semanticCandidate.Content, recent) ||
+		!meaningTooSimilar(semanticCandidate.Content, recent, nil) {
+		t.Fatal("test candidate must overlap semantically but not repeat the body")
+	}
+
+	selected := pickBestNovelFallback([]postGenCandidate{
+		{gen: GeneratedPost{Content: recent[0].Content}, attempt: 1},
+		{gen: semanticCandidate, attempt: 2},
+	}, model.MoeAgentRuntime{}, recent, nil)
+	if selected == nil || selected.gen.Content != semanticCandidate.Content {
+		t.Fatalf("selected=%+v, want high-quality semantic fallback", selected)
+	}
+
+	lowQuality := GeneratedPost{Content: "宁静"}
+	if brain.ComputeQualityScore(lowQuality.Content, lowQuality.MoodTag, 1, nil) >= brain.QualityApproveThreshold {
+		t.Fatal("test candidate must be below the quality threshold")
+	}
+	selected = pickBestNovelFallback([]postGenCandidate{
+		{gen: lowQuality, attempt: 3},
+	}, model.MoeAgentRuntime{}, nil, nil)
+	if selected != nil {
+		t.Fatalf("selected=%+v, want low-quality candidate rejected", selected)
+	}
+}
+
+func TestPostScenarioHintRotatesAcrossDirections(t *testing.T) {
+	seen := make(map[string]struct{}, len(postScenarioHints))
+	for index := range postScenarioHints {
+		hint := postScenarioHint(index)
+		if _, exists := seen[hint]; exists {
+			t.Fatalf("scenario %d repeats an earlier direction: %q", index, hint)
+		}
+		seen[hint] = struct{}{}
+	}
+	if got := postScenarioHint(len(postScenarioHints)); got != postScenarioHint(0) {
+		t.Fatalf("scenario wraparound = %q, want %q", got, postScenarioHint(0))
+	}
+}
+
+func TestNextPostScenarioIndexContinuesAfterLastRunDirection(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("get sqlite connection pool: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		if err := sqlDB.Close(); err != nil {
+			t.Errorf("close sqlite: %v", err)
+		}
+	})
+	if err := db.AutoMigrate(&model.MoeAgentRunLog{}); err != nil {
+		t.Fatalf("AutoMigrate() error = %v", err)
+	}
+
+	bundle := RunLogBundle{
+		CreativeDirectionIndex: 5,
+		GenerateAttempts: []GenAttemptRecord{
+			{Attempt: 1, DirectionIndex: 2, Outcome: GenOutcomeTheme},
+			{Attempt: 2, DirectionIndex: 5, Outcome: GenOutcomeOK},
+		},
+	}
+	if err := SaveAgentRunLog(db, "agent", true, "ok", "", bundle); err != nil {
+		t.Fatalf("SaveAgentRunLog() error = %v", err)
+	}
+
+	if got, want := nextPostScenarioIndex(db, "agent"), 6; got != want {
+		t.Fatalf("nextPostScenarioIndex() = %d, want %d", got, want)
 	}
 }

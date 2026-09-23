@@ -28,6 +28,7 @@ class CommentsViewModel extends ChangeNotifier {
   String? replyParentId;
   String? replyToUserName;
   bool _disposed = false;
+  final Set<String> _pendingCommentLikes = <String>{};
 
   List<Comment> get comments => _comments;
   bool get isLoading => _isLoading;
@@ -35,6 +36,8 @@ class CommentsViewModel extends ChangeNotifier {
   Object? get loadError => _loadError;
   int get commentCount => _comments.length;
   bool get isEmpty => !_isLoading && _loadError == null && _comments.isEmpty;
+  bool isCommentLikePending(String commentId) =>
+      _pendingCommentLikes.contains(commentId);
 
   Future<void> bootstrap() async {
     await Future.wait([loadUserInfo(), fetchComments()]);
@@ -164,25 +167,45 @@ class CommentsViewModel extends ChangeNotifier {
     if (userId == null) {
       throw StateError('请先登录');
     }
-    final idx = _comments.indexWhere((c) => c.id == commentId);
-    if (idx < 0) {
-      await PostService.toggleCommentLike(commentId, userId);
-      return;
-    }
-    final before = _comments[idx];
-    final liked = !before.isLiked;
-    final likes =
-        liked ? before.likes + 1 : (before.likes > 0 ? before.likes - 1 : 0);
-    _comments[idx] = before.copyWith(isLiked: liked, likes: likes);
+    if (!_pendingCommentLikes.add(commentId)) return;
     _notify();
+
+    final initialIndex = _comments.indexWhere((c) => c.id == commentId);
+    final before = initialIndex < 0 ? null : _comments[initialIndex];
+    if (before != null) {
+      final liked = !before.isLiked;
+      final likes =
+          liked ? before.likes + 1 : (before.likes > 0 ? before.likes - 1 : 0);
+      _comments[initialIndex] = before.copyWith(isLiked: liked, likes: likes);
+      _notify();
+    }
+
     try {
-      await PostService.toggleCommentLike(commentId, userId);
+      final updated = await PostService.toggleCommentLike(commentId, userId);
+      if (_disposed) return;
+      final currentIndex = _comments.indexWhere((c) => c.id == commentId);
+      if (currentIndex >= 0) {
+        _comments[currentIndex] = _comments[currentIndex].copyWith(
+          isLiked: updated.isLiked,
+          likes: updated.likes,
+        );
+        _notify();
+      }
     } catch (e) {
-      if (!_disposed && idx < _comments.length && _comments[idx].id == commentId) {
-        _comments[idx] = before;
+      if (!_disposed && before != null) {
+        final currentIndex = _comments.indexWhere((c) => c.id == commentId);
+        if (currentIndex >= 0) {
+          _comments[currentIndex] = _comments[currentIndex].copyWith(
+            isLiked: before.isLiked,
+            likes: before.likes,
+          );
+        }
         _notify();
       }
       throw StateError(MoeErrorCopy.toast(e, scene: MoeErrorScene.feed));
+    } finally {
+      _pendingCommentLikes.remove(commentId);
+      _notify();
     }
   }
 

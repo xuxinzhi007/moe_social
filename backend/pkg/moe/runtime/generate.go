@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"backend/model"
 	"backend/pkg/llminference"
 	"backend/pkg/moe/brain"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -34,9 +37,21 @@ type postGenJSON struct {
 }
 
 type postGenCandidate struct {
-	gen     GeneratedPost
-	score   int
-	attempt int
+	gen            GeneratedPost
+	quality        int
+	attempt        int
+	directionIndex int
+}
+
+var postScenarioHints = []string{
+	"从一个刚发生的细节切入，写清它为什么让你停下来；不必强行提问。",
+	"分享一个正在做的具体进度；只使用上下文里真实出现的数字，没有数字就写动作或细节。",
+	"写一个小失误、意外或尝试后的结果，重点放在自己的反应，不要编造背景。",
+	"回应社区里正在讨论的话题，补充自己的经历或不同角度，不复述原帖。",
+	"分享一个明确的偏好，并用一句真实理由说明，不写成推荐广告。",
+	"写一条轻松吐槽或小发现，换到与近期动态不同的日常场景。",
+	"提出一个值得交流的小选择题，先交代具体缘由，只有自然时才以问题收尾。",
+	"从近期记忆或账号兴趣里挑一个尚未重复的切口，讲一件具体的小事。",
 }
 
 // generatePostContent 调用本地模型生成不重复的社区短帖；attempts 仅含本次试跑内的生成次数。
@@ -100,12 +115,29 @@ func generatePostContent(
 	)
 	stability := brain.EffectiveStabilityScore(rt)
 	policy := brain.GenerationPolicyForStability(stability)
+	directionOffset := nextPostScenarioIndex(deps.DB, rt.AgentKey)
+	forbidden := brain.ParseTagList(rt.ForbiddenTags)
 	for attempt := 1; attempt <= policy.MaxGenerateAttempts; attempt++ {
+		directionIndex := (directionOffset + attempt - 1) % len(postScenarioHints)
 		if rec != nil {
 			rec.BeginStep("generate", "LLM 生成正文")
 		}
 		attemptStart := time.Now()
-		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel, stability, rec)
+		gen, err := callPostLLM(
+			ctx,
+			deps,
+			modelName,
+			persona,
+			rulesBlock,
+			brainBlock,
+			ctxBlock,
+			recent,
+			attempt,
+			directionIndex,
+			rejectNovel,
+			stability,
+			rec,
+		)
 		if err != nil {
 			lastErr = err
 			rejectNovel = ""
@@ -114,74 +146,107 @@ func generatePostContent(
 				ctxBlock.topicHint = "只输出一行 JSON，不要 markdown、不要前缀说明、content 内不要用未转义换行"
 			}
 			attempts = append(attempts, GenAttemptRecord{
-				Attempt: attempt,
-				Outcome: GenOutcomeLLMError,
-				Note:    genAttemptNote(err),
+				Attempt:        attempt,
+				DirectionIndex: directionIndex,
+				Outcome:        GenOutcomeLLMError,
+				Note:           genAttemptNote(err),
 			})
 			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeLLMError, "", genAttemptNote(err), time.Since(attemptStart), attempts)
 			continue
 		}
-		if contentTooSimilar(gen.Content, recent) {
-			lastErr = fmt.Errorf("与近期帖重复")
-			ctxBlock.topicHint = "必须换全新角度，禁止复述【本 Bot 近期已发】里的任何句子"
-			rejectNovel = "duplicate"
-			brain.NoteRejectedContent(ctx, brain.Deps{DB: deps.DB, Inference: deps.Inference}, rt.AgentKey, gen.Content, gen.MoodTag, novelStyleScore(gen.Content))
-			ctxBlock.topicAvoid = appendTopicAvoid(ctxBlock.topicAvoid, gen.Content)
+		candidate, outcome, note := reviewPostCandidate(gen, rt, recent, episodes, forbidden, true)
+		candidate.attempt = attempt
+		candidate.directionIndex = directionIndex
+		if outcome != GenOutcomeOK {
+			lastErr = fmt.Errorf("%s", note)
+			switch outcome {
+			case GenOutcomeDuplicate:
+				rejectNovel = "duplicate"
+				ctxBlock.topicHint = "换一个近期没有出现过的主题、开头和细节，不要复述旧动态。"
+			case GenOutcomeTheme:
+				rejectNovel = "theme"
+				ctxBlock.topicHint = "更换场景、叙事视角和句式，避免复用近期动态的主题或开头。"
+				fallback = append(fallback, candidate)
+			case GenOutcomeForbidden:
+				rejectNovel = "forbidden"
+				ctxBlock.topicHint = "避开这些明确禁止的标签：" + note
+			case GenOutcomeQuality:
+				rejectNovel = "quality"
+				ctxBlock.topicHint = "补充一个真实、具体且有信息量的细节，不要用空泛感叹凑字数。"
+			case GenOutcomeNovel:
+				rejectNovel = "novel"
+				ctxBlock.topicHint = "改用自然口语和具体经历，避免诗意套话或固定开场。"
+			}
+			if outcome == GenOutcomeDuplicate || outcome == GenOutcomeTheme {
+				brain.NoteRejectedContent(
+					ctx,
+					brain.Deps{DB: deps.DB},
+					rt.AgentKey,
+					gen.Content,
+					gen.MoodTag,
+					novelStyleScore(gen.Content),
+				)
+				ctxBlock.topicAvoid = appendTopicAvoid(ctxBlock.topicAvoid, gen.Content)
+			}
 			attempts = append(attempts, GenAttemptRecord{
-				Attempt: attempt,
-				Outcome: GenOutcomeDuplicate,
-				Snippet: genSnippet(gen.Content),
+				Attempt:        attempt,
+				DirectionIndex: directionIndex,
+				Outcome:        outcome,
+				Snippet:        genSnippet(gen.Content),
+				Note:           note,
 			})
-			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeDuplicate, genSnippet(gen.Content), "与近期帖重复", time.Since(attemptStart), attempts)
+			recordGenAttemptStep(
+				rec,
+				attempt,
+				"fail",
+				outcome,
+				genSnippet(gen.Content),
+				note,
+				time.Since(attemptStart),
+				attempts,
+			)
 			continue
 		}
-		if meaningTooSimilar(gen.Content, recent, episodes) {
-			lastErr = fmt.Errorf("与近期动态意思太像")
-			ctxBlock.topicHint = "换场景：别写深夜星光抒情，改具体小事/吐槽/进度数字"
-			rejectNovel = "theme"
-			brain.NoteRejectedContent(ctx, brain.Deps{DB: deps.DB, Inference: deps.Inference}, rt.AgentKey, gen.Content, gen.MoodTag, novelStyleScore(gen.Content))
-			ctxBlock.topicAvoid = appendTopicAvoid(ctxBlock.topicAvoid, gen.Content)
-			fallback = append(fallback, postGenCandidate{gen: gen, score: 10, attempt: attempt})
-			attempts = append(attempts, GenAttemptRecord{
-				Attempt: attempt,
-				Outcome: GenOutcomeTheme,
-				Snippet: genSnippet(gen.Content),
-			})
-			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeTheme, genSnippet(gen.Content), "意思太像", time.Since(attemptStart), attempts)
-			continue
-		}
-		score := novelStyleScore(gen.Content)
-		forbidden := brain.ParseTagList(rt.ForbiddenTags)
-		if hits := brain.EpisodeTagsViolate(gen.Content, gen.MoodTag, score, forbidden); len(hits) > 0 {
-			lastErr = fmt.Errorf("命中禁止标签 %v", hits)
-			rejectNovel = "forbidden"
-			ctxBlock.topicHint = "避开这些明确禁止的标签：" + strings.Join(hits, "、")
-			attempts = append(attempts, GenAttemptRecord{Attempt: attempt, Outcome: GenOutcomeForbidden, Snippet: genSnippet(gen.Content), Note: strings.Join(hits, "、")})
-			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeForbidden, genSnippet(gen.Content), strings.Join(hits, "、"), time.Since(attemptStart), attempts)
-			continue
-		}
-		gen.Source = fmt.Sprintf("llm#%d", attempt)
+		candidate.gen.Source = fmt.Sprintf("llm#%d", attempt)
 		attempts = append(attempts, GenAttemptRecord{
-			Attempt: attempt,
-			Outcome: GenOutcomeOK,
-			Snippet: genSnippet(gen.Content),
+			Attempt:        attempt,
+			DirectionIndex: directionIndex,
+			Outcome:        GenOutcomeOK,
+			Snippet:        genSnippet(candidate.gen.Content),
+			Note:           note,
 		})
-		recordGenAttemptStep(rec, attempt, "ok", GenOutcomeOK, genSnippet(gen.Content), "通过重复与禁止标签检查", time.Since(attemptStart), attempts)
+		recordGenAttemptStep(
+			rec,
+			attempt,
+			"ok",
+			GenOutcomeOK,
+			genSnippet(candidate.gen.Content),
+			note,
+			time.Since(attemptStart),
+			attempts,
+		)
 		if rec != nil {
-			rec.Add("generate_finalize", "生成质检汇总", "ok", FormatGenStepDetail(attempts, true, gen.Source), time.Since(genPhaseStart))
+			rec.Add(
+				"generate_finalize",
+				"生成质检汇总",
+				"ok",
+				FormatGenStepDetail(attempts, true, candidate.gen.Source),
+				time.Since(genPhaseStart),
+			)
 		}
-		return gen, attempts, nil
+		return candidate.gen, attempts, nil
 	}
 
-	// 仅稳定度足够时允许采用放宽质检的候选，低稳定度必须在严格质检下成功。
+	// Stable bots may relax semantic similarity only after all hard quality checks pass.
 	if policy.AllowRelaxedFallback {
-		if best := pickBestNovelFallback(fallback, recent, episodes); best != nil {
+		if best := pickBestNovelFallback(fallback, rt, recent, forbidden); best != nil {
 			best.gen.Source = fmt.Sprintf("llm#%d-relaxed", best.attempt)
 			attempts = append(attempts, GenAttemptRecord{
-				Attempt: best.attempt,
-				Outcome: GenOutcomeOK,
-				Snippet: genSnippet(best.gen.Content),
-				Note:    "放宽质检后采用",
+				Attempt:        best.attempt,
+				DirectionIndex: best.directionIndex,
+				Outcome:        GenOutcomeOK,
+				Snippet:        genSnippet(best.gen.Content),
+				Note:           fmt.Sprintf("语义相似放宽；质量分 %d/100", best.quality),
 			})
 			if rec != nil {
 				rec.Add("generate_finalize", "生成质检汇总", "ok",
@@ -198,6 +263,52 @@ func generatePostContent(
 		return GeneratedPost{}, attempts, lastErr
 	}
 	return GeneratedPost{}, attempts, fmt.Errorf("多次生成仍不符合要求，请调整发帖规则或检查 llama-server")
+}
+
+func reviewPostCandidate(
+	gen GeneratedPost,
+	rt model.MoeAgentRuntime,
+	recent []model.Post,
+	episodes []model.MoeBotEpisode,
+	forbidden []string,
+	checkSemanticSimilarity bool,
+) (postGenCandidate, GenAttemptOutcome, string) {
+	candidate := postGenCandidate{
+		gen:     gen,
+		attempt: 0,
+	}
+	if contentTooSimilar(gen.Content, recent) {
+		return candidate, GenOutcomeDuplicate, "与近期已发正文重复"
+	}
+
+	styleScore := novelStyleScore(gen.Content)
+	if hits := brain.EpisodeTagsViolate(gen.Content, gen.MoodTag, styleScore, forbidden); len(hits) > 0 {
+		return candidate, GenOutcomeForbidden, strings.Join(hits, "、")
+	}
+	candidate.quality = brain.ComputeQualityScore(gen.Content, gen.MoodTag, styleScore, forbidden)
+	tags := brain.ExtractTags(gen.Content, gen.MoodTag, styleScore)
+	if !brain.IsApprovedQuality(candidate.quality) ||
+		brain.NeedsRefinement(candidate.quality, tags, forbidden) {
+		if styleScore >= novelStyleRejectThreshold {
+			return candidate, GenOutcomeNovel, fmt.Sprintf(
+				"诗意腔得分 %d，质量分 %d/100",
+				styleScore,
+				candidate.quality,
+			)
+		}
+		return candidate, GenOutcomeQuality, fmt.Sprintf(
+			"质量分 %d/100，目标 ≥ %d",
+			candidate.quality,
+			brain.QualityApproveThreshold,
+		)
+	}
+	if hasBannedOpening(gen.Content) {
+		return candidate, GenOutcomeTheme, "命中重复开头模式"
+	}
+	if checkSemanticSimilarity && meaningTooSimilar(gen.Content, recent, episodes) {
+		return candidate, GenOutcomeTheme, "与近期动态意思太像"
+	}
+	return candidate, GenOutcomeOK, fmt.Sprintf("质量分 %d/100", candidate.quality)
 }
 
 func recordGenAttemptStep(rec *StepRecorder, attempt int, status string, outcome GenAttemptOutcome, snippet, note string, dur time.Duration, attempts []GenAttemptRecord) {
@@ -219,23 +330,24 @@ func recordGenAttemptStep(rec *StepRecorder, attempt int, status string, outcome
 	}
 }
 
-func pickBestNovelFallback(cands []postGenCandidate, recent []model.Post, episodes []model.MoeBotEpisode) *postGenCandidate {
+func pickBestNovelFallback(
+	cands []postGenCandidate,
+	rt model.MoeAgentRuntime,
+	recent []model.Post,
+	forbidden []string,
+) *postGenCandidate {
 	if len(cands) == 0 {
 		return nil
 	}
 	var best *postGenCandidate
 	for i := range cands {
 		c := &cands[i]
-		if contentTooSimilar(c.gen.Content, recent) {
+		reviewed, outcome, _ := reviewPostCandidate(c.gen, rt, recent, nil, forbidden, false)
+		if outcome != GenOutcomeOK || hasBannedOpening(c.gen.Content) {
 			continue
 		}
-		if meaningTooSimilar(c.gen.Content, recent, episodes) {
-			continue
-		}
-		if hasBannedOpening(c.gen.Content) {
-			continue
-		}
-		if best == nil || c.score < best.score {
+		c.quality = reviewed.quality
+		if best == nil || c.quality > best.quality {
 			best = c
 		}
 	}
@@ -249,6 +361,7 @@ func callPostLLM(
 	ctxBlock postContextBlock,
 	recent []model.Post,
 	attempt int,
+	directionIndex int,
 	rejectKind string,
 	stabilityScore int,
 	rec *StepRecorder,
@@ -262,15 +375,16 @@ func callPostLLM(
 		"",
 		persona,
 		"",
-		"任务：写一条【全新】社区动态（不是评论回复）。",
-		"先参考【本 Bot 近期已发】避免重复，再从社区脉搏、记忆、账号画像或当下时段中自由选择最有感觉的切入点。不要刻意复刻任何示例。",
-		"长度、语气、是否提问、是否使用表情都由内容自然决定；可以短，也可以稍微展开，不要为了满足格式而添加无意义的句子。",
+		"任务：写一条有真实细节、能让社区愿意停下来读的原创动态，不是评论回复或公告。",
+		"按本次创作方向选择一个切口，结合账号画像、记忆或社区脉搏；只写上下文支持的事实，不虚构经历、数字或外部信息。",
+		"每条只表达一个清楚的想法。避免空泛感叹、万能问候、固定收尾和近期已经使用的开头/主题；提问不是必需。",
+		"长短、语气、是否使用表情由内容自然决定，不要为了满足格式添加无意义句子。",
 		"只输出 JSON：{\"content\":\"...\",\"mood_tag\":\"calm|happy|think|sad|excited\"}",
 	}, "\n")
 
 	userParts := []string{
 		brain.StabilityGenerationHint(stabilityScore),
-		"【本次创作方向】" + postScenarioHint(attempt, rejectKind),
+		"【本次创作方向】" + postScenarioHint(directionIndex),
 		"【账号画像】\n" + ctxBlock.userProfile,
 		"【时段】" + ctxBlock.timeHint,
 		"【创作提示】" + ctxBlock.topicHint,
@@ -301,6 +415,9 @@ func callPostLLM(
 		case "theme":
 			userParts = append(userParts, "",
 				fmt.Sprintf("（第 %d 次：与近期动态意思太像，请换场景、叙事视角和句式，不要沿用上一条结构）", attempt))
+		case "quality":
+			userParts = append(userParts, "",
+				fmt.Sprintf("（第 %d 次：上次质量分未达标；加入具体且真实的细节，避免空话和套话）", attempt))
 		case "json":
 			userParts = append(userParts, "",
 				fmt.Sprintf("（第 %d 次：上次 JSON 非法，只输出 {\"content\":\"一句口语\",\"mood_tag\":\"calm\"}，不要其它字符）", attempt))
@@ -309,7 +426,7 @@ func callPostLLM(
 				fmt.Sprintf("（第 %d 次重试，请换写法）", attempt))
 		}
 	}
-	userParts = append(userParts, "", "请输出下一条【与历史完全不同】的动态 JSON。")
+	userParts = append(userParts, "", "请按本次方向输出一条自然、有细节且不复用近期表达的动态 JSON。")
 
 	temp := 0.92 + float64(attempt-1)*0.03
 	if rejectKind == "novel" && attempt > 1 {
@@ -359,22 +476,25 @@ func callPostLLM(
 	return GeneratedPost{Content: content, MoodTag: normalizeMoodTag(parsed.MoodTag)}, nil
 }
 
-func postScenarioHint(attempt int, rejectKind string) string {
-	scenarios := []string{
-		"记录刚刚发生的一件小事：一个动作、一个细节、一个意外结果；不要提问。",
-		"写一个正在进行的具体进度：带数字或可验证细节；不要使用排队、画材店、深夜抒情。",
-		"写一句轻松吐槽或小发现：换到吃饭、通勤、收拾房间、天气、设备等日常场景。",
-		"回应一个社区里看到的话题：只说自己的经历或看法，不要复述原帖，不要以“大家好”开头。",
-		"写一个小请求或选择题：先交代真实背景，再用一句自然口语收尾；不要套用上次句式。",
-	}
-	index := attempt - 1
+func postScenarioHint(index int) string {
 	if index < 0 {
 		index = 0
 	}
-	if rejectKind != "" {
-		index++
+	return postScenarioHints[index%len(postScenarioHints)]
+}
+
+func nextPostScenarioIndex(db *gorm.DB, agentKey string) int {
+	if db != nil {
+		if previous, err := LatestAgentRunLog(db, agentKey); err == nil {
+			previousRun := ParseRunLog(previous.StepsJSON)
+			if len(previousRun.GenerateAttempts) > 0 {
+				return (previousRun.CreativeDirectionIndex + 1) % len(postScenarioHints)
+			}
+		}
 	}
-	return scenarios[index%len(scenarios)]
+	hasher := fnv.New32a()
+	_, _ = hasher.Write([]byte(strings.TrimSpace(agentKey)))
+	return int(hasher.Sum32() % uint32(len(postScenarioHints)))
 }
 
 func parsePostGenJSON(raw string) (postGenJSON, error) {

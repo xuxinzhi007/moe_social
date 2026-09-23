@@ -17,7 +17,6 @@ import '../../widgets/post_card.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
-import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_motion.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
@@ -34,18 +33,14 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> {
   late final HomeFeedViewModel _feed;
   late final CompanionPresenceProvider _presence;
 
-  late TabController _tabController;
+  HomeFeedMode _baseFeedMode = HomeFeedMode.hot;
 
   final ScrollController _scrollController = ScrollController();
   Timer? _loadMoreTimer;
-
-  /// Feed 入场动效去重：按「模式 + 话题 + 帖子 id」分桶，下拉刷新不重播。
-  final Set<String> _revealedFeedKeys = {};
 
   static const _tabs = [
     (label: '热门', mode: HomeFeedMode.hot),
@@ -63,8 +58,6 @@ class _HomePageState extends State<HomePage>
     _feed.addListener(_onFeedChanged);
     _presence = CompanionPresenceProvider.instance;
     _presence.addListener(_onPresenceChanged);
-    _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_scrollListener);
     unawaited(_feed.bootstrap());
   }
@@ -86,18 +79,10 @@ class _HomePageState extends State<HomePage>
     _presence.removeListener(_onPresenceChanged);
     _feed.removeListener(_onFeedChanged);
     _feed.dispose();
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _loadMoreTimer?.cancel();
     super.dispose();
-  }
-
-  void _onTabChanged() {
-    if (_tabController.indexIsChanging) return;
-    final newMode = _tabs[_tabController.index].mode;
-    _feed.setMode(newMode);
   }
 
   void _scrollListener() {
@@ -176,7 +161,12 @@ class _HomePageState extends State<HomePage>
   }
 
   void _onTopicSelected(TopicTag? tag) {
-    _feed.selectTopic(tag, fallbackMode: _tabs[_tabController.index].mode);
+    _feed.selectTopic(tag, fallbackMode: _baseFeedMode);
+  }
+
+  void _selectFeedMode(HomeFeedMode mode) {
+    _baseFeedMode = mode;
+    _feed.setMode(mode);
   }
 
   @override
@@ -210,25 +200,41 @@ class _HomePageState extends State<HomePage>
                     ? _filterTabExtent
                     : _filterTabExtent + _filterTopicExtent,
                 background: MoeTheme.of(context).pageBackground,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Stack(
                   children: [
-                    SizedBox(
-                      height: _filterTabExtent,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          MoeTokens.spaceLg,
-                          MoeTokens.spaceSm,
-                          MoeTokens.spaceLg,
-                          0,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: _filterTabExtent,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              MoeTokens.spaceLg,
+                              MoeTokens.spaceSm,
+                              MoeTokens.spaceLg,
+                              0,
+                            ),
+                            child: _buildFeedModeSwitcher(context),
+                          ),
                         ),
-                        child: _buildFeedModeSwitcher(context),
-                      ),
+                        if (_feed.availableTags.isNotEmpty)
+                          SizedBox(
+                            height: _filterTopicExtent,
+                            child: _buildTopicFilterRow(context),
+                          ),
+                      ],
                     ),
-                    if (_feed.availableTags.isNotEmpty)
-                      SizedBox(
-                        height: _filterTopicExtent,
-                        child: _buildTopicFilterRow(context),
+                    if (_feed.isRefreshing)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: LinearProgressIndicator(
+                          minHeight: MoeTokens.spaceXs / 2,
+                          color: MoeTokens.primary,
+                          backgroundColor:
+                              MoeTokens.primary.withValues(alpha: 0.12),
+                        ),
                       ),
                   ],
                 ),
@@ -259,12 +265,7 @@ class _HomePageState extends State<HomePage>
             else
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => MoeStaggerReveal(
-                    index: index,
-                    itemKey: _feed.feedRevealKey(_feed.displayPosts[index].id),
-                    revealedKeys: _revealedFeedKeys,
-                    child: _buildPostCard(_feed.displayPosts[index]),
-                  ),
+                  (context, index) => _buildPostCard(_feed.displayPosts[index]),
                   childCount: _feed.displayPosts.length,
                 ),
               ),
@@ -386,7 +387,7 @@ class _HomePageState extends State<HomePage>
       itemBuilder: (context, index) {
         final tag = tags[index];
         return _HomeTopicChip(
-          name: tag.name,
+          tag: tag,
           selected: _feed.activeTopic?.id == tag.id,
           onTap: () => _onTopicSelected(tag),
         );
@@ -395,28 +396,28 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFeedModeSwitcher(BuildContext context) {
-    // topic 模式下不高亮任一 Tab，点 Tab 会清话题回到该模式。
     return Row(
       children: [
         Expanded(
-          child: Row(
-            children: [
-              for (final entry in _tabs.asMap().entries)
-                _HomeFeedModeTab(
-                  label: entry.value.label,
-                  selected: _feed.mode == entry.value.mode,
-                  onTap: () {
-                    if (_tabController.index != entry.key) {
-                      _tabController.animateTo(entry.key);
-                      return;
-                    }
-                    if (_feed.activeTopic != null ||
-                        _feed.mode != entry.value.mode) {
-                      _feed.setMode(entry.value.mode);
-                    }
-                  },
-                ),
-            ],
+          child: Container(
+            padding: const EdgeInsets.all(MoeTokens.spaceXs / 2),
+            decoration: BoxDecoration(
+              color: MoeTokens.surface1,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+              border: Border.all(color: MoeTokens.surfaceBorder),
+            ),
+            child: Row(
+              children: [
+                for (final entry in _tabs)
+                  Expanded(
+                    child: _HomeFeedModeTab(
+                      label: entry.label,
+                      selected: _baseFeedMode == entry.mode,
+                      onTap: () => _selectFeedMode(entry.mode),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
         const SizedBox(width: MoeTokens.spaceSm),
@@ -769,13 +770,6 @@ class _HomeFeedModeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduceMotion = moeReduceMotion(context);
     final duration = reduceMotion ? Duration.zero : MoeTokens.motionFast;
-    final style = TextStyle(
-      fontSize: selected ? MoeTokens.textLg : MoeTokens.textBase,
-      fontWeight:
-          selected ? MoeTokens.fontWeightTitle : MoeTokens.fontWeightBody,
-      color: selected ? MoeTokens.titleText : MoeTokens.hintText,
-      height: 1.2,
-    );
 
     return Semantics(
       button: true,
@@ -785,31 +779,29 @@ class _HomeFeedModeTab extends StatelessWidget {
       child: MoePressable(
         onTap: onTap,
         borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
-        child: Padding(
-          padding: const EdgeInsets.only(right: MoeTokens.spaceLg),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedDefaultTextStyle(
-                  duration: duration,
-                  curve: Curves.easeInOut,
-                  style: style,
-                  child: Text(label),
-                ),
-                const SizedBox(height: MoeTokens.spaceXs),
-                AnimatedContainer(
-                  duration: duration,
-                  curve: Curves.easeInOut,
-                  width: selected ? MoeTokens.spaceLg : 0,
-                  height: MoeTokens.spaceXs,
-                  decoration: BoxDecoration(
-                    color: MoeTokens.primary,
-                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                  ),
-                ),
-              ],
+        child: AnimatedContainer(
+          duration: duration,
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(
+            horizontal: MoeTokens.spaceXs,
+            vertical: MoeTokens.spaceSm,
+          ),
+          decoration: BoxDecoration(
+            color: selected
+                ? MoeTokens.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: MoeTokens.textSm,
+              fontWeight: selected
+                  ? MoeTokens.fontWeightSubtitle
+                  : MoeTokens.fontWeightBody,
+              color: selected ? MoeTokens.primary : MoeTokens.caption,
             ),
           ),
         ),
@@ -865,12 +857,12 @@ class _HomeComposeButton extends StatelessWidget {
 
 class _HomeTopicChip extends StatelessWidget {
   const _HomeTopicChip({
-    required this.name,
+    required this.tag,
     required this.selected,
     required this.onTap,
   });
 
-  final String name;
+  final TopicTag tag;
   final bool selected;
   final VoidCallback onTap;
 
@@ -880,7 +872,7 @@ class _HomeTopicChip extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: name,
+      label: tag.name,
       excludeSemantics: true,
       child: MoePressable(
         onTap: onTap,
@@ -893,20 +885,37 @@ class _HomeTopicChip extends StatelessWidget {
             vertical: MoeTokens.spaceXs,
           ),
           decoration: BoxDecoration(
-            color: selected
-                ? MoeTokens.primary.withValues(alpha: 0.12)
-                : Colors.transparent,
+            color: tag.color.withValues(alpha: selected ? 0.15 : 0.07),
             borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-          ),
-          child: Text(
-            name,
-            style: TextStyle(
-              fontSize: MoeTokens.textSm,
-              fontWeight: selected
-                  ? MoeTokens.fontWeightSubtitle
-                  : MoeTokens.fontWeightCaption,
-              color: selected ? MoeTokens.primary : MoeTokens.caption,
+            border: Border.all(
+              color: selected
+                  ? tag.color.withValues(alpha: 0.38)
+                  : MoeTokens.surfaceBorder,
             ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: MoeTokens.spaceSm,
+                height: MoeTokens.spaceSm,
+                decoration: BoxDecoration(
+                  color: tag.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: MoeTokens.spaceXs),
+              Text(
+                tag.name,
+                style: TextStyle(
+                  fontSize: MoeTokens.textSm,
+                  fontWeight: selected
+                      ? MoeTokens.fontWeightSubtitle
+                      : MoeTokens.fontWeightCaption,
+                  color: selected ? MoeTokens.titleText : MoeTokens.caption,
+                ),
+              ),
+            ],
           ),
         ),
       ),

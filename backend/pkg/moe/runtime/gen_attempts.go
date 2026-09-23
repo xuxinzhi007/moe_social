@@ -14,6 +14,7 @@ const (
 	GenOutcomeDuplicate GenAttemptOutcome = "duplicate"
 	GenOutcomeTheme     GenAttemptOutcome = "theme"
 	GenOutcomeForbidden GenAttemptOutcome = "forbidden"
+	GenOutcomeQuality   GenAttemptOutcome = "quality"
 	GenOutcomeNovel     GenAttemptOutcome = "novel"
 	GenOutcomeLLMError  GenAttemptOutcome = "llm_error"
 	GenOutcomeEmpty     GenAttemptOutcome = "empty"
@@ -21,10 +22,11 @@ const (
 
 // GenAttemptRecord 单次试跑内的一次生成尝试记录。
 type GenAttemptRecord struct {
-	Attempt int               `json:"attempt"`
-	Outcome GenAttemptOutcome `json:"outcome"`
-	Snippet string            `json:"snippet,omitempty"`
-	Note    string            `json:"note,omitempty"`
+	Attempt        int               `json:"attempt"`
+	DirectionIndex int               `json:"direction_index,omitempty"`
+	Outcome        GenAttemptOutcome `json:"outcome"`
+	Snippet        string            `json:"snippet,omitempty"`
+	Note           string            `json:"note,omitempty"`
 }
 
 func genSnippet(content string) string {
@@ -45,6 +47,8 @@ func outcomeLabelZh(o GenAttemptOutcome) string {
 		return "主题/开头过像"
 	case GenOutcomeForbidden:
 		return "命中禁止标签"
+	case GenOutcomeQuality:
+		return "质量分未达标"
 	case GenOutcomeNovel:
 		return "偏剧本/诗意腔"
 	case GenOutcomeLLMError:
@@ -117,8 +121,8 @@ func summarizeRejectCounts(attempts []GenAttemptRecord) string {
 		return ""
 	}
 	order := []GenAttemptOutcome{
-		GenOutcomeDuplicate, GenOutcomeTheme, GenOutcomeNovel,
-		GenOutcomeForbidden, GenOutcomeLLMError, GenOutcomeEmpty,
+		GenOutcomeDuplicate, GenOutcomeTheme, GenOutcomeForbidden,
+		GenOutcomeQuality, GenOutcomeNovel, GenOutcomeLLMError, GenOutcomeEmpty,
 	}
 	var parts []string
 	for _, o := range order {
