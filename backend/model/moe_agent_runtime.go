@@ -12,7 +12,7 @@ type MoeAgentRuntime struct {
 	ModelName         string     `gorm:"size:128" json:"model_name"`
 	ProviderProfileID string     `gorm:"size:128" json:"provider_profile_id"`
 	ToolsEnabled      bool       `gorm:"default:true" json:"tools_enabled"`
-	PostQuotaDaily    int        `gorm:"default:5" json:"post_quota_daily"`
+	PostQuotaDaily    int        `gorm:"default:0" json:"post_quota_daily"`
 	PostsToday        int        `gorm:"default:0" json:"posts_today"`
 	QuotaResetDate    *time.Time `gorm:"type:date" json:"quota_reset_date,omitempty"`
 	LastRunAt         *time.Time `json:"last_run_at,omitempty"`

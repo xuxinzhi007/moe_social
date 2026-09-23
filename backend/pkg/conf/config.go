@@ -18,7 +18,7 @@ package conf
 // （逐个 grep 确认过，不是漏掉）：
 //   - server.port / server.host —— 单进程化后端口只认 runtime.http_port，8080 无监听者
 //   - memory.search.* / memory.embedding.* —— 记忆检索当前走关键词，向量/图谱段是死配置
-//   - moe.enabled / moe.default_capability_tier / moe.bot_post_daily_limit_default
+//   - moe.enabled / moe.default_capability_tier
 //     / moe.production.unified_entry
 //     （moe.enabled 是 2026-09-09 序2 批次补记的：全仓 Go 与非 Go 均零引用；
 //     unified_entry 于 2026-09-11 随 MoeProduction 的另三个 gRPC/pilot 端口字段一并摘除）

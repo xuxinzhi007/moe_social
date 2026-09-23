@@ -24,12 +24,8 @@ func evaluateSmartPost(ctx context.Context, deps Deps, rt model.MoeAgentRuntime,
 	if rt.PostQuotaDaily > 0 && rt.PostsToday >= rt.PostQuotaDaily {
 		return false, "已达今日发帖配额", nil
 	}
-	minGap := time.Duration(opts.MinIntervalHours) * time.Hour
-	if minGap <= 0 {
-		minGap = 2 * time.Hour
-	}
-	if rt.LastRunAt != nil && time.Since(*rt.LastRunAt) < minGap {
-		return false, fmt.Sprintf("距上次执行不足 %v", minGap), nil
+	if reason := smartIntervalReason(time.Now(), rt.LastRunAt, opts.MinIntervalHours); reason != "" {
+		return false, reason, nil
 	}
 
 	ctxBlock := gatherPostContext(ctx, deps, rt)
@@ -82,6 +78,17 @@ func evaluateSmartPost(ctx context.Context, deps Deps, rt model.MoeAgentRuntime,
 		return false, "", err
 	}
 	return dec.ShouldPost, strings.TrimSpace(dec.Reason), nil
+}
+
+func smartIntervalReason(now time.Time, lastRunAt *time.Time, minIntervalHours int) string {
+	if lastRunAt == nil || minIntervalHours <= 0 {
+		return ""
+	}
+	minGap := time.Duration(minIntervalHours) * time.Hour
+	if now.Sub(*lastRunAt) < minGap {
+		return fmt.Sprintf("距上次执行不足 %v", minGap)
+	}
+	return ""
 }
 
 func parseSmartDecision(raw string) (smartDecisionJSON, error) {

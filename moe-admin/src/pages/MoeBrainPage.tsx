@@ -311,6 +311,9 @@ export function MoeBrainPage() {
 
   const activeKey = brain?.agent_key || agentKey
   const activeRuntime = agents.find((item) => item.agent_key === activeKey)
+  const dailyQuota = activeRuntime?.post_quota_daily
+  const dailyQuotaLabel =
+    dailyQuota === undefined ? '—' : dailyQuota > 0 ? dailyQuota : '不限'
   const episodes = brain?.episodes ?? []
   const tagStats = brain?.tag_stats ?? []
   const memories = brain?.memories ?? []
@@ -392,7 +395,7 @@ export function MoeBrainPage() {
           <div><span>稳定度</span><strong>{stabilityScore}{stabilityDelta ? ` (${stabilityDelta > 0 ? '+' : ''}${stabilityDelta})` : ''}</strong></div>
           <div><span>状态</span><strong>{activeRuntime?.enabled === false ? '已暂停' : '已启用'}</strong></div>
           <div><span>模式</span><strong>{activeRuntime?.post_schedule_mode === 'smart' ? '智能发送' : activeRuntime?.post_schedule_mode === 'cron' ? '定时发送' : '手动触发'}</strong></div>
-          <div><span>今日配额</span><strong>{activeRuntime?.posts_today ?? 0} / {activeRuntime?.post_quota_daily ?? '—'}</strong></div>
+          <div><span>今日配额</span><strong>{activeRuntime?.posts_today ?? 0} / {dailyQuotaLabel}</strong></div>
           <div><span>下次执行</span><strong>{activeRuntime?.next_run_at || '手动触发'}</strong></div>
           <div><span>绑定用户</span><strong title={brain?.bot_user_id || undefined}>{brain?.bot_user_id || '—'}</strong></div>
           <div><span>记忆注入</span><strong>{brain?.generation_meta?.prompt_memory_lines ?? 0} 行</strong></div>

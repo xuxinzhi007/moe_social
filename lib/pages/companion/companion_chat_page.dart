@@ -343,6 +343,10 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 isStreaming: false,
               );
             });
+            final warning = event.payload?['warning']?.toString().trim() ?? '';
+            if (warning.isNotEmpty) {
+              MoeToast.warning(context, warning);
+            }
             unawaited(
                 CompanionPresenceProvider.instance.markCompanionChatSeen());
             unawaited(_refreshPresenceState());

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/services/post_service.dart';
+import 'package:moe_social/theme/moe_tokens.dart';
+import 'package:moe_social/widgets/motion/moe_motion.dart';
 import 'package:moe_social/widgets/motion/moe_pressable.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 
@@ -27,10 +29,14 @@ class _LikeButtonState extends State<LikeButton>
     with SingleTickerProviderStateMixin {
   bool _isLiked = false;
   int _likeCount = 0;
+  int _countDirection = 1;
   bool _isLoading = false;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
+  bool _animateLike = false;
+  late final AnimationController _animationController;
+  late final Animation<double> _likeScaleAnimation;
+  late final Animation<double> _unlikeScaleAnimation;
+  late final Animation<double> _ringScaleAnimation;
+  late final Animation<double> _ringOpacityAnimation;
 
   @override
   void initState() {
@@ -40,15 +46,48 @@ class _LikeButtonState extends State<LikeButton>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: MoeTokens.motionSlow,
     );
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    _likeScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1, end: 0.78)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 18,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.78, end: 1.28)
+            .chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 34,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.28, end: 1)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 48,
+      ),
+    ]).animate(_animationController);
+    _unlikeScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1, end: 0.82)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.82, end: 1)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 55,
+      ),
+    ]).animate(_animationController);
+    _ringScaleAnimation = Tween<double>(begin: 0.65, end: 1.65).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
     );
-
-    _opacityAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    _ringOpacityAnimation = Tween<double>(begin: 0.34, end: 0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOut,
+      ),
     );
   }
 
@@ -59,6 +98,7 @@ class _LikeButtonState extends State<LikeButton>
       _isLiked = widget.isLiked;
     }
     if (oldWidget.likeCount != widget.likeCount) {
+      _countDirection = widget.likeCount > oldWidget.likeCount ? 1 : -1;
       _likeCount = widget.likeCount;
     }
   }
@@ -69,25 +109,24 @@ class _LikeButtonState extends State<LikeButton>
     super.dispose();
   }
 
+  void _playAnimation(bool liked) {
+    if (moeReduceMotion(context)) return;
+    _animateLike = liked;
+    _animationController.forward(from: 0);
+  }
+
   Future<void> _toggleLike() async {
     if (_isLoading) return;
-    setState(() {
-      _isLoading = true;
-    });
+    _playAnimation(!_isLiked);
+    setState(() => _isLoading = true);
     try {
       final updatedPost =
           await PostService.toggleLike(widget.postId, widget.userId);
       if (!mounted) return;
-      // LikeStateManager 已由 PostService 更新，本地跟服务端对齐
       setState(() {
         _isLiked = updatedPost.isLiked;
         _likeCount = updatedPost.likes;
       });
-      if (_isLiked) {
-        _animationController
-            .forward()
-            .then((_) => _animationController.reverse());
-      }
       widget.onLikeChanged?.call(_isLiked, _likeCount);
     } catch (e) {
       if (mounted) MoeToast.show(context, '操作失败，请稍后重试');
@@ -98,63 +137,153 @@ class _LikeButtonState extends State<LikeButton>
 
   @override
   Widget build(BuildContext context) {
-    return MoePressable(
-      onTap: _toggleLike,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedBuilder(
-            animation: Listenable.merge([_scaleAnimation, _opacityAnimation]),
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _scaleAnimation.value,
-                child: Opacity(
-                  opacity: _opacityAnimation.value,
-                  child: Icon(
-                    _isLiked ? Icons.favorite : Icons.favorite_border,
-                    color:
-                        _isLiked ? const Color(0xFFFF4757) : Colors.grey[500],
-                    size: 24,
+    final reduceMotion = moeReduceMotion(context);
+    final motionDuration = reduceMotion ? Duration.zero : MoeTokens.motionFast;
+
+    return Semantics(
+      button: true,
+      label: _isLiked ? '取消点赞' : '点赞',
+      value: '$_likeCount',
+      onTap: _isLoading ? null : _toggleLike,
+      child: ExcludeSemantics(
+        child: MoePressable(
+          onTap: _toggleLike,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    final scale = reduceMotion
+                        ? 1.0
+                        : (_animateLike
+                            ? _likeScaleAnimation.value
+                            : _unlikeScaleAnimation.value);
+
+                    return Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        if (!reduceMotion && _animateLike)
+                          Opacity(
+                            opacity: _ringOpacityAnimation.value,
+                            child: Transform.scale(
+                              scale: _ringScaleAnimation.value,
+                              child: Container(
+                                width: 25,
+                                height: 25,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: MoeTokens.pastelPink
+                                        .withValues(alpha: 0.7),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        AnimatedContainer(
+                          duration: motionDuration,
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isLiked
+                                ? MoeTokens.pastelPink.withValues(alpha: 0.14)
+                                : Colors.transparent,
+                          ),
+                          child: Center(
+                            child: Transform.scale(
+                              scale: scale,
+                              child: AnimatedSwitcher(
+                                duration: motionDuration,
+                                transitionBuilder: (child, animation) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Icon(
+                                  _isLiked
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  key: ValueKey<bool>(_isLiked),
+                                  color: _isLiked
+                                      ? MoeTokens.pastelPink
+                                      : MoeTokens.inkMuted
+                                          .withValues(alpha: 0.78),
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_isLoading)
+                          Positioned(
+                            top: 1,
+                            right: 1,
+                            child: SizedBox(
+                              width: 11,
+                              height: 11,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.6,
+                                color: MoeTokens.pastelPink,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: MoeTokens.spaceXs),
+              Flexible(
+                child: AnimatedSwitcher(
+                  duration: motionDuration,
+                  transitionBuilder: (child, animation) {
+                    final offset = Tween<Offset>(
+                      begin: Offset(0, _countDirection > 0 ? 0.65 : -0.65),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    );
+                    return ClipRect(
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: offset, child: child),
+                      ),
+                    );
+                  },
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _likeCount.toString(),
+                      key: ValueKey<int>(_likeCount),
+                      style: TextStyle(
+                        color: _isLiked
+                            ? MoeTokens.pastelPink
+                            : MoeTokens.inkMuted.withValues(alpha: 0.82),
+                        fontSize: MoeTokens.textBase,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: animation,
-                  child: child,
-                ),
-              );
-            },
-            child: Text(
-              _likeCount.toString(),
-              key: ValueKey<int>(_likeCount),
-              style: TextStyle(
-                color: _isLiked ? const Color(0xFFFF4757) : Colors.grey[500],
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
               ),
-            ),
+            ],
           ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.only(left: 8),
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFFFF4757),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

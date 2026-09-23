@@ -2,10 +2,13 @@ package tools
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"backend/internal/platform/moelog"
 	"backend/model"
 	"backend/pkg/moe/core"
 	"backend/pkg/moe/postpulse"
@@ -13,6 +16,7 @@ import (
 	postv1 "backend/api/post/v1"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type postSearchArgs struct {
@@ -99,10 +103,17 @@ func (e *Executor) execPostCreate(ctx context.Context, req core.ExecuteRequest) 
 		if err := e.deps.DB.Where("id = ? AND is_bot = ?", botUID, true).First(&user).Error; err != nil {
 			return fail("仅 Bot 账号可调用 post_create")
 		}
-		if req.AgentKey != "" {
-			if err := bumpPostQuota(e.deps.DB, req.AgentKey); err != nil {
+	}
+	releaseQuota := func() error { return nil }
+	if e.deps.DB != nil && req.AgentKey != "" {
+		var err error
+		releaseQuota, err = reservePostQuota(e.deps.DB, req.AgentKey)
+		if err != nil {
+			if errors.Is(err, errQuotaExceeded) {
 				return fail(err.Error())
 			}
+			moelog.Errorf("moe post quota reservation failed agent=%s: %v", req.AgentKey, err)
+			return fail("发帖额度预留失败")
 		}
 	}
 
@@ -113,6 +124,9 @@ func (e *Executor) execPostCreate(ctx context.Context, req core.ExecuteRequest) 
 		MoodTag: strings.TrimSpace(args.MoodTag),
 	})
 	if err != nil || createResp == nil || createResp.Post == nil {
+		if releaseErr := releaseQuota(); releaseErr != nil {
+			moelog.Errorf("moe post quota rollback failed agent=%s: %v", req.AgentKey, releaseErr)
+		}
 		return fail("发帖失败")
 	}
 	postID := createResp.Post.Id
@@ -128,27 +142,71 @@ func (e *Executor) execPostCreate(ctx context.Context, req core.ExecuteRequest) 
 	return ok(map[string]any{"post_id": postID, "created": true})
 }
 
-func bumpPostQuota(db *gorm.DB, agentKey string) error {
-	var rt model.MoeAgentRuntime
-	if err := db.Where("agent_key = ? AND enabled = ?", agentKey, true).First(&rt).Error; err != nil {
+func reservePostQuota(db *gorm.DB, agentKey string) (func() error, error) {
+	noReservation := func() error { return nil }
+	if db == nil || strings.TrimSpace(agentKey) == "" {
+		return noReservation, nil
+	}
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	reserved := false
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var rt model.MoeAgentRuntime
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("agent_key = ? AND enabled = ?", agentKey, true).
+			First(&rt).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("load bot runtime %s for post quota: %w", agentKey, err)
+		}
+
+		if rt.QuotaResetDate == nil || !sameUTCDay(*rt.QuotaResetDate, today) {
+			if err := tx.Model(&rt).Updates(map[string]any{
+				"posts_today":      0,
+				"quota_reset_date": today,
+			}).Error; err != nil {
+				return fmt.Errorf("reset post quota for bot %s: %w", agentKey, err)
+			}
+			rt.PostsToday = 0
+		}
+		if rt.PostQuotaDaily > 0 && rt.PostsToday >= rt.PostQuotaDaily {
+			return errQuotaExceeded
+		}
+		if err := tx.Model(&rt).UpdateColumn("posts_today", gorm.Expr("posts_today + 1")).Error; err != nil {
+			return fmt.Errorf("reserve post quota for bot %s: %w", agentKey, err)
+		}
+		reserved = true
 		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	today := time.Now().Truncate(24 * time.Hour)
-	if rt.QuotaResetDate == nil || !rt.QuotaResetDate.Equal(today) {
-		_ = db.Model(&rt).Updates(map[string]any{
-			"posts_today":      0,
-			"quota_reset_date": today,
-		}).Error
-		rt.PostsToday = 0
+	if !reserved {
+		return noReservation, nil
 	}
-	if rt.PostQuotaDaily > 0 && rt.PostsToday >= rt.PostQuotaDaily {
-		return errQuotaExceeded
-	}
-	return db.Model(&rt).UpdateColumn("posts_today", gorm.Expr("posts_today + 1")).Error
+
+	return func() error {
+		err := db.Model(&model.MoeAgentRuntime{}).
+			Where(
+				"agent_key = ? AND quota_reset_date = ? AND posts_today > ?",
+				agentKey,
+				today,
+				0,
+			).
+			UpdateColumn("posts_today", gorm.Expr("posts_today - 1")).Error
+		if err != nil {
+			return fmt.Errorf("release post quota for bot %s: %w", agentKey, err)
+		}
+		return nil
+	}, nil
 }
 
-var errQuotaExceeded = &quotaError{}
+func sameUTCDay(left, right time.Time) bool {
+	leftYear, leftMonth, leftDay := left.UTC().Date()
+	rightYear, rightMonth, rightDay := right.UTC().Date()
+	return leftYear == rightYear && leftMonth == rightMonth && leftDay == rightDay
+}
 
-type quotaError struct{}
-
-func (e *quotaError) Error() string { return "已达今日发帖配额" }
+var errQuotaExceeded = errors.New("已达今日发帖配额")
