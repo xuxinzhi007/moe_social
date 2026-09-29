@@ -16,7 +16,7 @@ class NotificationModel {
   final String content;
   bool isRead;
   final DateTime createdAt;
-  
+
   // 关联信息
   final String? postId;
   final String? senderId;
@@ -49,7 +49,7 @@ class NotificationModel {
       content: json['content'] as String? ?? '',
       isRead: json['is_read'] as bool? ?? false,
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-          DateTime.now(),
+          DateTime.fromMillisecondsSinceEpoch(0),
       postId: apiField(json, 'post_id', 'postId')?.toString(),
       senderId: senderRaw?.toString(),
       senderName: json['sender_name']?.toString(),

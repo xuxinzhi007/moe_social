@@ -10,6 +10,7 @@ import '../../models/private_message_item.dart';
 import '../../services/api_client.dart' show ApiException;
 import '../../services/chat_push_service.dart';
 import '../../services/chat_service.dart';
+import '../../services/direct_chat_local_reader.dart';
 import '../../services/direct_chat_sync_bus.dart';
 import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
@@ -120,6 +121,7 @@ class DirectChatViewModel extends ChangeNotifier {
       final userId = await AuthService.getUserId();
       if (_disposed) return;
       _currentUserId = userId;
+      await DirectChatLocalReader.releaseMisusedClearMarkers();
       _clearedAt = await _loadClearedAt(userId);
       await _loadLocalMessages(userId);
       await _fetchInitialServerHistory();

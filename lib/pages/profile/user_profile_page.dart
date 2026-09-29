@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/user.dart';
@@ -14,8 +12,6 @@ import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/profile_bg.dart';
-import '../../widgets/motion/moe_reveal.dart';
-import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_toast.dart';
@@ -56,7 +52,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
   final LikeStateManager _likeManager = LikeStateManager();
-  final Set<String> _revealedPostIds = {};
 
   // 关注统计数据
   int _followingCount = 0;
@@ -276,17 +271,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  /// 头部最小总高度 = 顶栏留白 + 底边距 + 主体（头像/昵称/统计条等）最小高度。
-  /// 之前用整体 scale(272) 未扣掉 [Padding] 的 top，内部 Column 只有 ~169px 易溢出。
-  double _userProfileHeaderMinHeight(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top + kToolbarHeight + 2;
-    const bottomPad = 14.0;
-    final ts = MediaQuery.textScalerOf(context);
-    // 统计条为两行（动态/关注/粉丝 + 魅力/收礼），略增高避免挤压。
-    final bodyMin = ts.scale(238.0).clamp(200.0, 400.0);
-    return (topPad + bottomPad + bodyMin).clamp(300.0, 580.0);
-  }
-
   String _formatReceivedGiftValue(double v) {
     if (v >= 10000) {
       final w = v / 10000;
@@ -301,7 +285,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Widget _buildFrostedStatsStrip() {
     Widget stat(String label, String value, {VoidCallback? onTap}) {
       final ts = MediaQuery.textScalerOf(context);
-      final valueSize = ts.scale(18.0).clamp(14.0, 24.0);
+      final valueSize = ts.scale(16.0).clamp(14.0, 20.0);
       final labelSize = ts.scale(11.0).clamp(10.0, 15.0);
       final valueStyle = TextStyle(
         fontSize: valueSize,
@@ -363,89 +347,82 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final giftValueLabel = _user == null
         ? '…'
         : _formatReceivedGiftValue(_user!.receivedGiftValue);
-    final sepH = MediaQuery.textScalerOf(context).scale(32.0).clamp(24.0, 44.0);
+    final sepH = MediaQuery.textScalerOf(context).scale(26.0).clamp(22.0, 34.0);
 
     Widget vDivider() => Container(
           width: 1,
           height: sepH,
-          color: Colors.white.withValues(alpha: 0.35),
+          color: const Color(0xFF1E1E2E).withValues(alpha: 0.08),
         );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(
-            vertical:
-                MediaQuery.textScalerOf(context).scale(12.0).clamp(8.0, 18.0),
-            horizontal: 2,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.26),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        vertical: MediaQuery.textScalerOf(context).scale(8.0).clamp(6.0, 12.0),
+        horizontal: 2,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  stat('动态', postsLabel, onTap: _scrollToPosts),
-                  vDivider(),
-                  stat(
-                    '关注',
-                    _isLoadingStats ? '…' : '$_followingCount',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              FollowingPage(userId: widget.userId),
-                        ),
-                      );
-                    },
-                  ),
-                  vDivider(),
-                  stat(
-                    '粉丝',
-                    _isLoadingStats ? '…' : '$_followersCount',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              FollowersPage(userId: widget.userId),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+              stat('动态', postsLabel, onTap: _scrollToPosts),
+              vDivider(),
+              stat(
+                '关注',
+                _isLoadingStats ? '…' : '$_followingCount',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) =>
+                          FollowingPage(userId: widget.userId),
+                    ),
+                  );
+                },
               ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  8,
-                  MediaQuery.textScalerOf(context).scale(6.0).clamp(4.0, 10.0),
-                  8,
-                  0,
-                ),
-                child: Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Colors.white.withValues(alpha: 0.35),
-                ),
-              ),
-              Row(
-                children: [
-                  stat('魅力', charmLabel),
-                  vDivider(),
-                  stat('收礼', giftValueLabel),
-                ],
+              vDivider(),
+              stat(
+                '粉丝',
+                _isLoadingStats ? '…' : '$_followersCount',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) =>
+                          FollowersPage(userId: widget.userId),
+                    ),
+                  );
+                },
               ),
             ],
           ),
-        ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              8,
+              MediaQuery.textScalerOf(context).scale(6.0).clamp(4.0, 10.0),
+              8,
+              0,
+            ),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: const Color(0xFF1E1E2E).withValues(alpha: 0.08),
+            ),
+          ),
+          Row(
+            children: [
+              stat('魅力', charmLabel),
+              vDivider(),
+              stat('收礼', giftValueLabel),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -454,208 +431,175 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final sig = (_user?.signature ?? '').trim();
     final moe = _user?.moeNo ?? '';
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: double.infinity,
-        minHeight: _userProfileHeaderMinHeight(context),
-      ),
-      child: IntrinsicHeight(
-        child: Stack(
-          clipBehavior: Clip.none,
-          fit: StackFit.loose,
-          alignment: Alignment.bottomCenter,
-          children: [
-            const Positioned.fill(child: ProfileBg()),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.14),
-                    ],
-                    stops: const [0.4, 1.0],
+    final frameId = _user?.equippedFrameId;
+    final hasFrame = frameId != null && frameId.isNotEmpty;
+    const avatarRadius = 28.0;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.bottomCenter,
+      children: [
+        const Positioned.fill(child: ProfileBg()),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            MediaQuery.paddingOf(context).top + kToolbarHeight,
+            20,
+            16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Hero(
+                tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
                   ),
+                  child: hasFrame
+                      ? DynamicAvatar(
+                          avatarUrl: avatar ?? '',
+                          size: avatarRadius * 2,
+                          frameId: frameId,
+                        )
+                      : NetworkAvatarImage(
+                          imageUrl: avatar ?? '',
+                          radius: avatarRadius,
+                          placeholderIcon: Icons.person,
+                        ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                MediaQuery.of(context).padding.top + kToolbarHeight + 2,
-                20,
-                14,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Hero(
-                    tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xFF7F7FD5).withValues(alpha: 0.35),
-                            blurRadius: 22,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: _user != null
-                            ? DynamicAvatar(
-                                avatarUrl: avatar ?? '',
-                                size: 76,
-                                frameId: _user!.equippedFrameId,
-                              )
-                            : NetworkAvatarImage(
-                                imageUrl: avatar ?? '',
-                                radius: 38,
-                                placeholderIcon: Icons.person,
-                              ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      if (_user?.isVip == true) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: const Color(0xFFFFE082)
-                                  .withValues(alpha: 0.9),
-                            ),
-                          ),
-                          child: const Text(
-                            'VIP',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFFFFF8E1),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (_isSelf && (_user?.email ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      _user!.email,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.78),
-                      ),
+                  Flexible(
+                    child: Text(
+                      name,
+                      textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (sig.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        sig,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.3,
-                          color: Colors.white.withValues(alpha: 0.92),
-                        ),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.2,
                       ),
                     ),
-                  ],
-                  if (moe.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Material(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(999),
-                      child: InkWell(
-                        onTap: _isSelf
-                            ? () {
-                                Clipboard.setData(ClipboardData(text: moe));
-                                MoeToast.success(context, '已复制 Moe 号');
-                              }
-                            : null,
+                  ),
+                  if (_user?.isVip == true) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(999),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 5,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.badge_outlined,
-                                size: 14,
-                                color: Colors.white.withValues(alpha: 0.95),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                moe,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              if (_isSelf) ...[
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.copy_rounded,
-                                  size: 13,
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                ),
-                              ],
-                            ],
-                          ),
+                        border: Border.all(
+                          color: const Color(0xFFFFE082).withValues(alpha: 0.9),
+                        ),
+                      ),
+                      child: const Text(
+                        'VIP',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFFFF8E1),
                         ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 10),
-                  _buildFrostedStatsStrip(),
                 ],
               ),
-            ),
-          ],
+              if (_isSelf && (_user?.email ?? '').isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  _user!.email,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.78),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (sig.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    sig,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+              ],
+              if (moe.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Material(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(999),
+                  child: InkWell(
+                    onTap: _isSelf
+                        ? () {
+                            Clipboard.setData(ClipboardData(text: moe));
+                            MoeToast.success(context, '已复制 Moe 号');
+                          }
+                        : null,
+                    borderRadius: BorderRadius.circular(999),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.badge_outlined,
+                            size: 12,
+                            color: Colors.white.withValues(alpha: 0.92),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            moe,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (_isSelf) ...[
+                            const SizedBox(width: 3),
+                            Icon(
+                              Icons.copy_rounded,
+                              size: 12,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              _buildFrostedStatsStrip(),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -755,12 +699,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
         foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildTopHeader(name, avatar),
-            if (showMidCard)
-              Transform.translate(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildTopHeader(name, avatar)),
+          if (showMidCard)
+            SliverToBoxAdapter(
+              child: Transform.translate(
                 offset: const Offset(0, -22),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1022,114 +966,113 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
                   ),
                 ),
-              )
-            else
-              const SizedBox(height: 4),
-            MoeReveal(
-              delay: const Duration(milliseconds: 300),
-              child: Container(
+              ),
+            )
+          else
+            const SliverToBoxAdapter(child: SizedBox(height: 4)),
+          _buildPostsSliver(),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostsSliver() {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: DecoratedSliver(
+        decoration: BoxDecoration(
+          color: MoeTokens.cardBackground,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: MoeTokens.shadowCard(),
+        ),
+        sliver: SliverMainAxisGroup(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
                 key: _postsSectionKey,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: MoeTokens.cardBackground,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: MoeTokens.shadowCard(),
-                ),
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.all(20),
+                child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: MoeTokens.primary,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _isSelf ? '我的动态' : 'TA 的动态',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                    Container(
+                      width: 4,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: MoeTokens.primary,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const Divider(height: 1),
-                    if (_isLoadingPosts)
-                      const Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else if (_userPosts.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(40.0),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(Icons.bubble_chart_outlined,
-                                  size: 64, color: Colors.grey[200]),
-                              const SizedBox(height: 16),
-                              Text(
-                                '这里还空空如也哦 ~',
-                                style: TextStyle(color: Colors.grey[400]),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      ..._userPosts.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final post = entry.value;
-                        return MoeStaggerReveal(
-                          index: index,
-                          maxAnimated: 8,
-                          staggerStep: const Duration(milliseconds: 30),
-                          itemKey: '${widget.userId}_${post.id}',
-                          revealedKeys: _revealedPostIds,
-                          child: PostCard(
-                            post: post,
-                            heroTagPrefix: 'up_',
-                            onLike: () => _toggleLike(post.id),
-                            onComment: () async {
-                              final result =
-                                  await openPostDetail(context, post);
-                              if (result != null && mounted) {
-                                setState(() {
-                                  final i = _userPosts
-                                      .indexWhere((p) => p.id == post.id);
-                                  if (i != -1) {
-                                    _userPosts[i] = _userPosts[i]
-                                        .copyWith(comments: result);
-                                  }
-                                });
-                              }
-                            },
-                            onEdit:
-                                post.userId == (AuthService.currentUser ?? '')
-                                    ? () => _editPost(post)
-                                    : null,
-                            onDelete:
-                                post.userId == (AuthService.currentUser ?? '')
-                                    ? () => _deletePost(post.id)
-                                    : null,
-                          ),
-                        );
-                      }),
-                    const SizedBox(height: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isSelf ? '我的动态' : 'TA 的动态',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            const SliverToBoxAdapter(child: Divider(height: 1)),
+            if (_isLoadingPosts)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else if (_userPosts.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.bubble_chart_outlined,
+                            size: 64, color: Colors.grey[200]),
+                        const SizedBox(height: 16),
+                        Text(
+                          '这里还空空如也哦 ~',
+                          style: TextStyle(color: Colors.grey[400]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverList.builder(
+                itemCount: _userPosts.length,
+                itemBuilder: (context, index) {
+                  final post = _userPosts[index];
+                  return PostCard(
+                    post: post,
+                    heroTagPrefix: 'up_',
+                    onLike: () => _toggleLike(post.id),
+                    onComment: () async {
+                      final result = await openPostDetail(context, post);
+                      if (result != null && mounted) {
+                        setState(() {
+                          final i =
+                              _userPosts.indexWhere((p) => p.id == post.id);
+                          if (i != -1) {
+                            _userPosts[i] =
+                                _userPosts[i].copyWith(comments: result);
+                          }
+                        });
+                      }
+                    },
+                    onEdit: post.userId == (AuthService.currentUser ?? '')
+                        ? () => _editPost(post)
+                        : null,
+                    onDelete: post.userId == (AuthService.currentUser ?? '')
+                        ? () => _deletePost(post.id)
+                        : null,
+                  );
+                },
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
           ],
         ),
       ),

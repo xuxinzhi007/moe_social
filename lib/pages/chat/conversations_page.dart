@@ -25,7 +25,9 @@ import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_stagger.dart';
+import '../../widgets/motion/moe_motion.dart';
 import 'conversations_viewmodel.dart';
+import 'widgets/chat_empty_illustration.dart';
 
 /// 会话列表。`embedded: true` 时无 Scaffold，用于嵌在 [FriendsPage] 的 Tab 里。
 class ConversationsPage extends StatefulWidget {
@@ -46,15 +48,15 @@ class ConversationsPage extends StatefulWidget {
 
 class _ConversationsPageState extends State<ConversationsPage> {
   late final ConversationsViewModel _vm;
-  final TextEditingController _searchController = TextEditingController();
   final Set<String> _revealedConversationKeys = <String>{};
+  int _hideNoticeToken = 0;
+  String? _hideNoticePeerId;
 
   @override
   void initState() {
     super.initState();
     _vm = ConversationsViewModel();
     _vm.addListener(_onVmChanged);
-    _searchController.addListener(_handleSearchChanged);
     ChatPushService.unreadBySender.addListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.addListener(_onLocalThreadsTick);
     PresenceService.start();
@@ -66,8 +68,6 @@ class _ConversationsPageState extends State<ConversationsPage> {
   void dispose() {
     _vm.removeListener(_onVmChanged);
     _vm.dispose();
-    _searchController.removeListener(_handleSearchChanged);
-    _searchController.dispose();
     ChatPushService.unreadBySender.removeListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.removeListener(_onLocalThreadsTick);
     PresenceService.online.removeListener(_onPresenceChanged);
@@ -80,10 +80,6 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
   void _onVmChanged() {
     if (mounted) setState(() {});
-  }
-
-  void _handleSearchChanged() {
-    _vm.updateSearchQuery(_searchController.text);
   }
 
   void _onPushUnread() {
@@ -110,7 +106,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }
     return Column(
       children: [
-        _buildSearchBar(context),
+        const SizedBox(height: 8),
         _buildOnlineFriendsStrip(context),
         const SizedBox(height: 4),
         Expanded(child: _buildList(context, _vm.localPeers)),
@@ -170,45 +166,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
     );
   }
 
-  Widget _buildSearchBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: MoeTokens.surface1,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-          border: Border.all(color: MoeTokens.surfaceBorder),
-        ),
-        child: TextField(
-          controller: _searchController,
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: '搜索会话、好友昵称或 Moe ID',
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: MoeTokens.hintText,
-            ),
-            suffixIcon: _vm.searchQuery.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: '清空搜索',
-                    onPressed: () => _searchController.clear(),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final body = _buildBody(context);
+    final body = _withHideCapsule(_buildBody(context));
     if (widget.embedded) {
       if (!widget.showEmbeddedToolbar) return body;
       return Column(
@@ -274,7 +234,6 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Widget _buildList(BuildContext context, Set<String> localPeers) {
     final myId = AuthService.currentUser ?? '';
     final pushUnread = context.watch<NotificationProvider>().unreadDmBySender;
-    final query = _vm.searchQuery.toLowerCase();
 
     if (_vm.serverConversations.isNotEmpty) {
       final rows = List<PrivateConversationItem>.from(_vm.serverConversations)
@@ -285,22 +244,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
         if (!_vm.isPeerVisibleInConversationList(peerId, lastAt)) {
           return false;
         }
-        if (query.isEmpty) return true;
-        final peerIdQ = peerId.toLowerCase();
-        final peerName = c.peerName.trim().toLowerCase();
-        final friend = _vm.friends.cast<User?>().firstWhere(
-              (u) => u?.id == peerId,
-              orElse: () => null,
-            );
-        final friendName = (friend?.username ?? '').trim().toLowerCase();
-        final moeNo = (friend?.moeNo ?? '').trim().toLowerCase();
-        return peerIdQ.contains(query) ||
-            peerName.contains(query) ||
-            friendName.contains(query) ||
-            moeNo.contains(query);
+        final body = c.lastMessage.body.trim();
+        return body.isNotEmpty || c.lastMessage.imagePaths.isNotEmpty;
       }).toList();
       if (rows.isEmpty) {
-        return _buildListEmptyState(context, searching: query.isNotEmpty);
+        return _buildListEmptyState(context, searching: false);
       }
       return RefreshIndicator(
         onRefresh: _vm.load,
@@ -340,9 +288,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
             if (previewRaw.isEmpty && c.lastMessage.imagePaths.isNotEmpty) {
               previewRaw = '[IMG]';
             }
-            final preview = previewRaw.isEmpty
-                ? '点击开始聊天'
-                : formatDmPreviewForUi(previewRaw);
+            final preview = formatDmPreviewForUi(previewRaw);
             final pushBadge = pushUnread[peerId] ?? 0;
             final badge = pushBadge > c.unreadCount ? pushBadge : c.unreadCount;
             // 解析最后活跃时间
@@ -396,12 +342,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }
 
     final peerIds = <String>{};
-    for (final f in _vm.friends) {
-      peerIds.add(f.id);
-    }
     peerIds.addAll(pushUnread.keys);
     peerIds.addAll(lastBySender.keys);
     peerIds.addAll(localPeers);
+    peerIds.addAll(_vm.serverThreadTails.keys);
     peerIds.remove(myId);
     peerIds.removeWhere((e) => e.isEmpty);
 
@@ -437,27 +381,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
       )) {
         return false;
       }
-      if (query.isEmpty) return true;
-      User? friend;
-      for (final u in _vm.friends) {
-        if (u.id == peerId) {
-          friend = u;
-          break;
-        }
-      }
-      final last = lastBySender[peerId];
-      final title = friend?.username ??
-          ChatPushService.cachedSenderDisplayName(peerId) ??
-          last?.senderName ??
-          '';
-      final moeNo = friend?.moeNo ?? '';
-      return peerId.toLowerCase().contains(query) ||
-          title.toLowerCase().contains(query) ||
-          moeNo.toLowerCase().contains(query);
+      return _conversationPreview(
+        peerId: peerId,
+        notification: lastBySender[peerId],
+      ).isNotEmpty;
     }).toList();
 
     if (filteredRows.isEmpty) {
-      return _buildListEmptyState(context, searching: query.isNotEmpty);
+      return _buildListEmptyState(context, searching: false);
     }
 
     return RefreshIndicator(
@@ -486,27 +417,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
               last?.senderName ??
               '用户';
           final avatar = friend?.avatar ?? last?.senderAvatar ?? '';
-          final lt = _vm.localThreadTails[peerId];
-          final st = _vm.serverThreadTails[peerId];
-          final previewRaw = () {
-            var bestAt = DateTime.fromMillisecondsSinceEpoch(0);
-            var bestRaw = '';
-            if (lt != null &&
-                lt.rawPreview.isNotEmpty &&
-                lt.at.isAfter(bestAt)) {
-              bestAt = lt.at;
-              bestRaw = lt.rawPreview;
-            }
-            if (st != null &&
-                st.rawPreview.isNotEmpty &&
-                st.at.isAfter(bestAt)) {
-              bestRaw = st.rawPreview;
-            }
-            return bestRaw;
-          }();
-          final preview = previewRaw.isEmpty
-              ? (last == null ? '' : '收到一条新消息')
-              : formatDmPreviewForUi(previewRaw);
+          final preview = _conversationPreview(
+            peerId: peerId,
+            notification: last,
+          );
           final badge = pushUnread[peerId] ?? 0;
 
           return MoeStaggerReveal(
@@ -519,7 +433,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 context,
                 avatar: avatar,
                 title: title,
-                preview: preview.isEmpty ? '点击开始聊天' : preview,
+                preview: preview,
                 badge: badge,
                 lastActive: lastActivity(peerId),
                 isOnline: PresenceService.isUserOnline(peerId),
@@ -558,7 +472,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
             primaryAction: MoeEmptyStateAction(
               label: '清空搜索',
               icon: Icons.refresh_rounded,
-              onPressed: () => _searchController.clear(),
+              onPressed: () {},
             ),
             secondaryAction: MoeEmptyStateAction(
               label: '找好友',
@@ -573,13 +487,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
             ),
           )
         : MoeEmptyState(
-            icon: Icons.chat_bubble_outline_rounded,
-            title: '暂时没有会话',
-            subtitle: '左滑可隐藏会话；有新消息时会再出现在这里',
+            image: const ChatEmptyIllustration(),
+            title: '还没有会话',
+            subtitle: '新消息会出现在这里',
             compact: true,
-            primaryAction: MoeEmptyStateAction(
+            showCard: false,
+            secondaryAction: MoeEmptyStateAction(
               label: '去通讯录',
-              icon: Icons.people_rounded,
+              icon: Icons.people_outline_rounded,
               onPressed: () {
                 if (widget.onEmptyFindFriends != null) {
                   widget.onEmptyFindFriends!();
@@ -648,7 +563,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         if (!mounted) return true;
         await _vm.hideConversation(peerId);
         if (!mounted) return true;
-        _showHideConversationSnackBar(peerId);
+        _showHideCapsule(peerId);
         return true;
       },
       child: child,
@@ -815,31 +730,64 @@ class _ConversationsPageState extends State<ConversationsPage> {
     );
   }
 
-  /// 隐藏会话后的可撤销提示：带倒计时，到期自动消失。
-  void _showHideConversationSnackBar(String peerId) {
-    const undoSeconds = 5;
-    final messenger = ScaffoldMessenger.of(context);
-    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        content: _CountdownSnackLabel(
-          prefix: '已隐藏',
-          seconds: undoSeconds,
+  /// 有正文或图片才算一条会话；通知占位、空好友行不进列表。
+  String _conversationPreview({
+    required String peerId,
+    required NotificationModel? notification,
+  }) {
+    final lt = _vm.localThreadTails[peerId];
+    final st = _vm.serverThreadTails[peerId];
+    var bestAt = DateTime.fromMillisecondsSinceEpoch(0);
+    var bestRaw = '';
+    if (lt != null && lt.rawPreview.trim().isNotEmpty) {
+      bestAt = lt.at;
+      bestRaw = lt.rawPreview;
+    }
+    if (st != null &&
+        st.rawPreview.trim().isNotEmpty &&
+        !st.at.isBefore(bestAt)) {
+      bestRaw = st.rawPreview;
+    }
+    if (bestRaw.trim().isNotEmpty) {
+      return formatDmPreviewForUi(bestRaw);
+    }
+    final content = (notification?.content ?? '').trim();
+    if (content.isEmpty) return '';
+    return formatDmPreviewForUi(content);
+  }
+
+  Widget _withHideCapsule(Widget child) {
+    final peerId = _hideNoticePeerId;
+    if (peerId == null) return child;
+    final token = _hideNoticeToken;
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          top: MoeTokens.spaceSm,
+          left: 0,
+          right: 0,
+          child: _HideCapsuleNotice(
+            key: ValueKey(token),
+            onUndo: () {
+              setState(() => _hideNoticePeerId = null);
+              unawaited(_vm.unhideConversation(peerId));
+            },
+            onDismissed: () {
+              if (!mounted || _hideNoticeToken != token) return;
+              setState(() => _hideNoticePeerId = null);
+            },
+          ),
         ),
-        duration: const Duration(seconds: undoSeconds),
-        behavior: SnackBarBehavior.floating,
-        dismissDirection: DismissDirection.down,
-        // 避开底部 Tab，避免与导航叠挤导致溢出条。
-        margin: EdgeInsets.fromLTRB(16, 0, 16, 72 + bottomInset),
-        action: SnackBarAction(
-          label: '撤销',
-          onPressed: () {
-            unawaited(_vm.unhideConversation(peerId));
-          },
-        ),
-      ),
+      ],
     );
+  }
+
+  void _showHideCapsule(String peerId) {
+    setState(() {
+      _hideNoticeToken++;
+      _hideNoticePeerId = peerId;
+    });
   }
 }
 
@@ -908,55 +856,136 @@ class _OnlineFriendChip extends StatelessWidget {
   }
 }
 
-/// SnackBar 文案：`前缀 · Ns`，每秒刷新。
-class _CountdownSnackLabel extends StatefulWidget {
-  const _CountdownSnackLabel({
-    required this.prefix,
-    required this.seconds,
+/// 顶部胶囊：淡入，停留后向上收回。
+class _HideCapsuleNotice extends StatefulWidget {
+  const _HideCapsuleNotice({
+    super.key,
+    required this.onUndo,
+    required this.onDismissed,
   });
 
-  final String prefix;
-  final int seconds;
+  final VoidCallback onUndo;
+  final VoidCallback onDismissed;
 
   @override
-  State<_CountdownSnackLabel> createState() => _CountdownSnackLabelState();
+  State<_HideCapsuleNotice> createState() => _HideCapsuleNoticeState();
 }
 
-class _CountdownSnackLabelState extends State<_CountdownSnackLabel> {
-  late int _left;
-  Timer? _timer;
+class _HideCapsuleNoticeState extends State<_HideCapsuleNotice>
+    with SingleTickerProviderStateMixin {
+  static const _hold = Duration(milliseconds: 2200);
+
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _offset;
+  Timer? _holdTimer;
 
   @override
   void initState() {
     super.initState();
-    _left = widget.seconds;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
+    _controller = AnimationController(
+      vsync: this,
+      duration: MoeTokens.motionMedium,
+      reverseDuration: MoeTokens.motionFast,
+    );
+    _opacity = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _offset = Tween<Offset>(
+      begin: const Offset(0, -0.85),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (moeReduceMotion(context)) {
+        _holdTimer = Timer(_hold, widget.onDismissed);
         return;
       }
-      if (_left <= 1) {
-        timer.cancel();
-        setState(() => _left = 0);
-        return;
-      }
-      setState(() => _left -= 1);
+      _controller.forward();
+      _holdTimer = Timer(_hold, _close);
     });
+  }
+
+  Future<void> _close() async {
+    _holdTimer?.cancel();
+    if (!mounted) return;
+    await _controller.reverse();
+    if (mounted) widget.onDismissed();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _holdTimer?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final suffix = _left > 0 ? ' · ${_left}s' : '';
-    return Text(
-      '${widget.prefix}$suffix',
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    final capsule = Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+        decoration: BoxDecoration(
+          color: MoeTokens.cardBackground.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          border: Border.all(color: MoeTokens.lineSoft),
+          boxShadow: MoeTokens.shadowSm(),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.visibility_off_outlined,
+              size: 16,
+              color: MoeTokens.inkMuted,
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              '已隐藏',
+              style: TextStyle(
+                color: MoeTokens.titleText,
+                fontSize: MoeTokens.textSm,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            TextButton(
+              onPressed: widget.onUndo,
+              style: TextButton.styleFrom(
+                foregroundColor: MoeTokens.primary,
+                minimumSize: const Size(44, 28),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text(
+                '撤销',
+                style: TextStyle(
+                  fontSize: MoeTokens.textSm,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Center(
+      child: moeReduceMotion(context)
+          ? capsule
+          : FadeTransition(
+              opacity: _opacity,
+              child: SlideTransition(position: _offset, child: capsule),
+            ),
     );
   }
 }

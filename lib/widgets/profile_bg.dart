@@ -1,38 +1,15 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
-class ProfileBg extends StatefulWidget {
+/// 个人主页顶部渐变。装饰圆保持静止，避免进页转场时每帧重绘。
+class ProfileBg extends StatelessWidget {
   const ProfileBg({super.key});
 
   @override
-  State<ProfileBg> createState() => _ProfileBgState();
-}
-
-class _ProfileBgState extends State<ProfileBg> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 6),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Stack(
+    return const Stack(
       children: [
-        // 渐变背景
-        Container(
-          decoration: const BoxDecoration(
+        DecoratedBox(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 Color(0xFF7F7FD5),
@@ -43,52 +20,42 @@ class _ProfileBgState extends State<ProfileBg> with SingleTickerProviderStateMix
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(40),
-              bottomRight: Radius.circular(40),
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
             ),
           ),
+          child: SizedBox.expand(),
         ),
-        
-        // 动态装饰圆 1 (右上)
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Positioned(
-              right: -40 + math.sin(_controller.value * math.pi) * 15,
-              top: -40 + math.cos(_controller.value * math.pi) * 15,
-              child: child!,
-            );
-          },
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-            ),
-          ),
+        Positioned(
+          right: -48,
+          top: -56,
+          child: _BgOrb(diameter: 180, alpha: 0.10),
         ),
-
-        // 动态装饰圆 2 (左下)
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Positioned(
-              left: -60 + math.cos(_controller.value * math.pi) * 20,
-              bottom: 40 + math.sin(_controller.value * math.pi) * 20, // 稍微靠上一点，因为 ProfileHeader 有弧度
-              child: child!,
-            );
-          },
-          child: Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
-            ),
-          ),
+        Positioned(
+          left: -72,
+          bottom: 24,
+          child: _BgOrb(diameter: 140, alpha: 0.06),
         ),
       ],
+    );
+  }
+}
+
+class _BgOrb extends StatelessWidget {
+  const _BgOrb({required this.diameter, required this.alpha});
+
+  final double diameter;
+  final double alpha;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: diameter,
+      height: diameter,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: alpha),
+        shape: BoxShape.circle,
+      ),
     );
   }
 }
