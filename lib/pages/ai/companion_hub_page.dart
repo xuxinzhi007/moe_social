@@ -1,20 +1,18 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/feature_flags.dart';
 import '../../models/post.dart';
 import '../../pages/life/life_world_page.dart';
 import '../../providers/companion_presence_provider.dart';
-import '../../services/companion_character_card_import.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/post_navigation.dart';
 import 'companion_hub_viewmodel.dart';
+import 'companion_profile_edit_page.dart';
 import 'ai_provider_profiles_page.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
@@ -276,9 +274,12 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
   }
 
   Future<void> _editProfile() async {
-    final saved = await _showProfileEditor();
-    if (saved == null) return;
-    if (!mounted) return;
+    final saved = await Navigator.of(context).push<CompanionProfileData>(
+      MaterialPageRoute(
+        builder: (_) => CompanionProfileEditPage(initial: _hub.profile),
+      ),
+    );
+    if (saved == null || !mounted) return;
 
     setState(() => _isSavingProfile = true);
     try {
@@ -291,442 +292,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
       }
     } finally {
       if (mounted) setState(() => _isSavingProfile = false);
-    }
-  }
-
-  Future<CompanionProfileData?> _showProfileEditor() async {
-    final current = _hub.profile;
-    final nameController = TextEditingController(text: current.name);
-    final emojiController = TextEditingController(text: current.emoji);
-    final personaController = TextEditingController(text: current.persona);
-    final agentIdController = TextEditingController(text: current.agentId);
-    final traitsController = TextEditingController(
-      text: current.personalityTraits.join('，'),
-    );
-    final systemPromptController = TextEditingController(
-      text: current.systemPromptOverride,
-    );
-    var greetingStyle =
-        current.greetingStyle.isNotEmpty ? current.greetingStyle : 'warm';
-    var avatarUrl = current.avatarUrl;
-    var uploadingAvatar = false;
-
-    try {
-      return await showModalBottomSheet<CompanionProfileData>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (sheetContext) {
-          return StatefulBuilder(
-            builder: (context, setSheetState) {
-              Future<void> pickAvatar() async {
-                if (uploadingAvatar) return;
-                final picked = await ImagePicker().pickImage(
-                  source: ImageSource.gallery,
-                  maxWidth: 1024,
-                  maxHeight: 1024,
-                  imageQuality: 88,
-                );
-                if (picked == null) return;
-                setSheetState(() => uploadingAvatar = true);
-                try {
-                  final url = await CompanionService()
-                      .uploadAvatarImage(File(picked.path));
-                  if (!sheetContext.mounted) return;
-                  setSheetState(() {
-                    avatarUrl = url;
-                    uploadingAvatar = false;
-                  });
-                } catch (e) {
-                  if (sheetContext.mounted) {
-                    setSheetState(() => uploadingAvatar = false);
-                    MoeToast.error(
-                      sheetContext,
-                      e.toString().replaceFirst('Exception: ', ''),
-                    );
-                  }
-                }
-              }
-
-              Future<void> applyCardDraft(
-                CompanionCardImportDraft draft,
-              ) async {
-                nameController.text = draft.name;
-                if (draft.persona.isNotEmpty) {
-                  personaController.text = draft.persona;
-                }
-                if (draft.personalityTraits.isNotEmpty) {
-                  traitsController.text = draft.personalityTraits.join('，');
-                }
-                if (draft.systemPromptOverride.isNotEmpty) {
-                  systemPromptController.text = draft.systemPromptOverride;
-                }
-                setSheetState(() {});
-
-                final png = draft.avatarPngBytes;
-                if (png != null && png.isNotEmpty) {
-                  setSheetState(() => uploadingAvatar = true);
-                  try {
-                    final url = await CompanionService().uploadAvatarBytes(
-                      png,
-                      filename: 'character_card.png',
-                    );
-                    if (!sheetContext.mounted) return;
-                    setSheetState(() {
-                      avatarUrl = url;
-                      uploadingAvatar = false;
-                    });
-                  } catch (e) {
-                    if (sheetContext.mounted) {
-                      setSheetState(() => uploadingAvatar = false);
-                      MoeToast.error(
-                        sheetContext,
-                        '人设已填入，但头像上传失败：'
-                        '${e.toString().replaceFirst('Exception: ', '')}',
-                      );
-                    }
-                    return;
-                  }
-                }
-
-                if (!sheetContext.mounted) return;
-                MoeToast.success(
-                  sheetContext,
-                  '已从${draft.sourceLabel}填入，确认后点保存',
-                );
-              }
-
-              Future<void> importFromFile() async {
-                try {
-                  final draft =
-                      await CompanionCharacterCardImport.fromFilePicker();
-                  if (!sheetContext.mounted) return;
-                  await applyCardDraft(draft);
-                } on CompanionCardImportCancelled {
-                  return;
-                } catch (e) {
-                  if (sheetContext.mounted) {
-                    MoeToast.error(
-                      sheetContext,
-                      e.toString().replaceFirst('Exception: ', ''),
-                    );
-                  }
-                }
-              }
-
-              Future<void> importFromPaste() async {
-                final pasteController = TextEditingController();
-                final raw = await showDialog<String>(
-                  context: sheetContext,
-                  builder: (dialogContext) {
-                    return AlertDialog(
-                      title: const Text('粘贴角色卡 JSON'),
-                      content: TextField(
-                        controller: pasteController,
-                        maxLines: 10,
-                        decoration: const InputDecoration(
-                          hintText: '粘贴 SillyTavern / Moe 角色卡 JSON',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('取消'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(
-                            dialogContext,
-                            pasteController.text,
-                          ),
-                          child: const Text('解析'),
-                        ),
-                      ],
-                    );
-                  },
-                );
-                pasteController.dispose();
-                if (raw == null || !sheetContext.mounted) return;
-                try {
-                  final draft =
-                      CompanionCharacterCardImport.fromJsonString(raw);
-                  await applyCardDraft(draft);
-                } catch (e) {
-                  if (sheetContext.mounted) {
-                    MoeToast.error(
-                      sheetContext,
-                      e.toString().replaceFirst('Exception: ', ''),
-                    );
-                  }
-                }
-              }
-
-              Future<void> showImportPicker() async {
-                final action = await showModalBottomSheet<String>(
-                  context: sheetContext,
-                  backgroundColor: AiBrandTokens.pageBackground,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  builder: (ctx) {
-                    return SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              '从角色卡导入',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AiBrandTokens.titleColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '仅写入名字 / 人设 / 性格 / 提示词；不导入世界书，不创建酒馆角色。',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: MoeTokens.spaceMd),
-                            MoeActionRow(
-                              icon: Icons.folder_open_rounded,
-                              title: '选择 JSON / PNG 文件',
-                              iconColor: MoeTokens.primary,
-                              onTap: () => Navigator.pop(ctx, 'file'),
-                            ),
-                            MoeActionRow(
-                              icon: Icons.content_paste_rounded,
-                              title: '粘贴 JSON',
-                              iconColor: MoeTokens.primary,
-                              onTap: () => Navigator.pop(ctx, 'paste'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-                if (!sheetContext.mounted || action == null) return;
-                if (action == 'file') {
-                  await importFromFile();
-                } else if (action == 'paste') {
-                  await importFromPaste();
-                }
-              }
-
-              return SafeArea(
-                top: false,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: AiBrandTokens.pageBackground,
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(24)),
-                  ),
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    10,
-                    16,
-                    16 + MediaQuery.viewInsetsOf(context).bottom,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 42,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          '自定义我的 TA',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AiBrandTokens.titleColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '名字、头像、人设属于关系层；世界居民绑定不会覆盖这里。',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        OutlinedButton.icon(
-                          onPressed: uploadingAvatar ? null : showImportPicker,
-                          icon: const Icon(Icons.badge_outlined),
-                          label: const Text('从角色卡导入'),
-                        ),
-                        const SizedBox(height: 12),
-                        Center(
-                          child: Column(
-                            children: [
-                              CompanionAvatar(
-                                emoji: emojiController.text,
-                                avatarUrl: avatarUrl,
-                                size: 88,
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children: [
-                                  TextButton.icon(
-                                    onPressed:
-                                        uploadingAvatar ? null : pickAvatar,
-                                    icon: uploadingAvatar
-                                        ? const SizedBox.square(
-                                            dimension: 14,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : const Icon(Icons.photo_rounded),
-                                    label: Text(
-                                      uploadingAvatar ? '上传中…' : '上传头像',
-                                    ),
-                                  ),
-                                  if (avatarUrl.trim().isNotEmpty)
-                                    TextButton(
-                                      onPressed: uploadingAvatar
-                                          ? null
-                                          : () => setSheetState(
-                                                () => avatarUrl = '',
-                                              ),
-                                      child: const Text('清除头像'),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileField(
-                          controller: nameController,
-                          label: '名称',
-                          hint: '例如：阿悠',
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileField(
-                          controller: emojiController,
-                          label: '表情（无头像时显示）',
-                          hint: '例如：🐾',
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileField(
-                          controller: personaController,
-                          label: '人设',
-                          hint: '一句话描述 AI 的角色和气质',
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileField(
-                          controller: agentIdController,
-                          label: 'Agent ID',
-                          hint: '对接 OpenClaw / 后端 AI 的账号标识',
-                          maxLength: 64,
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileField(
-                          controller: traitsController,
-                          label: '性格标签',
-                          hint: '用逗号分隔，例如：温暖, 好奇, 幽默',
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileField(
-                          controller: systemPromptController,
-                          label: '系统提示词覆盖',
-                          hint: '可选，留空则使用默认设置',
-                          maxLines: 4,
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          initialValue: greetingStyle,
-                          decoration: _profileFieldDecoration('问候风格'),
-                          items: const [
-                            DropdownMenuItem(value: 'warm', child: Text('温暖')),
-                            DropdownMenuItem(
-                                value: 'playful', child: Text('俏皮')),
-                            DropdownMenuItem(value: 'calm', child: Text('沉静')),
-                          ],
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setSheetState(() => greetingStyle = value);
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                        FilledButton.icon(
-                          onPressed: uploadingAvatar
-                              ? null
-                              : () {
-                                  final traits = traitsController.text
-                                      .split(RegExp(r'[，,;\n]'))
-                                      .map((item) => item.trim())
-                                      .where((item) => item.isNotEmpty)
-                                      .toList(growable: false);
-                                  Navigator.pop(
-                                    sheetContext,
-                                    current.copyWith(
-                                      name: nameController.text.trim(),
-                                      emoji: emojiController.text.trim().isEmpty
-                                          ? '🐾'
-                                          : emojiController.text.trim(),
-                                      avatarUrl: avatarUrl.trim(),
-                                      persona: personaController.text.trim(),
-                                      agentId: agentIdController.text.trim(),
-                                      personalityTraits: traits,
-                                      greetingStyle: greetingStyle,
-                                      systemPromptOverride:
-                                          systemPromptController.text.trim(),
-                                    ),
-                                  );
-                                },
-                          icon: const Icon(Icons.save_rounded),
-                          label: const Text('保存'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AiBrandTokens.primary,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(48),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () => Navigator.pop(sheetContext),
-                          child: const Text('取消'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      );
-    } finally {
-      // BottomSheet returns before its exit animation has fully detached TextField dependents.
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      nameController.dispose();
-      emojiController.dispose();
-      personaController.dispose();
-      agentIdController.dispose();
-      traitsController.dispose();
-      systemPromptController.dispose();
     }
   }
 
@@ -780,12 +345,9 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       );
                     },
                   ),
-                  const SizedBox(height: 12),
-                  _CompanionQuickActions(
-                    onMemories: () => _openMemories(),
-                    onLife: FeatureFlags.showLifeEngine ? _openLifeWorld : null,
-                  ),
                   if (FeatureFlags.showLifeEngine) ...[
+                    const SizedBox(height: 12),
+                    _CompanionQuickActions(onLife: _openLifeWorld),
                     const SizedBox(height: 14),
                     _WorldStrip(
                       summaryLine: _hub.worldSummaryLine.isNotEmpty
@@ -1026,11 +588,19 @@ class _HeroCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CompanionAvatar(
-                emoji: profile.emoji,
-                avatarUrl: profile.avatarUrl,
-                size: 58,
+              MoePressable(
+                onTap: onCustomize,
                 borderRadius: BorderRadius.circular(20),
+                child: Semantics(
+                  button: true,
+                  label: '编辑伙伴',
+                  child: CompanionAvatar(
+                    emoji: profile.emoji,
+                    avatarUrl: profile.avatarUrl,
+                    size: 58,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1318,38 +888,17 @@ class _CompanionSummaryBlock extends StatelessWidget {
 }
 
 class _CompanionQuickActions extends StatelessWidget {
-  const _CompanionQuickActions({
-    required this.onMemories,
-    this.onLife,
-  });
+  const _CompanionQuickActions({required this.onLife});
 
-  final VoidCallback onMemories;
-  final VoidCallback? onLife;
+  final VoidCallback onLife;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _QuickAction(
-            icon: Icons.psychology_alt_rounded,
-            label: '记忆',
-            tint: const Color(0xFF8A62B8),
-            onTap: onMemories,
-          ),
-        ),
-        if (onLife != null) ...[
-          const SizedBox(width: MoeTokens.spaceSm),
-          Expanded(
-            child: _QuickAction(
-              icon: Icons.public_rounded,
-              label: '世界',
-              tint: MoeTokens.pastelTeal,
-              onTap: onLife!,
-            ),
-          ),
-        ],
-      ],
+    return _QuickAction(
+      icon: Icons.public_rounded,
+      label: '世界',
+      tint: MoeTokens.pastelTeal,
+      onTap: onLife,
     );
   }
 }
@@ -1829,50 +1378,4 @@ class _SectionCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ProfileField extends StatelessWidget {
-  const _ProfileField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    this.maxLines = 1,
-    this.maxLength,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final int maxLines;
-  final int? maxLength;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      decoration: _profileFieldDecoration(label).copyWith(hintText: hint),
-    );
-  }
-}
-
-InputDecoration _profileFieldDecoration(String label) {
-  return InputDecoration(
-    labelText: label,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Colors.grey.shade300),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Colors.grey.shade300),
-    ),
-    focusedBorder: const OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(16)),
-      borderSide: BorderSide(color: AiBrandTokens.primary),
-    ),
-    filled: true,
-    fillColor: Colors.white,
-  );
 }

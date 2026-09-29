@@ -39,18 +39,12 @@ class _MessageCenterPageState extends State<MessageCenterPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController.addListener(_onTabChanged);
     PresenceService.start();
     unawaited(FriendRequestSync.refreshIncomingCount());
   }
 
-  void _onTabChanged() {
-    if (!_tabController.indexIsChanging && mounted) setState(() {});
-  }
-
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _openRequestsTick.dispose();
     super.dispose();
@@ -124,19 +118,18 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                 bottom: BorderSide(color: MoeTokens.surfaceBorder),
               ),
               actions: [
-                if (_tabController.index == 1)
-                  IconButton(
-                    tooltip: '搜索好友',
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      if (AuthService.currentUser == null) {
-                        MoeToast.error(context, '请先登录');
-                        return;
-                      }
-                      Navigator.pushNamed(context, '/friend-search');
-                    },
-                    icon: const Icon(Icons.search_rounded),
-                  ),
+                IconButton(
+                  tooltip: '搜索',
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    if (AuthService.currentUser == null) {
+                      MoeToast.error(context, '请先登录');
+                      return;
+                    }
+                    Navigator.pushNamed(context, '/friend-search');
+                  },
+                  icon: const Icon(Icons.search_rounded),
+                ),
                 IconButton(
                   tooltip: hasRequests ? '好友申请（$incomingRequestCount）' : '好友申请',
                   onPressed: _openRequests,

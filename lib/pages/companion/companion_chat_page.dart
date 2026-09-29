@@ -21,8 +21,6 @@ import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/motion/moe_pressable.dart';
-
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
 class CompanionChatPage extends StatefulWidget {
   const CompanionChatPage({super.key, this.initialDraft});
@@ -66,10 +64,13 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   bool get _voiceEnabled => FeatureFlags.companionVoicePresence;
 
+  bool _stickToBottom = true;
+
   @override
   void initState() {
     super.initState();
     _ttsHelper = AiTtsHelper();
+    _scrollController.addListener(_onScroll);
     _focusNode.addListener(_onComposerFocusChanged);
     if (_voiceEnabled) {
       unawaited(_initVoice());
@@ -186,6 +187,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     }
     unawaited(_ttsHelper.dispose());
     _controller.dispose();
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -234,7 +236,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       });
       _applyInitialDraft();
       unawaited(CompanionPresenceProvider.instance.markCompanionChatSeen());
-      _scrollToBottom();
+      _scrollToBottom(force: true);
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString().toLowerCase();
@@ -295,7 +297,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       }
       _isSending = true;
     });
-    _scrollToBottom();
+    _scrollToBottom(force: true);
 
     var receivedTerminalEvent = false;
     try {
@@ -500,15 +502,22 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     return quota.toStringAsFixed(0);
   }
 
-  void _scrollToBottom() {
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final atBottom = _scrollController.position.pixels <= 80;
+    if (_stickToBottom != atBottom) {
+      _stickToBottom = atBottom;
+    }
+  }
+
+  /// reverse 列表的 offset 0 就是最新一条，历史在上方。
+  void _scrollToBottom({bool force = false}) {
+    if (force) _stickToBottom = true;
+    if (!_stickToBottom) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 60,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
+      if (!_scrollController.hasClients) return;
+      if (_scrollController.position.pixels <= 1) return;
+      _scrollController.jumpTo(0);
     });
   }
 
@@ -640,21 +649,37 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
           ),
         ),
         actions: [
-          _ProviderStatusButton(
-            status: _providerStatus,
-            label: _providerLabel,
-            onTap: () => unawaited(_openProviderSettings()),
-          ),
-          IconButton(
-            tooltip: '聊天工具',
-            onPressed: _openChatTools,
-            icon: Badge(
-              isLabelVisible: _voiceEnabled && _autoSpeak,
-              smallSize: 8,
-              backgroundColor: AiBrandTokens.primary,
-              child: const Icon(Icons.more_horiz_rounded),
+          _ComposerCircleButton(
+            size: 36,
+            tooltip: '记忆',
+            onTap: () => Navigator.of(context).pushNamed('/ai-memories'),
+            background: MoeTokens.cardBackground,
+            borderColor: AiBrandTokens.companionBorder,
+            child: const Icon(
+              Icons.auto_stories_rounded,
+              size: 18,
+              color: MoeTokens.titleText,
             ),
           ),
+          const SizedBox(width: 6),
+          _ComposerCircleButton(
+            size: 36,
+            tooltip: '聊天工具',
+            onTap: _openChatTools,
+            background: MoeTokens.cardBackground,
+            borderColor: AiBrandTokens.companionBorder,
+            child: Badge(
+              isLabelVisible: _voiceEnabled && _autoSpeak,
+              smallSize: 7,
+              backgroundColor: AiBrandTokens.primary,
+              child: const Icon(
+                Icons.more_horiz_rounded,
+                size: 18,
+                color: MoeTokens.titleText,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: AiChatBackground(
@@ -672,45 +697,72 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     if (_isLoading) {
       return const Text('加载中...');
     }
+    final name = _profile.name.isNotEmpty ? _profile.name : '我的伙伴';
+    final status = _state.activityLabel.isNotEmpty
+        ? _state.activityLabel
+        : (_voiceEnabled && _autoSpeak ? '自动朗读已开' : _providerLabel);
+    final statusColor = switch (_providerStatus) {
+      _ChatProviderStatus.connected => MoeTokens.success,
+      _ChatProviderStatus.failed ||
+      _ChatProviderStatus.notConfigured =>
+        MoeTokens.danger,
+      _ => MoeTokens.warning,
+    };
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            gradient: AiBrandTokens.heroGradient,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: CompanionAvatar(
-            emoji: _profile.emoji,
-            avatarUrl: _profile.avatarUrl,
-            size: 40,
-            borderRadius: BorderRadius.circular(13),
-          ),
+        CompanionAvatar(
+          emoji: _profile.emoji,
+          avatarUrl: _profile.avatarUrl,
+          size: 36,
+          borderRadius: BorderRadius.circular(12),
         ),
         const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _profile.name.isNotEmpty ? _profile.name : '我的伙伴',
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-            ),
-            if (_state.activityLabel.isNotEmpty)
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                _state.activityLabel,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-              )
-            else if (_voiceEnabled && _autoSpeak)
-              const Text(
-                '自动朗读已开',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AiBrandTokens.primary,
-                  fontWeight: FontWeight.w600,
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: MoeTokens.titleText,
                 ),
               ),
-          ],
+              const SizedBox(height: 2),
+              GestureDetector(
+                onTap: () => unawaited(_openProviderSettings()),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        status,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: MoeTokens.hintText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -731,12 +783,14 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
     return ListView.builder(
       controller: _scrollController,
+      reverse: true,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       itemCount: _items.length,
       itemBuilder: (context, index) {
-        final item = _items[index];
+        final chronoIndex = _items.length - 1 - index;
+        final item = _items[chronoIndex];
         final isAssistant = item.role == 'assistant';
-        final itemIndex = index;
+        final itemIndex = chronoIndex;
         final canSpeak = _voiceEnabled &&
             isAssistant &&
             !item.isStreaming &&
@@ -1131,16 +1185,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                         TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
                 _ChatToolTile(
-                    icon: Icons.psychology_alt_rounded,
-                    title: 'TA 记得的事',
-                    subtitle: '查看和管理共同记忆',
-                    onTap: () => Navigator.pop(sheetContext, 'memories')),
-                _ChatToolTile(
-                    icon: Icons.edit_note_rounded,
-                    title: '编辑伙伴资料',
-                    subtitle: '调整名字、表情和陪伴方式',
-                    onTap: () => Navigator.pop(sheetContext, 'profile')),
-                _ChatToolTile(
                     icon: Icons.tune_rounded,
                     title: '模型设置',
                     subtitle: _providerLabel,
@@ -1175,10 +1219,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     );
     if (!mounted || action == null) return;
     switch (action) {
-      case 'memories':
-        await Navigator.of(context).pushNamed('/ai-memories');
-      case 'profile':
-        await _showProfileEditor();
       case 'provider':
         await _openProviderSettings();
       case 'auto_speak':
@@ -1236,145 +1276,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     setState(() {});
     MoeToast.success(context, '已切换音色');
   }
-
-  Future<void> _showProfileEditor() async {
-    final nameController = TextEditingController(text: _profile.name);
-    final emojiController = TextEditingController(text: _profile.emoji);
-    final personaController = TextEditingController(text: _profile.persona);
-    final saved = await showDialog<CompanionProfileData>(
-      context: context,
-      builder: (dialogContext) {
-        InputDecoration fieldDecoration(String hint) => InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: MoeTokens.hintText),
-              filled: true,
-              fillColor: MoeTokens.softLavenderBg,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: MoeTokens.spaceMd,
-                vertical: MoeTokens.spaceSm,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                borderSide: const BorderSide(color: MoeTokens.lineSoft),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                borderSide: const BorderSide(color: MoeTokens.lineSoft),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                borderSide: const BorderSide(color: AiBrandTokens.primary),
-              ),
-            );
-
-        return Dialog(
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: MoeTokens.spaceXl),
-          backgroundColor: Colors.transparent,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 420,
-              maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.82,
-            ),
-            child: Material(
-              color: MoeTokens.surface2,
-              borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(MoeTokens.spaceXl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      '伙伴资料',
-                      style: TextStyle(
-                        color: AiBrandTokens.titleColor,
-                        fontSize: MoeTokens.textXl,
-                        fontWeight: MoeTokens.fontWeightTitle,
-                      ),
-                    ),
-                    const SizedBox(height: MoeTokens.spaceXs),
-                    const Text(
-                      '改成你习惯叫 TA 的样子。',
-                      style: TextStyle(
-                        color: AiBrandTokens.companionInkMuted,
-                        fontSize: MoeTokens.textSm,
-                      ),
-                    ),
-                    const SizedBox(height: MoeTokens.spaceXl),
-                    const Text('名字',
-                        style: TextStyle(fontSize: MoeTokens.textSm)),
-                    const SizedBox(height: MoeTokens.spaceXs),
-                    TextField(
-                      controller: nameController,
-                      textInputAction: TextInputAction.next,
-                      decoration: fieldDecoration('例如：啾啾'),
-                    ),
-                    const SizedBox(height: MoeTokens.spaceMd),
-                    const Text('表情',
-                        style: TextStyle(fontSize: MoeTokens.textSm)),
-                    const SizedBox(height: MoeTokens.spaceXs),
-                    TextField(
-                      controller: emojiController,
-                      textInputAction: TextInputAction.next,
-                      decoration: fieldDecoration('例如：🐤'),
-                    ),
-                    const SizedBox(height: MoeTokens.spaceMd),
-                    const Text('陪伴方式',
-                        style: TextStyle(fontSize: MoeTokens.textSm)),
-                    const SizedBox(height: MoeTokens.spaceXs),
-                    TextField(
-                      controller: personaController,
-                      minLines: 2,
-                      maxLines: 3,
-                      decoration: fieldDecoration('例如：温暖、简短地陪我聊天'),
-                    ),
-                    const SizedBox(height: MoeTokens.spaceXl),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('取消'),
-                        ),
-                        const SizedBox(width: MoeTokens.spaceSm),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(
-                            dialogContext,
-                            _profile.copyWith(
-                              name: nameController.text.trim(),
-                              emoji: emojiController.text.trim(),
-                              persona: personaController.text.trim(),
-                            ),
-                          ),
-                          child: const Text('保存'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    nameController.dispose();
-    emojiController.dispose();
-    personaController.dispose();
-    if (saved == null || !mounted) return;
-    try {
-      final profile = await CompanionService().updateProfile(saved);
-      if (!mounted) return;
-      setState(() => _profile = profile);
-      MoeToast.success(context, '伙伴资料已更新');
-    } catch (error) {
-      if (mounted) {
-        MoeToast.error(
-            context, error.toString().replaceFirst('Exception: ', ''));
-      }
-    }
-  }
 }
 
 enum _ChatProviderStatus {
@@ -1400,59 +1301,6 @@ enum _ChatProviderStatus {
 
   bool get needsConfiguration =>
       this == notConfigured || this == notSelected || this == failed;
-}
-
-class _ProviderStatusButton extends StatelessWidget {
-  const _ProviderStatusButton({
-    required this.status,
-    required this.label,
-    required this.onTap,
-  });
-
-  final _ChatProviderStatus status;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (status) {
-      _ChatProviderStatus.connected => const Color(0xFF28A56A),
-      _ChatProviderStatus.failed ||
-      _ChatProviderStatus.notConfigured =>
-        const Color(0xFFE36B6B),
-      _ => const Color(0xFFE4A13C),
-    };
-    final icon = switch (status) {
-      _ChatProviderStatus.connected => Icons.cloud_done_rounded,
-      _ChatProviderStatus.failed ||
-      _ChatProviderStatus.notConfigured =>
-        Icons.cloud_off_rounded,
-      _ChatProviderStatus.backendDefault => Icons.cloud_rounded,
-      _ => Icons.cloud_queue_rounded,
-    };
-    return Tooltip(
-      message: label,
-      child: Semantics(
-        button: true,
-        label: label,
-        child: MoePressable(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-          child: Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: 0.22)),
-            ),
-            child: Icon(icon, color: color, size: 21),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _ChatToolTile extends StatelessWidget {

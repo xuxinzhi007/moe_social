@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../utils/media_url.dart';
+
 /// 关系层伙伴头像：优先 [avatarUrl]，否则 emoji 回退。
 class CompanionAvatar extends StatelessWidget {
   const CompanionAvatar({
@@ -20,7 +22,7 @@ class CompanionAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = borderRadius ?? BorderRadius.circular(size * 0.32);
-    final url = avatarUrl.trim();
+    final url = resolveMediaUrl(avatarUrl);
     final face = emoji.trim().isNotEmpty ? emoji.trim() : '🐾';
     return Container(
       width: size,
@@ -38,10 +40,9 @@ class CompanionAvatar extends StatelessWidget {
               fit: BoxFit.cover,
               width: size,
               height: size,
-              errorBuilder: (_, __, ___) => Text(
-                face,
-                style: TextStyle(fontSize: size * 0.48),
-              ),
+              excludeFromSemantics: true,
+              errorBuilder: (_, __, ___) =>
+                  Text(face, style: TextStyle(fontSize: size * 0.48)),
             ),
     );
   }

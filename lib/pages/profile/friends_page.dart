@@ -394,7 +394,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
       foregroundColor: MoeTokens.titleText,
       actions: [
         IconButton(
-          tooltip: '搜索好友',
+          tooltip: '搜索',
           onPressed: _openFriendSearch,
           icon: Icon(Icons.search_rounded, color: moe.primary),
         ),

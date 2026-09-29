@@ -15,14 +15,13 @@ import '../../services/notification_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/chat_message_display.dart';
 
-/// 会话列表状态与加载/同步（页面只负责搜索框、列表 UI、导航）。
+/// 会话列表状态与加载/同步（页面负责列表 UI 与导航，搜索走统一搜索页）。
 class ConversationsViewModel extends ChangeNotifier {
   bool _loading = true;
   Object? _loadError;
   List<User> _friends = [];
   List<NotificationModel> _notifs = [];
   List<PrivateConversationItem> _serverConversations = [];
-  String _searchQuery = '';
   Map<String, ({DateTime at, String rawPreview})> _localThreadTails = {};
   Map<String, ({DateTime at, String rawPreview})> _serverThreadTails = {};
   bool _refreshingServerTails = false;
@@ -36,20 +35,12 @@ class ConversationsViewModel extends ChangeNotifier {
   List<User> get friends => _friends;
   List<NotificationModel> get notifs => _notifs;
   List<PrivateConversationItem> get serverConversations => _serverConversations;
-  String get searchQuery => _searchQuery;
   Map<String, ({DateTime at, String rawPreview})> get localThreadTails =>
       _localThreadTails;
   Map<String, ({DateTime at, String rawPreview})> get serverThreadTails =>
       _serverThreadTails;
   Map<String, DateTime> get clearMarkers => _clearMarkers;
   Set<String> get localPeers => _localPeers;
-
-  void updateSearchQuery(String query) {
-    final next = query.trim();
-    if (next == _searchQuery) return;
-    _searchQuery = next;
-    _notify();
-  }
 
   Future<void> load() async {
     _loading = true;
@@ -64,7 +55,11 @@ class ConversationsViewModel extends ChangeNotifier {
         return;
       }
 
-      final clearMarkers = await _loadClearMarkers(uid);
+      await DirectChatLocalReader.releaseMisusedClearMarkers();
+      final clearMarkers = _mergeClearMarkers(
+        await _loadClearMarkers(uid),
+        _clearMarkers,
+      );
       final friends = await UserService.getFriends(uid);
       List<PrivateConversationItem> serverConvs = [];
       try {
@@ -238,7 +233,7 @@ class ConversationsViewModel extends ChangeNotifier {
     return isAfterClearMarker(trimmed, lastActivityAt);
   }
 
-  /// 从会话列表隐藏（写 clear marker；聊天记录仍在，有新消息后会话再出现）。
+  /// 从会话列表隐藏。只记列表标记，不删、不遮聊天记录。
   Future<void> hideConversation(String peerId) async {
     final trimmed = peerId.trim();
     if (trimmed.isEmpty) return;
@@ -262,9 +257,16 @@ class ConversationsViewModel extends ChangeNotifier {
     if (serverTailAt != null && !serverTailAt.isBefore(marker)) {
       marker = serverTailAt.add(const Duration(milliseconds: 1));
     }
+    for (final n in _notifs) {
+      if (n.type != NotificationModel.directMessage) continue;
+      if ((n.senderId ?? '').trim() != trimmed) continue;
+      if (!n.createdAt.isBefore(marker)) {
+        marker = n.createdAt.add(const Duration(milliseconds: 1));
+      }
+    }
 
     final ids = [uid, trimmed]..sort();
-    final key = 'direct_chat_cleared_${ids.join('_')}';
+    final key = 'direct_chat_hidden_${ids.join('_')}';
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, marker.toIso8601String());
 
@@ -285,7 +287,7 @@ class ConversationsViewModel extends ChangeNotifier {
     _notify();
   }
 
-  /// 撤销 [hideConversation]（删除 clear marker 并刷新列表）。
+  /// 撤销 [hideConversation]（去掉列表隐藏标记并刷新）。
   Future<void> unhideConversation(String peerId) async {
     final trimmed = peerId.trim();
     if (trimmed.isEmpty) return;
@@ -293,7 +295,7 @@ class ConversationsViewModel extends ChangeNotifier {
     if (uid.isEmpty) return;
 
     final ids = [uid, trimmed]..sort();
-    final key = 'direct_chat_cleared_${ids.join('_')}';
+    final key = 'direct_chat_hidden_${ids.join('_')}';
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(key);
 
@@ -344,10 +346,24 @@ class ConversationsViewModel extends ChangeNotifier {
     return out;
   }
 
+  static Map<String, DateTime> _mergeClearMarkers(
+    Map<String, DateTime> loaded,
+    Map<String, DateTime> inMemory,
+  ) {
+    final merged = Map<String, DateTime>.from(loaded);
+    for (final entry in inMemory.entries) {
+      final previous = merged[entry.key];
+      if (previous == null || entry.value.isAfter(previous)) {
+        merged[entry.key] = entry.value;
+      }
+    }
+    return merged;
+  }
+
   static Future<Map<String, DateTime>> _loadClearMarkers(String myId) async {
     if (myId.isEmpty) return const {};
     final prefs = await SharedPreferences.getInstance();
-    const prefix = 'direct_chat_cleared_';
+    const prefix = 'direct_chat_hidden_';
     final out = <String, DateTime>{};
     for (final k in prefs.getKeys()) {
       if (!k.startsWith(prefix)) continue;

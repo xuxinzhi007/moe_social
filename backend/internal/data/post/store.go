@@ -3,6 +3,7 @@ package postdata
 import (
 	"context"
 	"errors"
+	"time"
 
 	postbiz "backend/internal/biz/post"
 	"backend/model"
@@ -95,13 +96,14 @@ func (s *store) ListPosts(ctx context.Context, f postbiz.ListPostsFilter) ([]mod
 			listQuery = listQuery.Where("1 = 0")
 		} else {
 			sub := s.db.Model(&model.Follow{}).Select("following_id").Where("follower_id = ?", f.ViewerUID)
-			listQuery = listQuery.Where("user_id = ? OR user_id IN (?)", f.ViewerUID, sub)
+			listQuery = listQuery.Where("user_id IN (?)", sub)
 		}
 	}
 	switch f.FeedMode {
 	case "hot":
-		listQuery = listQuery.Order("(likes * 2 + comments) DESC").Order("created_at DESC").Order("id DESC")
+		listQuery = listQuery.Order(hotOrderSQL(hotRankSeed(time.Now()))).Order("id DESC")
 	default:
+		// latest / following：按发布时间新到旧。
 		listQuery = listQuery.Order("created_at DESC").Order("id DESC")
 	}
 

@@ -718,21 +718,19 @@ class _ChatPageState extends State<ChatPage> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final pos = _scrollController.position;
-    final atBottom = pos.maxScrollExtent - pos.pixels <= _scrollStickThreshold;
+    final atBottom = pos.pixels <= _scrollStickThreshold;
     if (_stickToBottom != atBottom) {
       setState(() => _stickToBottom = atBottom);
     }
   }
 
+  /// reverse 列表的 offset 0 是最新消息。jumpTo 避免 animate 队列把位置停在中段。
   void _scrollToBottom({bool force = false}) {
     if (!force && !_stickToBottom) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      if (_scrollController.position.pixels <= 1) return;
+      _scrollController.jumpTo(0);
     });
   }
 
@@ -820,7 +818,8 @@ class _ChatPageState extends State<ChatPage> {
         if (_scrollController.hasClients) {
           // 估算每个消息的高度，实际应用中可能需要更精确的计算
           const double estimatedMessageHeight = 100.0;
-          final double scrollPosition = index * estimatedMessageHeight;
+          final visualIndex = _messages.length - 1 - index;
+          final double scrollPosition = visualIndex * estimatedMessageHeight;
 
           _scrollController.animateTo(
             scrollPosition,
@@ -1568,21 +1567,25 @@ class _ChatPageState extends State<ChatPage> {
     }
     return ListView.builder(
       controller: _scrollController,
+      reverse: true,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       itemCount: _messages.length +
           (_isSending && _streamingMessageId == null ? 1 : 0),
       itemBuilder: (context, index) {
-        if (_isSending && index == _messages.length) {
+        final showTyping = _isSending && _streamingMessageId == null;
+        if (showTyping && index == 0) {
           return _buildTypingBubble();
         }
-        final message = _messages[index];
+        final chronoIndex =
+            _messages.length - 1 - (index - (showTyping ? 1 : 0));
+        final message = _messages[chronoIndex];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (_shouldShowDateHeader(index))
+            if (_shouldShowDateHeader(chronoIndex))
               _buildDateSeparator(_dateLabelFor(message.createdAt)),
-            _buildMessageBubble(message, index: index),
+            _buildMessageBubble(message, index: chronoIndex),
           ],
         );
       },
