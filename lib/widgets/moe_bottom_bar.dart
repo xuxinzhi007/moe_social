@@ -9,6 +9,10 @@ import 'motion/moe_motion.dart';
 /// 选中图标相对未选中的缩放。只表达当前项，不改变点击区域。
 const double _selectedIconScale = 1.06;
 
+/// 底栏未读圆点。单数字保持正圆，多位数再横向撑开。
+const double _badgeSize = 14;
+const double _badgeFontSize = 9;
+
 class MoeBottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
@@ -114,7 +118,7 @@ class MoeBottomBar extends StatelessWidget {
                                       primaryColor.withValues(alpha: 0.04),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: MoeTokens.spaceXs,
+                                      vertical: MoeTokens.spaceSm,
                                     ),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -161,8 +165,8 @@ class MoeBottomBar extends StatelessWidget {
                                                 ),
                                                 if (badgeCount > 0)
                                                   Positioned(
-                                                    right: -2,
-                                                    top: -4,
+                                                    right: -6,
+                                                    top: -2,
                                                     child: _Badge(
                                                       count: badgeCount,
                                                     ),
@@ -242,25 +246,25 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final label = count > 99 ? '99+' : '$count';
+    final wide = label.length > 1;
     return Container(
-      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-      padding: const EdgeInsets.symmetric(
-        horizontal: MoeTokens.spaceXs,
-        vertical: 1,
-      ),
+      height: _badgeSize,
+      constraints: const BoxConstraints(minWidth: _badgeSize),
+      padding: EdgeInsets.symmetric(horizontal: wide ? MoeTokens.spaceXs : 0),
       decoration: BoxDecoration(
         color: MoeTokens.danger,
         borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-        border: Border.all(color: Colors.white, width: 1.2),
+        border: Border.all(color: MoeTokens.surface1, width: 1.5),
       ),
       alignment: Alignment.center,
       child: Text(
-        count > 99 ? '99+' : '$count',
+        label,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: MoeTokens.textXs,
-          fontWeight: MoeTokens.fontWeightSubtitle,
-          height: 1.1,
+          fontSize: _badgeFontSize,
+          fontWeight: MoeTokens.fontWeightTitle,
+          height: 1,
         ),
       ),
     );

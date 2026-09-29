@@ -1,14 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/notification.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/companion_chat_launcher.dart';
-import '../../services/companion_service.dart';
 import '../../widgets/avatar_image.dart';
-import '../../widgets/ai_bot_badge.dart';
 import '../../utils/error_handler.dart';
 import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -26,9 +23,6 @@ class NotificationCenterPage extends StatefulWidget {
 
 class _NotificationCenterPageState extends State<NotificationCenterPage> {
   final Set<String> _revealedNotificationIds = {};
-  CompanionSnapshotData? _companionSnapshot;
-  CompanionCommunityIdentityData? _communityIdentity;
-  bool _companionLoading = true;
 
   @override
   void initState() {
@@ -36,27 +30,6 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<NotificationProvider>().fetchNotifications(refresh: true);
-    });
-    unawaited(_loadCompanionContext());
-  }
-
-  Future<void> _loadCompanionContext() async {
-    CompanionSnapshotData? snapshot;
-    CompanionCommunityIdentityData? identity;
-    try {
-      snapshot = await CompanionService().getSnapshot();
-    } catch (_) {}
-    if (snapshot?.profile.agentId.trim().isNotEmpty == true) {
-      try {
-        identity = await CompanionService().getCommunityIdentity();
-      } catch (_) {}
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _companionSnapshot = snapshot;
-      _communityIdentity = identity;
-      _companionLoading = false;
     });
   }
 
@@ -211,7 +184,6 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   ) {
     return Column(
       children: [
-        _buildCompanionBanner(),
         Expanded(
           child: isLoading
               ? const MessageSkeleton(itemCount: 8)
@@ -219,7 +191,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   ? const Center(
                       child: MoeEmptyState(
                         title: '暂时没有通知',
-                        subtitle: '新的互动和伙伴消息会出现在这里',
+                        subtitle: '评论、礼物和系统消息会出现在这里',
                         icon: Icons.notifications_none_rounded,
                         compact: false,
                       ),
@@ -398,193 +370,6 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                     ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCompanionBanner() {
-    final snapshot = _companionSnapshot;
-    final profile = snapshot?.profile;
-    final state = snapshot?.state;
-    final identity = _communityIdentity;
-    final hasCompanion =
-        profile != null || (identity != null && identity.isValid);
-    if (!hasCompanion && !_companionLoading) {
-      return const SizedBox.shrink();
-    }
-
-    final name = profile?.name.trim().isNotEmpty == true
-        ? profile!.name.trim()
-        : 'AI 伙伴';
-    final subtitle = _companionLoading
-        ? '正在同步你的伙伴状态'
-        : (state?.activityLabel.trim().isNotEmpty == true
-            ? state!.activityLabel.trim()
-            : state?.greeting.trim().isNotEmpty == true
-                ? state!.greeting.trim()
-                : '在这里查看通知，也能直接去聊天和社区');
-    final avatarUrl = identity?.userAvatar.trim() ?? '';
-    final agentKey = (identity?.authorBotAgentKey.isNotEmpty == true)
-        ? identity!.authorBotAgentKey
-        : profile?.agentId ?? '';
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: MoeTokens.cardBackground,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-          border: Border.all(color: MoeTokens.surfaceBorder),
-          boxShadow: MoeTokens.shadowSm(),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F6FB),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  alignment: Alignment.center,
-                  child: avatarUrl.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            avatarUrl,
-                            width: 48,
-                            height: 48,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Text(
-                              profile?.emoji.isNotEmpty == true
-                                  ? profile!.emoji
-                                  : '🤖',
-                              style: const TextStyle(fontSize: 22),
-                            ),
-                          ),
-                        )
-                      : Text(
-                          profile?.emoji.isNotEmpty == true
-                              ? profile!.emoji
-                              : '🤖',
-                          style: const TextStyle(fontSize: 22),
-                        ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: MoeTokens.titleText,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (agentKey.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            AiBotBadge(compact: true, agentKey: agentKey),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildCompanionAction(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  label: '聊天',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    unawaited(CompanionChatLauncher.openChat(context));
-                  },
-                ),
-                _buildCompanionAction(
-                  icon: Icons.groups_rounded,
-                  label: '社区',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pushNamed(context, '/community');
-                  },
-                ),
-                if (identity?.isValid == true)
-                  _buildCompanionAction(
-                    icon: Icons.edit_note_rounded,
-                    label: '发动态',
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.pushNamed(
-                        context,
-                        '/create-post',
-                        arguments: {'communityIdentity': identity},
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompanionAction({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF6F7FC),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: MoeTokens.primary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: MoeTokens.titleText,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
