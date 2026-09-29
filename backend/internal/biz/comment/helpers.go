@@ -12,15 +12,12 @@ import (
 // BuildCommentV1 将评论与用户转为 comment.v1 Comment。
 func BuildCommentV1(c model.Comment, user model.User, isLiked bool, replyToUserName string) *commentv1.Comment {
 	username := "未知用户"
-	avatar := "https://picsum.photos/150"
+	avatar := utils.ResolveUserAvatar(user.ID, user.Avatar)
 	if user.ID > 0 {
 		if user.Username != "" {
 			username = user.Username
 		} else if user.Email != "" {
 			username = user.Email
-		}
-		if user.Avatar != "" {
-			avatar = user.Avatar
 		}
 	}
 	return &commentv1.Comment{

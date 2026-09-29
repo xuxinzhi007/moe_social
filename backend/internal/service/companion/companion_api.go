@@ -424,7 +424,7 @@ func (s *AppService) ChatStream(
 	return s.ChatStreamWithInference(ctx, userID, message, nil, "", onChunk)
 }
 
-// ChatStreamWithInference streams one message with an optional user-selected provider.
+// ChatStreamWithInference streams one message. override 来自服务端已保存的供应商，为空时用默认模型。
 func (s *AppService) ChatStreamWithInference(
 	ctx context.Context,
 	userID uint,

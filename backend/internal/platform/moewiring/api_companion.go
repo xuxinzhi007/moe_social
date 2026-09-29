@@ -3,8 +3,10 @@ package moewiring
 import (
 	"context"
 
+	aibiz "backend/internal/biz/ai"
 	companionbiz "backend/internal/biz/companion"
 	lifebiz "backend/internal/biz/life"
+	aidata "backend/internal/data/ai"
 	companiondata "backend/internal/data/companion"
 	"backend/internal/platform/appdb"
 	companionapp "backend/internal/service/companion"
@@ -48,5 +50,13 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 		lifeApp.Engine().SetBoundEntitySource(&companionBoundEntitySource{db: db})
 		lifeApp.Engine().SetEventObserver(engine.ObserveLifeEvent)
 	}
-	return companionapp.New(engine, hub, db), nil
+	svc := companionapp.New(engine, hub, db)
+	if svc != nil {
+		if aiStore := aidata.NewStore(db); aiStore != nil {
+			svc.UseInferenceResolver(func(ctx context.Context, userID uint) (*llminference.Config, error) {
+				return aibiz.ResolveActiveInference(ctx, aiStore, userID)
+			})
+		}
+	}
+	return svc, nil
 }

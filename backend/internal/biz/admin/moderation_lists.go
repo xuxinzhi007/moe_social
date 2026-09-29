@@ -204,16 +204,14 @@ func ListComments(ctx context.Context, st AdminStore, in *adminv1.AdminListComme
 	comments := make([]*adminv1.Comment, 0, len(rows))
 	for _, c := range rows {
 		username := "未知用户"
-		avatar := "https://picsum.photos/150"
+		avatar := utils.ResolveUserAvatar(0, "")
 		if u, ok := userMap[c.UserID]; ok {
 			if u.Username != "" {
 				username = u.Username
 			} else if u.Email != "" {
 				username = u.Email
 			}
-			if u.Avatar != "" {
-				avatar = u.Avatar
-			}
+			avatar = utils.ResolveUserAvatar(u.ID, u.Avatar)
 		}
 		comments = append(comments, &adminv1.Comment{
 			Id:         strconv.FormatUint(uint64(c.ID), 10),

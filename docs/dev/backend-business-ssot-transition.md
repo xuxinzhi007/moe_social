@@ -421,3 +421,9 @@ Flutter 迁移顺序：
 - Flutter 新增 `AiChatHistoryService`，普通 AI 聊天页加载/创建/删除会话、加载/保存/删除消息均走后端历史服务；后端 Provider 的正常对话由后端落库，外部 Provider、开场白和错误气泡由前端通过历史服务补写。
 - `ChatPage` 不再使用本地 `AiDbService` 或 Web `SharedPreferences` 作为普通 AI 聊天历史主路径；本地页面状态只保留输入、气泡、生成中、滚动和错误提示。
 - 已验证：`flutter analyze lib/pages/ai/chat_page.dart lib/services/ai_chat_history_service.dart` 通过；`go test ./internal/service/llm ./internal/data/llm ./internal/server/protohttp/llm -count=1` 通过。
+
+### 2026-09-30：Companion 模型选择与聊天提示词展示
+
+- Companion SSE 不再接受客户端传来的供应商地址、模型名和 API Key。
+- 后端按用户已保存的 `last_selected_provider_id`、供应商资料和解密后的 Key 选择模型；未选择或内置后端时使用服务端默认推理配置。
+- 普通 AI 聊天页的系统提示词改为读取 `GET /api/llm/model-prompt`，页面只展示，不再编辑或写回角色卡。

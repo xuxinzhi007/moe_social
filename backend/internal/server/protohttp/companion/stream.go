@@ -2,28 +2,24 @@ package companionhttp
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
+	aibiz "backend/internal/biz/ai"
 	apicomm "backend/internal/platform/apicomm"
 	companionapp "backend/internal/service/companion"
-	"backend/pkg/llminference"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
 type chatStreamRequest struct {
-	Message          string `json:"message"`
-	ProviderBaseURL  string `json:"provider_base_url"`
-	ProviderAPIStyle string `json:"provider_api_style"`
-	ProviderModel    string `json:"provider_model"`
-	ProviderAPIKey   string `json:"provider_api_key"`
-	ProviderTimeout  int    `json:"provider_timeout_seconds"`
-	Scene            string `json:"scene"`
-	InputMode        string `json:"input_mode"`
+	Message   string `json:"message"`
+	Scene     string `json:"scene"`
+	InputMode string `json:"input_mode"`
 }
 
 const maxChatStreamBodyBytes = 32 << 10
@@ -55,19 +51,12 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 	if strings.TrimSpace(req.Message) == "" {
 		return kerrors.BadRequest("MESSAGE_REQUIRED", "消息不能为空")
 	}
-	var override *llminference.Config
-	if strings.TrimSpace(req.ProviderBaseURL) != "" {
-		config := llminference.ConfigFrom(
-			req.ProviderBaseURL,
-			req.ProviderAPIStyle,
-			req.ProviderTimeout,
-			req.ProviderModel,
-			req.ProviderAPIKey,
-		)
-		if config.BaseURL == "" || config.DefaultModel == "" {
-			return kerrors.BadRequest("INVALID_PROVIDER_CONFIG", "用户模型配置缺少地址或模型")
+	override, err := app.ResolveChatInference(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, aibiz.ErrActiveProviderUnavailable) {
+			return kerrors.BadRequest("INVALID_PROVIDER_CONFIG", "已保存的模型配置缺少地址或模型")
 		}
-		override = &config
+		return err
 	}
 
 	apicomm.InitSSEHeaders(w)

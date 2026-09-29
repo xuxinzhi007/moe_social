@@ -34,7 +34,7 @@ class ApiEnvConfig {
   static const String productionUrl = 'http://47.106.175.49:8888';
 
   /// 本地 API（无末尾 /）—— 开发机局域网地址，换机器/换网段时改这里
-  static const String developmentUrl = 'http://192.168.124.22:8888';
+  static const String developmentUrl = 'http://192.168.124.36:8888';
 
   static String get baseUrl => isProduction ? productionUrl : developmentUrl;
 

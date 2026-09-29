@@ -3,6 +3,7 @@ package userbiz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"backend/model"
@@ -63,6 +64,9 @@ func Login(ctx context.Context, store UserStore, email, username, password strin
 		return model.User{}, "", err
 	}
 	user, _ = store.ReloadUser(ctx, user.ID)
+	if err := pinStableAvatar(ctx, store, &user); err != nil {
+		return model.User{}, "", err
+	}
 	token, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
 		return model.User{}, "", err
@@ -100,16 +104,21 @@ func Register(ctx context.Context, store UserStore, username, email, password st
 		Username: username,
 		Password: password,
 		Email:    emailNorm,
-		Avatar:   "https://picsum.photos/150",
 		IsVip:    false,
 	}
 	if err := store.CreateUser(ctx, &user); err != nil {
+		return model.User{}, "", err
+	}
+	if err := pinStableAvatar(ctx, store, &user); err != nil {
 		return model.User{}, "", err
 	}
 	if _, err := utils.EnsureUserMoeNo(store.Raw(), user.ID); err != nil {
 		return model.User{}, "", err
 	}
 	user, _ = store.ReloadUser(ctx, user.ID)
+	if err := pinStableAvatar(ctx, store, &user); err != nil {
+		return model.User{}, "", err
+	}
 	token, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
 		return model.User{}, "", err
@@ -133,5 +142,25 @@ func GetByID(ctx context.Context, store UserStore, userID uint) (model.User, err
 		return model.User{}, err
 	}
 	user, _ = store.ReloadUser(ctx, user.ID)
+	if err := pinStableAvatar(ctx, store, &user); err != nil {
+		return model.User{}, err
+	}
 	return user, nil
+}
+
+// pinStableAvatar 把还没固定的默认头像写成该用户专属地址，并落库。
+func pinStableAvatar(ctx context.Context, store UserStore, user *model.User) error {
+	if store == nil || user == nil || user.ID == 0 {
+		return nil
+	}
+	if !utils.NeedsStableDefaultAvatar(user.Avatar) {
+		return nil
+	}
+	user.Avatar = utils.StableDefaultAvatar(user.ID)
+	if err := store.UpdateUserFields(ctx, user.ID, map[string]interface{}{
+		"avatar": user.Avatar,
+	}); err != nil {
+		return fmt.Errorf("save default avatar: %w", err)
+	}
+	return nil
 }

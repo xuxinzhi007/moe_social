@@ -200,8 +200,8 @@ func findOrCreateFeishuUser(ctx context.Context, store UserStore, info utils.Fei
 		email = fmt.Sprintf("%s@feishu.oauth.local", openID)
 	}
 	avatar := strings.TrimSpace(info.Avatar)
-	if avatar == "" {
-		avatar = "https://picsum.photos/150"
+	if utils.NeedsStableDefaultAvatar(avatar) {
+		avatar = ""
 	}
 	openIDCopy := openID
 	user = model.User{
@@ -213,6 +213,9 @@ func findOrCreateFeishuUser(ctx context.Context, store UserStore, info utils.Fei
 	}
 	applyFeishuProfile(&user, info)
 	if err := store.CreateUser(ctx, &user); err != nil {
+		return model.User{}, false, err
+	}
+	if err := pinStableAvatar(ctx, store, &user); err != nil {
 		return model.User{}, false, err
 	}
 	return user, true, nil

@@ -174,8 +174,8 @@ func findOrCreateWechatUser(ctx context.Context, store UserStore, info utils.Wec
 	}
 	email := fmt.Sprintf("%s@wechat.oauth.local", openID)
 	avatar := strings.TrimSpace(info.Avatar)
-	if avatar == "" {
-		avatar = "https://picsum.photos/150"
+	if utils.NeedsStableDefaultAvatar(avatar) {
+		avatar = ""
 	}
 	openIDCopy := openID
 	user = model.User{
@@ -187,6 +187,9 @@ func findOrCreateWechatUser(ctx context.Context, store UserStore, info utils.Wec
 	}
 	applyWechatProfile(&user, info)
 	if err := store.CreateUser(ctx, &user); err != nil {
+		return model.User{}, false, err
+	}
+	if err := pinStableAvatar(ctx, store, &user); err != nil {
 		return model.User{}, false, err
 	}
 	return user, true, nil
