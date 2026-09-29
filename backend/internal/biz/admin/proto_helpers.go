@@ -8,6 +8,7 @@ import (
 
 	adminv1 "backend/api/admin/v1"
 	"backend/model"
+	"backend/utils"
 
 	"gorm.io/gorm"
 )
@@ -77,14 +78,11 @@ func postModelToAdminV1(post model.Post, user model.User, isLiked bool) *adminv1
 		_ = json.Unmarshal([]byte(post.Images), &images)
 	}
 	username := "未知用户"
-	avatar := "https://picsum.photos/150"
+	avatar := utils.ResolveUserAvatar(user.ID, user.Avatar)
 	if user.Username != "" {
 		username = user.Username
 	} else if user.Email != "" {
 		username = user.Email
-	}
-	if user.Avatar != "" {
-		avatar = user.Avatar
 	}
 	moderationStatus := strings.TrimSpace(post.ModerationStatus)
 	if moderationStatus == "" {
@@ -202,8 +200,5 @@ func adminUserLabel(user model.User) string {
 }
 
 func adminUserAvatar(user model.User) string {
-	if user.Avatar != "" {
-		return user.Avatar
-	}
-	return "https://picsum.photos/150"
+	return utils.ResolveUserAvatar(user.ID, user.Avatar)
 }

@@ -8,6 +8,7 @@ import (
 
 	postv1 "backend/api/post/v1"
 	"backend/model"
+	"backend/utils"
 )
 
 // LikedTargetIDSet 返回 targetIDs 中已被 userID 点赞的 ID。
@@ -41,14 +42,11 @@ func BuildPostV1(post model.Post, user model.User, isLiked bool) *postv1.Post {
 	}
 
 	username := "未知用户"
-	avatar := "https://picsum.photos/150"
+	avatar := utils.ResolveUserAvatar(user.ID, user.Avatar)
 	if user.Username != "" {
 		username = user.Username
 	} else if user.Email != "" {
 		username = user.Email
-	}
-	if user.Avatar != "" {
-		avatar = user.Avatar
 	}
 
 	topicTags := make([]*postv1.TopicTag, 0, len(post.TopicTags))

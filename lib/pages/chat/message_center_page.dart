@@ -9,6 +9,7 @@ import '../../services/presence_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../profile/friends_page.dart';
 import '../profile/widgets/add_friend_bottom_sheet.dart';
@@ -85,7 +86,7 @@ class _MessageCenterPageState extends State<MessageCenterPage>
   }
 
   void _openRequests() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     if (_tabController.index != 1) {
       _tabController.animateTo(1);
     }
@@ -123,6 +124,37 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                 bottom: BorderSide(color: MoeTokens.surfaceBorder),
               ),
               actions: [
+                if (_tabController.index == 1)
+                  IconButton(
+                    tooltip: '搜索好友',
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      if (AuthService.currentUser == null) {
+                        MoeToast.error(context, '请先登录');
+                        return;
+                      }
+                      Navigator.pushNamed(context, '/friend-search');
+                    },
+                    icon: const Icon(Icons.search_rounded),
+                  ),
+                IconButton(
+                  tooltip: hasRequests ? '好友申请（$incomingRequestCount）' : '好友申请',
+                  onPressed: _openRequests,
+                  icon: Badge(
+                    isLabelVisible: hasRequests,
+                    backgroundColor: MoeTokens.warning,
+                    label: Text(
+                      incomingRequestCount > 99
+                          ? '99+'
+                          : '$incomingRequestCount',
+                    ),
+                    child: Icon(
+                      hasRequests
+                          ? Icons.mark_email_unread_outlined
+                          : Icons.mail_outline_rounded,
+                    ),
+                  ),
+                ),
                 IconButton(
                   tooltip: '添加好友',
                   onPressed: _showAddFriendSheet,
@@ -136,28 +168,29 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                   child: Container(
                     height: 40,
                     decoration: BoxDecoration(
-                      color: MoeTokens.surface1,
-                      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                      color: MoeTokens.softChipBg,
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                       border: Border.all(color: MoeTokens.surfaceBorder),
-                      boxShadow: MoeTokens.shadowCard(),
                     ),
                     child: TabBar(
                       controller: _tabController,
                       dividerHeight: 0,
                       indicatorSize: TabBarIndicatorSize.tab,
                       indicator: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: MoeTokens.primaryGradient,
+                        color: MoeTokens.surface1,
+                        borderRadius:
+                            BorderRadius.circular(MoeTokens.radiusFull),
+                        boxShadow: MoeTokens.shadowSm(),
                       ),
-                      labelColor: Colors.white,
+                      labelColor: MoeTokens.primary,
                       unselectedLabelColor: MoeTokens.hintText,
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: MoeTokens.textSm,
                       ),
                       unselectedLabelStyle: const TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                        fontSize: MoeTokens.textSm,
                       ),
                       tabs: [
                         for (var i = 0; i < _tabs.length; i++)
@@ -169,10 +202,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                                 Icon(_tabs[i].icon, size: 16),
                                 const SizedBox(width: 4),
                                 Text(_tabs[i].label),
-                                if (i == 1 && hasRequests) ...[
-                                  const SizedBox(width: 6),
-                                  _TabCountDot(count: incomingRequestCount),
-                                ],
                               ],
                             ),
                           ),
@@ -184,11 +213,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
             ),
             body: Column(
               children: [
-                if (hasRequests && _tabController.index == 0)
-                  _FriendRequestBanner(
-                    count: incomingRequestCount,
-                    onTap: _openRequests,
-                  ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -200,7 +224,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                       ),
                       FriendsPage(
                         contactsOnly: true,
-                        hideAddAction: true,
                         openRequestsTick: _openRequestsTick,
                       ),
                     ],
@@ -211,93 +234,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
           ),
         );
       },
-    );
-  }
-}
-
-class _TabCountDot extends StatelessWidget {
-  const _TabCountDot({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
-        color: MoeTokens.warning,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-      ),
-      child: Text(
-        count > 99 ? '99+' : '$count',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _FriendRequestBanner extends StatelessWidget {
-  const _FriendRequestBanner({
-    required this.count,
-    required this.onTap,
-  });
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: MoeTokens.softLavenderBg,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: MoeTokens.surfaceBorder),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.favorite_rounded,
-                size: 18,
-                color: MoeTokens.primary.withValues(alpha: 0.9),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  count == 1 ? '有 1 位同好想认识你' : '有 $count 条好友申请待处理',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: MoeTokens.titleText,
-                  ),
-                ),
-              ),
-              Text(
-                '去看看',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: MoeTokens.primary,
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: MoeTokens.hintText,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

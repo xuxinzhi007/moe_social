@@ -5,14 +5,20 @@ import (
 
 	companionbiz "backend/internal/biz/companion"
 	"backend/model"
+	"backend/pkg/llminference"
 	"gorm.io/gorm"
 )
 
+// InferenceResolver 按用户已保存的供应商解析推理配置。
+// 返回 nil 配置表示继续使用服务端默认模型。
+type InferenceResolver func(ctx context.Context, userID uint) (*llminference.Config, error)
+
 // AppService Companion 应用服务层。
 type AppService struct {
-	engine *companionbiz.Engine
-	hub    *companionbiz.CompanionWSHub
-	db     *gorm.DB
+	engine           *companionbiz.Engine
+	hub              *companionbiz.CompanionWSHub
+	db               *gorm.DB
+	resolveInference InferenceResolver
 }
 
 // New creates a Companion application service from injected business dependencies.
@@ -52,6 +58,22 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 	}
 
 	return &AppService{engine: engine, hub: hub, db: db}
+}
+
+// UseInferenceResolver 注入用户供应商解析。未注入时聊天使用服务端默认模型。
+func (s *AppService) UseInferenceResolver(resolve InferenceResolver) {
+	if s == nil {
+		return
+	}
+	s.resolveInference = resolve
+}
+
+// ResolveChatInference 读取当前用户已保存的外部供应商。
+func (s *AppService) ResolveChatInference(ctx context.Context, userID uint) (*llminference.Config, error) {
+	if s == nil || s.resolveInference == nil {
+		return nil, nil
+	}
+	return s.resolveInference(ctx, userID)
 }
 
 // Hub 暴露 WebSocket Hub（供 transport 层注册路由）。

@@ -47,6 +47,7 @@ import '../pages/notifications/notification_center_page.dart'
     deferred as notification_center;
 import '../pages/profile/edit_profile_page.dart';
 import '../pages/profile/friends_page.dart';
+import '../pages/profile/friend_search_page.dart';
 import '../pages/profile/profile_page.dart' deferred as profile_page;
 import '../pages/profile/user_profile_page.dart';
 import '../pages/profile/user_qr_code_page.dart';
@@ -254,6 +255,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       return TopicPostsPage(topicTag: tag);
     },
     '/friends': (context) => const FriendsPage(),
+    '/friend-search': (context) => const FriendSearchPage(),
     '/community': (context) => _deferred(
           community_home.loadLibrary,
           () => community_home.CommunityHomePage(),

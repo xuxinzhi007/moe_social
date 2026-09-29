@@ -2,9 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import '../../services/ai_prompt_defaults.dart';
-import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
+import '../../services/llm_api_service.dart';
 import '../../services/ai_chat_history_service.dart';
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_chat_session_prefs.dart';
@@ -104,9 +103,8 @@ class _ChatPageState extends State<ChatPage> {
     _ttsHelper = AiTtsHelper();
     _quickReplies = buildAgentQuickReplies(widget.agent);
     _scrollController.addListener(_onScroll);
-    _systemPrompt = widget.agent.systemPrompt.trim().isNotEmpty
-        ? widget.agent.systemPrompt
-        : AiPromptDefaults.defaultAgentSystemPrompt;
+    _systemPrompt = '';
+    unawaited(_loadBackendSystemPrompt());
     _initVoice();
     _loadChatPrefs();
     _loadUserPersona();
@@ -327,12 +325,6 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       if (mounted) MoeToast.error(context, '消息删除失败：$e');
     }
-  }
-
-  Future<void> _syncCurrentSession() async {
-    final session = _currentSession;
-    if (session == null) return;
-    await _saveSessionQuietly(session);
   }
 
   Future<void> _createNewSession({bool syncToBackend = true}) async {
@@ -711,64 +703,17 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _editSystemPrompt() async {
-    final controller = TextEditingController(text: _systemPrompt);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('编辑系统提示词'),
-        content: TextField(
-          controller: controller,
-          maxLines: 8,
-          decoration: const InputDecoration(
-            hintText: '输入系统提示词（为空则使用默认）',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('保存'),
-          ),
-        ],
-      ),
-    );
-    final nextPrompt = controller.text.trim();
-    // 等待对话框退出动画再释放输入框 controller。
-    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
-    if (ok != true || !mounted) return;
-    var cardSaved = false;
-    setState(() => _isSyncingModelPrompt = true);
-    try {
-      await _persistAgentSystemPrompt(nextPrompt);
-      cardSaved = true;
-      if (!mounted) return;
-      setState(() => _systemPrompt = nextPrompt);
-      unawaited(_syncCurrentSession());
-      // 提示词编辑只保存角色卡，不修改共享基座或隐式同步受管模型。
-      await _createNewSession();
-      if (!mounted) return;
-      MoeToast.success(
-        context,
-        '系统提示词已写入角色卡（已开启新对话，未修改服务器模型）',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      final message = !cardSaved ? '角色卡保存失败：$e' : '提示词已保存，但开启新对话失败：$e';
-      MoeToast.error(context, message);
-    } finally {
-      if (mounted) {
-        setState(() => _isSyncingModelPrompt = false);
-      }
-    }
+  Future<void> _loadBackendSystemPrompt() async {
+    final model = widget.agent.modelName.trim();
+    if (model.isEmpty) return;
+    if (mounted) setState(() => _isSyncingModelPrompt = true);
+    final prompt = await LlmApiService.fetchBackendModelSystemPrompt(model);
+    if (!mounted) return;
+    setState(() {
+      _systemPrompt = prompt;
+      _isSyncingModelPrompt = false;
+    });
   }
-
-  Future<void> _persistAgentSystemPrompt(String prompt) =>
-      AiAgentCloudService().updateSystemPrompt(widget.agent.id, prompt);
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
@@ -1475,38 +1420,6 @@ class _ChatPageState extends State<ChatPage> {
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey)),
-                          const Spacer(),
-                          if (_systemPrompt.isNotEmpty)
-                            TextButton.icon(
-                              style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap),
-                              icon: const Icon(Icons.copy_rounded, size: 14),
-                              label: const Text('复制',
-                                  style: TextStyle(fontSize: 12)),
-                              onPressed: () async {
-                                await Clipboard.setData(
-                                    ClipboardData(text: _systemPrompt));
-                                if (!mounted) return;
-                                if (!ctx.mounted) return;
-                                Navigator.pop(ctx);
-                                MoeToast.success(context, '提示词已复制');
-                              },
-                            ),
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap),
-                            icon: const Icon(Icons.edit_rounded, size: 14),
-                            label: const Text('编辑',
-                                style: TextStyle(fontSize: 12)),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _editSystemPrompt();
-                            },
-                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -1519,7 +1432,7 @@ class _ChatPageState extends State<ChatPage> {
                           border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: _systemPrompt.isEmpty
-                            ? Text('未设置系统提示词',
+                            ? Text('后端没有返回系统提示词',
                                 style: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,

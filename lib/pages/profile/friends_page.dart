@@ -16,11 +16,12 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/moe_error_copy.dart';
+import '../../widgets/motion/moe_motion.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
-import '../discover/discover_match_tab.dart';
 import 'widgets/add_friend_bottom_sheet.dart';
 import 'widgets/friend_requests_panel.dart';
 import 'widgets/friends_logged_out_body.dart';
@@ -36,16 +37,12 @@ enum _FriendGroup {
 class FriendsPage extends StatefulWidget {
   final bool contactsOnly;
 
-  /// 嵌入好友 Tab 时隐藏「添加」（枢纽 AppBar 已有入口）。
-  final bool hideAddAction;
-
   /// 枢纽递增后打开好友申请面板。
   final ValueNotifier<int>? openRequestsTick;
 
   const FriendsPage({
     super.key,
     this.contactsOnly = false,
-    this.hideAddAction = false,
     this.openRequestsTick,
   });
 
@@ -64,7 +61,6 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _hasError = false;
   Object? _loadError;
-  String _searchKeyword = '';
   Map<String, bool> _onlineStatus = {};
   Timer? _onlineTimer;
   bool _presenceListening = false;
@@ -125,47 +121,17 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   }
 
   void _goToRequestsTab() {
+    HapticFeedback.selectionClick();
     _showRequestsSheet();
   }
 
-  void _showMatchSheet() {
-    unawaited(
-      MoeSheet.showDraggable<void>(
-        context,
-        initialChildSize: 0.86,
-        minChildSize: 0.5,
-        maxChildSize: 0.96,
-        backgroundColor: MoeTokens.pageBackground,
-        builder: (sheetContext, scrollController) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 8, 8),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        '遇见同好',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: MoeTokens.titleText,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(sheetContext),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-              ),
-              const Expanded(child: DiscoverMatchTab(compact: true)),
-            ],
-          );
-        },
-      ),
-    );
+  void _openFriendSearch() {
+    HapticFeedback.selectionClick();
+    if (AuthService.currentUser == null) {
+      MoeToast.error(context, '请先登录');
+      return;
+    }
+    Navigator.pushNamed(context, '/friend-search');
   }
 
   void _showRequestsSheet() {
@@ -415,21 +381,6 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     );
   }
 
-  List<User> get _filteredFriends {
-    if (_searchKeyword.trim().isEmpty) {
-      return _friends;
-    }
-    final keyword = _searchKeyword.trim().toLowerCase();
-    return _friends.where((u) {
-      final name = u.username.toLowerCase();
-      final email = u.email.toLowerCase();
-      final moe = u.moeNo.toLowerCase();
-      return name.contains(keyword) ||
-          email.contains(keyword) ||
-          moe.contains(keyword);
-    }).toList();
-  }
-
   PreferredSizeWidget _contactsAppBar() {
     final moe = MoeTheme.of(context);
     return AppBar(
@@ -442,18 +393,32 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
       centerTitle: true,
       foregroundColor: MoeTokens.titleText,
       actions: [
-        if (_incomingRequests.isNotEmpty)
-          IconButton(
-            tooltip: '查看申请',
-            onPressed: _goToRequestsTab,
-            icon: Badge(
-              label: Text('${_incomingRequests.length}'),
-              child: Icon(
-                Icons.mark_email_unread_outlined,
-                color: moe.primary,
-              ),
+        IconButton(
+          tooltip: '搜索好友',
+          onPressed: _openFriendSearch,
+          icon: Icon(Icons.search_rounded, color: moe.primary),
+        ),
+        IconButton(
+          tooltip: _incomingRequests.isEmpty
+              ? '好友申请'
+              : '好友申请（${_incomingRequests.length}）',
+          onPressed: _goToRequestsTab,
+          icon: Badge(
+            isLabelVisible: _incomingRequests.isNotEmpty,
+            backgroundColor: MoeTokens.warning,
+            label: Text(
+              _incomingRequests.length > 99
+                  ? '99+'
+                  : '${_incomingRequests.length}',
+            ),
+            child: Icon(
+              _incomingRequests.isNotEmpty
+                  ? Icons.mark_email_unread_outlined
+                  : Icons.mail_outline_rounded,
+              color: moe.primary,
             ),
           ),
+        ),
         Container(
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
@@ -541,36 +506,13 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     }
 
     final filteredFriends = _getFilteredFriends();
-    final onlineCount =
-        _friends.where((f) => _onlineStatus[f.id] ?? false).length;
-    final favoriteCount =
-        _friends.where((f) => _favoriteFriends.contains(f.id)).length;
 
     if (widget.contactsOnly) {
-      return _buildEmbeddedContactsPanel(
-        filteredFriends: filteredFriends,
-        onlineCount: onlineCount,
-        favoriteCount: favoriteCount,
-      );
+      return _buildEmbeddedContactsPanel(filteredFriends: filteredFriends);
     }
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
-          child: _buildContactsPanelSummary(
-            onlineCount: onlineCount,
-            favoriteCount: favoriteCount,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-          child: _buildContactsPanelActions(),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-          child: _buildContactsPanelSearch(),
-        ),
         _buildCompactGroupTabs(),
         Expanded(
           child: RefreshIndicator(
@@ -584,7 +526,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
                       _buildContactsPanelBlankState(
                         icon: Icons.search_off_rounded,
                         title: '没有匹配联系人',
-                        subtitle: '换个关键词或切换分组看看',
+                        subtitle: '切换分组看看',
                       ),
                     ],
                   )
@@ -606,8 +548,6 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
 
   Widget _buildEmbeddedContactsPanel({
     required List<User> filteredFriends,
-    required int onlineCount,
-    required int favoriteCount,
   }) {
     return RefreshIndicator(
       onRefresh: _loadFriends,
@@ -617,27 +557,6 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
           parent: BouncingScrollPhysics(),
         ),
         slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
-              child: _buildContactsPanelSummary(
-                onlineCount: onlineCount,
-                favoriteCount: favoriteCount,
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-              child: _buildContactsPanelActions(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-              child: _buildContactsPanelSearch(),
-            ),
-          ),
           SliverToBoxAdapter(child: _buildCompactGroupTabs()),
           filteredFriends.isEmpty
               ? SliverToBoxAdapter(
@@ -646,7 +565,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
                     child: _buildContactsPanelBlankState(
                       icon: Icons.search_off_rounded,
                       title: '没有匹配联系人',
-                      subtitle: '换个关键词或切换分组看看',
+                      subtitle: '切换分组看看',
                     ),
                   ),
                 )
@@ -675,12 +594,10 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
       children: [
-        _buildContactsPanelActions(),
-        const SizedBox(height: 14),
         _buildContactsPanelBlankState(
           icon: Icons.people_outline_rounded,
           title: '通讯录还是空的',
-          subtitle: '添加好友，或点「遇见同好」认识新朋友，聊起来才有灵魂',
+          subtitle: '点右上角添加好友，聊起来才有灵魂',
         ),
         if (myMoe.isNotEmpty || myEmail.isNotEmpty) ...[
           const SizedBox(height: 14),
@@ -690,202 +607,9 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildContactsPanelSummary({
-    required int onlineCount,
-    required int favoriteCount,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: _summaryPill(
-            icon: Icons.groups_rounded,
-            label: '同好',
-            value: '${_friends.length}',
-            color: _moe.primary,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _summaryPill(
-            icon: Icons.circle_rounded,
-            label: '在线',
-            value: '$onlineCount',
-            color: const Color(0xFF2EBD85),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _summaryPill(
-            icon: Icons.star_rounded,
-            label: '收藏',
-            value: '$favoriteCount',
-            color: const Color(0xFFE8A598),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _summaryPill({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: MoeTokens.surface1,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: MoeTokens.titleText,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContactsPanelActions() {
-    final hasRequests = _incomingRequests.isNotEmpty;
-    final showAdd = !widget.hideAddAction;
-    return Row(
-      children: [
-        Expanded(
-          child: _compactActionChip(
-            icon: Icons.favorite_rounded,
-            label: '遇见同好',
-            color: const Color(0xFFFC6076),
-            onTap: _showMatchSheet,
-          ),
-        ),
-        if (showAdd) ...[
-          const SizedBox(width: 10),
-          Expanded(
-            child: _compactActionChip(
-              icon: Icons.person_add_rounded,
-              label: '添加',
-              color: _moe.primary,
-              onTap: _showAddFriendDialog,
-            ),
-          ),
-        ],
-        const SizedBox(width: 10),
-        Expanded(
-          child: _compactActionChip(
-            icon: hasRequests
-                ? Icons.mark_email_unread_rounded
-                : Icons.mark_email_read_rounded,
-            label: hasRequests ? '${_incomingRequests.length} 申请' : '申请',
-            color:
-                hasRequests ? const Color(0xFFFF8F00) : const Color(0xFF90A4AE),
-            onTap: _showRequestsSheet,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _compactActionChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: MoeTokens.surface1,
-      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-            border: Border.all(color: color.withValues(alpha: 0.16)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactsPanelSearch() {
-    return Container(
-      height: 46,
-      decoration: BoxDecoration(
-        color: MoeTokens.surface1,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        border: Border.all(color: MoeTokens.surfaceBorder),
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: '搜索昵称、邮箱或 Moe 号',
-          hintStyle: const TextStyle(
-            color: MoeTokens.hintText,
-            fontSize: 13,
-          ),
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: MoeTokens.hintText,
-          ),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchKeyword = value;
-          });
-        },
-      ),
-    );
-  }
-
   Widget _buildCompactGroupTabs() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
       child: Container(
         height: 42,
         padding: const EdgeInsets.all(3),
@@ -914,12 +638,15 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
         borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
         child: InkWell(
           onTap: () {
-            HapticFeedback.lightImpact();
+            if (selected) return;
+            HapticFeedback.selectionClick();
             setState(() => _currentGroup = group);
           },
           borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration:
+                moeReduceMotion(context) ? Duration.zero : MoeTokens.motionFast,
+            curve: Curves.easeOutCubic,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               gradient: selected ? MoeTokens.gradientPrimary : null,
@@ -950,12 +677,14 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
       index: index,
       maxAnimated: 5,
       staggerStep: const Duration(milliseconds: 35),
-      duration: const Duration(milliseconds: 180),
+      duration: MoeTokens.motionFast,
       child: Material(
         color: MoeTokens.surface1,
         borderRadius: BorderRadius.circular(18),
-        child: InkWell(
+        child: MoePressable(
+          enableHaptics: false,
           onTap: () {
+            HapticFeedback.selectionClick();
             // 社交主路径：点行进私信
             _updateRecentInteraction(user.id);
             Navigator.pushNamed(
@@ -1280,7 +1009,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   }
 
   List<User> _getFilteredFriends() {
-    var friends = _filteredFriends;
+    var friends = List<User>.from(_friends);
 
     switch (_currentGroup) {
       case _FriendGroup.online:
