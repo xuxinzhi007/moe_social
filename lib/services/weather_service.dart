@@ -238,20 +238,22 @@ class WeatherService {
   static Future<WeatherData?> getWeatherByLocation(
       double lat, double lon) async {
     try {
-      final cityName = _normalizeCityName(
-        await ReverseGeocode.cityName(lat, lon, fallback: _defaultCity),
-      );
+      final cityName =
+          await ReverseGeocode.cityName(lat, lon, fallback: '当前位置');
+      final shownCity = cityName.trim().isEmpty ? '当前位置' : cityName.trim();
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = 'weather_$cityName';
+      final cacheKey =
+          'weather_at_${lat.toStringAsFixed(2)}_${lon.toStringAsFixed(2)}';
       final now = DateTime.now().millisecondsSinceEpoch;
       final cachedTime = prefs.getInt('${cacheKey}_time') ?? 0;
       if (now - cachedTime < _cacheDuration.inMilliseconds) {
         final cachedData = prefs.getString(cacheKey);
         if (cachedData != null) {
-          return WeatherData.fromOpenMeteo(jsonDecode(cachedData), cityName);
+          return WeatherData.fromOpenMeteo(jsonDecode(cachedData), shownCity);
         }
       }
-      return _getWeatherAtCoordinates(lat, lon, cityName, prefs, cacheKey, now);
+      return _getWeatherAtCoordinates(
+          lat, lon, shownCity, prefs, cacheKey, now);
     } catch (_) {
       return null;
     }

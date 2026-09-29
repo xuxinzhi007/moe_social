@@ -30,7 +30,6 @@ class _MoeLikeActionButtonState extends State<MoeLikeActionButton>
   late final AnimationController _controller;
   late final Animation<double> _likeScale;
   late final Animation<double> _unlikeScale;
-  bool _actionPending = false;
   bool _animateLike = false;
   int _countDirection = 1;
 
@@ -88,18 +87,13 @@ class _MoeLikeActionButtonState extends State<MoeLikeActionButton>
 
   Future<void> _activate() async {
     final onPressed = widget.onPressed;
-    if (_actionPending || onPressed == null) return;
+    if (onPressed == null) return;
 
     if (!moeReduceMotion(context)) {
       _animateLike = !widget.isLiked;
       _controller.forward(from: 0);
     }
-    setState(() => _actionPending = true);
-    try {
-      await onPressed();
-    } finally {
-      if (mounted) setState(() => _actionPending = false);
-    }
+    await onPressed();
   }
 
   @override
@@ -107,7 +101,7 @@ class _MoeLikeActionButtonState extends State<MoeLikeActionButton>
     final reduceMotion = moeReduceMotion(context);
     final transitionDuration =
         reduceMotion ? Duration.zero : MoeTokens.motionFast;
-    final enabled = widget.onPressed != null && !_actionPending;
+    final enabled = widget.onPressed != null;
     final onTap = enabled ? _activate : null;
     final areaSize = widget.compact ? 32.0 : 40.0;
     final circleSize = widget.compact ? 26.0 : 34.0;
