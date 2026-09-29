@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moe_social/services/post_service.dart';
+import 'package:moe_social/services/api_service.dart';
+import 'package:moe_social/services/like_state_manager.dart';
 import 'package:moe_social/widgets/moe_like_action_button.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 
@@ -24,46 +25,54 @@ class LikeButton extends StatefulWidget {
 }
 
 class _LikeButtonState extends State<LikeButton> {
-  late bool _isLiked = widget.isLiked;
-  late int _likeCount = widget.likeCount;
-  bool _isLoading = false;
-
-  @override
-  void didUpdateWidget(covariant LikeButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isLiked != widget.isLiked) {
-      _isLiked = widget.isLiked;
-    }
-    if (oldWidget.likeCount != widget.likeCount) {
-      _likeCount = widget.likeCount;
-    }
-  }
+  int _outstanding = 0;
+  bool _syncing = false;
 
   Future<void> _toggleLike() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-    try {
-      final updatedPost =
-          await PostService.toggleLike(widget.postId, widget.userId);
-      if (!mounted) return;
-      setState(() {
-        _isLiked = updatedPost.isLiked;
-        _likeCount = updatedPost.likes;
-      });
-      widget.onLikeChanged?.call(_isLiked, _likeCount);
-    } catch (e) {
-      if (mounted) MoeToast.show(context, '操作失败，请稍后重试');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    if (widget.userId.isEmpty) {
+      MoeToast.show(context, '请先登录');
+      return;
+    }
+    LikeStateManager().toggleLike(widget.postId);
+    _outstanding++;
+    await _drain();
+  }
+
+  Future<void> _drain() async {
+    if (_syncing) return;
+    _syncing = true;
+    final manager = LikeStateManager();
+    while (mounted && _outstanding > 0) {
+      try {
+        final updated =
+            await ApiService.toggleLike(widget.postId, widget.userId);
+        if (!mounted) return;
+        _outstanding--;
+        if (_outstanding == 0) {
+          manager.updateState(widget.postId, updated.isLiked, updated.likes);
+          widget.onLikeChanged?.call(updated.isLiked, updated.likes);
+        }
+      } catch (_) {
+        if (mounted) {
+          manager.toggleLike(widget.postId);
+          MoeToast.show(context, '操作失败，请稍后重试');
+        }
+        _outstanding = 0;
+        break;
+      }
+    }
+    _syncing = false;
+    if (_outstanding > 0 && mounted) {
+      await _drain();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return MoeLikeActionButton(
-      isLiked: _isLiked,
-      likeCount: _likeCount,
-      onPressed: _isLoading ? null : _toggleLike,
+      isLiked: widget.isLiked,
+      likeCount: widget.likeCount,
+      onPressed: _toggleLike,
     );
   }
 }

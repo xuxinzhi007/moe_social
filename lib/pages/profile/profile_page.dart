@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +15,7 @@ import '../../services/user_service.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../theme/moe_tokens.dart';
@@ -322,13 +322,10 @@ class _ProfilePageState extends State<ProfilePage> {
       return AdaptivePageScaffold(
         template: PageTemplate.fullscreen,
         backgroundColor: MoeTheme.of(context).pageBackground,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            _buildSliverAppBar(),
-            SliverFillRemaining(
+        body: Column(
+          children: [
+            _buildPinnedHeader(),
+            Expanded(
               child: Center(
                 child: MoeLoading(color: MoeTheme.of(context).primary),
               ),
@@ -342,13 +339,10 @@ class _ProfilePageState extends State<ProfilePage> {
       return AdaptivePageScaffold(
         template: PageTemplate.fullscreen,
         backgroundColor: MoeTheme.of(context).pageBackground,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            _buildSliverAppBar(),
-            SliverFillRemaining(
+        body: Column(
+          children: [
+            _buildPinnedHeader(),
+            Expanded(
               child: Center(
                 child: MoeErrorState.fromError(
                   _loadError,
@@ -365,159 +359,169 @@ class _ProfilePageState extends State<ProfilePage> {
     return AdaptivePageScaffold(
       template: PageTemplate.fullscreen,
       backgroundColor: MoeTheme.of(context).pageBackground,
-      body: RefreshIndicator(
-        onRefresh: () => _loadUserInfo(forceRefresh: true),
-        color: MoeTheme.of(context).primary,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics()),
-          slivers: [
-            _buildSliverAppBar(),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 84),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Quick actions
-                    MoeReveal(
-                        delay: const Duration(milliseconds: 50),
-                        child: _buildQuickActions()),
-                    const SizedBox(height: 18),
-                    // Achievements preview
-                    if (_user != null) ...[
-                      MoeReveal(
-                          delay: const Duration(milliseconds: 80),
-                          child: _buildAchievementsPreview()),
-                      const SizedBox(height: 18),
-                    ],
-                    // Cloud & QR
-                    MoeReveal(
-                      delay: const Duration(milliseconds: 110),
-                      child: _menuSection('云端与相册', [
-                        _MenuItem(
-                            icon: Icons.cloud_queue_rounded,
-                            title: '云端图库',
-                            subtitle: '管理你的美好回忆',
-                            color: MoeTokens.secondary,
-                            onTap: () async {
-                              HapticFeedback.lightImpact();
-                              await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const CloudGalleryPage()));
-                            }),
-                        _MenuItem(
-                            icon: Icons.qr_code_rounded,
-                            title: '我的二维码',
-                            subtitle: '让其他用户扫描添加你',
-                            color: MoeTokens.pastelTeal,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              Navigator.pushNamed(context, '/user-qr-code');
-                            }),
-                      ]),
-                    ),
-                    const SizedBox(height: 20),
-                    // 设置入口仅 AppBar 齿轮（单一入口）；此处只放账号危险操作
-                    MoeReveal(
-                      delay: const Duration(milliseconds: 140),
-                      child: _menuSection('账号', [
-                        _MenuItem(
-                            icon: Icons.logout_rounded,
-                            title: '退出登录',
-                            color: const Color(0xFFFF6B6B),
-                            isDestructive: true,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              _showLogoutDialog();
-                            }),
-                      ]),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          _buildPinnedHeader(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _loadUserInfo(forceRefresh: true),
+              color: MoeTheme.of(context).primary,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 84),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Quick actions
+                          MoeReveal(
+                              delay: const Duration(milliseconds: 50),
+                              child: _buildQuickActions()),
+                          const SizedBox(height: 18),
+                          // Achievements preview
+                          if (_user != null) ...[
+                            MoeReveal(
+                                delay: const Duration(milliseconds: 80),
+                                child: _buildAchievementsPreview()),
+                            const SizedBox(height: 18),
+                          ],
+                          // Cloud & QR
+                          MoeReveal(
+                            delay: const Duration(milliseconds: 110),
+                            child: _menuSection('云端与相册', [
+                              _MenuItem(
+                                  icon: Icons.cloud_queue_rounded,
+                                  title: '云端图库',
+                                  subtitle: '管理你的美好回忆',
+                                  color: MoeTokens.secondary,
+                                  onTap: () async {
+                                    HapticFeedback.lightImpact();
+                                    await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) =>
+                                                const CloudGalleryPage()));
+                                  }),
+                              _MenuItem(
+                                  icon: Icons.qr_code_rounded,
+                                  title: '我的二维码',
+                                  subtitle: '让其他用户扫描添加你',
+                                  color: MoeTokens.pastelTeal,
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.pushNamed(
+                                        context, '/user-qr-code');
+                                  }),
+                            ]),
+                          ),
+                          const SizedBox(height: 20),
+                          // 设置入口仅 AppBar 齿轮（单一入口）；此处只放账号危险操作
+                          MoeReveal(
+                            delay: const Duration(milliseconds: 140),
+                            child: _menuSection('账号', [
+                              _MenuItem(
+                                  icon: Icons.logout_rounded,
+                                  title: '退出登录',
+                                  color: const Color(0xFFFF6B6B),
+                                  isDestructive: true,
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    _showLogoutDialog();
+                                  }),
+                            ]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  // ─── SliverAppBar ─────────────────────────────────────────────────────────
-
-  Widget _buildSliverAppBar() {
-    final moe = MoeTheme.of(context);
-    return SliverAppBar(
-      expandedHeight: 320,
-      pinned: true,
-      stretch: true,
-      backgroundColor: moe.primary,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('我的',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18)),
-          if (_hasDetailsError) ...[
-            const SizedBox(width: 6),
-            const Text(
-              '资料待刷新',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+  /// 资料头固定在顶部，不随列表收起，避免头像和名字被裁成半截。
+  Widget _buildPinnedHeader() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(MoeTokens.radiusXl),
+        ),
+        boxShadow: MoeTokens.shadowSm(),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(MoeTokens.radiusXl),
+        ),
+        child: Stack(
+          children: [
+            const Positioned.fill(child: ProfileBg()),
+            SafeArea(
+              bottom: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: kToolbarHeight,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_hasDetailsError)
+                            IconButton(
+                              tooltip: '刷新资料明细',
+                              onPressed: _isLoadingDetails || _user == null
+                                  ? null
+                                  : () {
+                                      setState(() => _isLoadingDetails = true);
+                                      unawaited(
+                                        _loadProfileDetails(_user!.id),
+                                      );
+                                    },
+                              icon: const Icon(
+                                Icons.refresh_rounded,
+                                color: Colors.white,
+                              ),
+                            ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.settings_outlined,
+                              color: Colors.white,
+                            ),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.pushNamed(context, '/settings').then((
+                                _,
+                              ) {
+                                if (mounted) _loadUserInfo();
+                              });
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.edit_outlined,
+                              color: Colors.white,
+                            ),
+                            onPressed: _openEditProfile,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _buildHeader(),
+                ],
               ),
             ),
           ],
-          if (_isLoadingDetails) ...[
-            const SizedBox(width: 8),
-            const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70))),
-          ],
-        ],
-      ),
-      centerTitle: true,
-      actions: [
-        if (_hasDetailsError)
-          IconButton(
-            tooltip: '刷新资料明细',
-            onPressed: _isLoadingDetails || _user == null
-                ? null
-                : () {
-                    setState(() => _isLoadingDetails = true);
-                    unawaited(_loadProfileDetails(_user!.id));
-                  },
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-          ),
-        IconButton(
-          icon: const Icon(Icons.settings_outlined, color: Colors.white),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pushNamed(context, '/settings').then((_) {
-              if (mounted) _loadUserInfo();
-            });
-          },
         ),
-        IconButton(
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
-            onPressed: _openEditProfile),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: _buildHeader(),
-        stretchModes: const [
-          StretchMode.zoomBackground,
-          StretchMode.blurBackground
-        ],
       ),
     );
   }
@@ -525,303 +529,243 @@ class _ProfilePageState extends State<ProfilePage> {
   // ─── Header (avatar + name + stats) ──────────────────────────────────────
 
   Widget _buildHeader() {
-    final primaryGlow = _moe.primary;
     final sig = (_user?.signature ?? '').trim();
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const Positioned.fill(child: ProfileBg()),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.12)
-                ],
-                stops: const [0.45, 1.0],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              MoePressable(
+                onTap: _openEditProfile,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: DynamicAvatar(
+                    avatarUrl: _user?.avatar ?? '',
+                    size: 52,
+                    frameId: _user?.equippedFrameId,
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
-        SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 28, 20, 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Avatar
-                MoeReveal(
-                  delay: const Duration(milliseconds: 80),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: _openEditProfile,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                                color: primaryGlow.withValues(alpha: 0.38),
-                                blurRadius: 28,
-                                offset: const Offset(0, 10))
-                          ],
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(3.5),
-                          decoration: const BoxDecoration(
-                              color: Colors.white, shape: BoxShape.circle),
-                          child: DynamicAvatar(
-                              avatarUrl: _user?.avatar ?? '',
-                              size: 72,
-                              frameId: _user?.equippedFrameId),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Name + VIP
-                MoeReveal(
-                  delay: const Duration(milliseconds: 120),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(_user?.username ?? '未知用户',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.3),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _user?.username ?? '未知用户',
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                      if (_isVip) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                                color: const Color(0xFFFFE082)
-                                    .withValues(alpha: 0.95)),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
                           ),
-                          child: const Text('VIP',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFFFFF8E1))),
                         ),
+                        if (_isVip) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(
+                                MoeTokens.radiusFull,
+                              ),
+                              border: Border.all(
+                                color: const Color(0xFFFFE082)
+                                    .withValues(alpha: 0.9),
+                              ),
+                            ),
+                            child: const Text(
+                              'VIP',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFFFF8E1),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (_isLoadingDetails) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white70),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Signature
-                MoeReveal(
-                  delay: const Duration(milliseconds: 140),
-                  child: GestureDetector(
-                    onTap: _openEditProfile,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    const SizedBox(height: 2),
+                    GestureDetector(
+                      onTap: _openEditProfile,
                       child: Text(
-                        sig.isEmpty ? '点击添加个性签名' : sig,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
+                        sig.isEmpty ? '添加签名' : sig,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
-                          height: 1.35,
-                          color: Colors.white
-                              .withValues(alpha: sig.isEmpty ? 0.55 : 0.9),
-                          fontStyle:
-                              sig.isEmpty ? FontStyle.italic : FontStyle.normal,
+                          fontSize: 12,
+                          color: Colors.white.withValues(
+                            alpha: sig.isEmpty ? 0.62 : 0.9,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Moe-No + Level pills
-                MoeReveal(
-                  delay: const Duration(milliseconds: 160),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if ((_user?.moeNo ?? '').isNotEmpty)
-                        _glassPill(
-                          onTap: () {
-                            Clipboard.setData(
-                                ClipboardData(text: _user!.moeNo));
-                            MoeToast.success(context, '已复制 Moe 号');
-                          },
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.badge_outlined,
-                                size: 14,
-                                color: Colors.white.withValues(alpha: 0.9)),
-                            const SizedBox(width: 5),
-                            Text(_user!.moeNo,
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if ((_user?.moeNo ?? '').isNotEmpty)
+                          _glassPill(
+                            onTap: () {
+                              Clipboard.setData(
+                                ClipboardData(text: _user!.moeNo),
+                              );
+                              MoeToast.success(context, '已复制 Moe 号');
+                            },
+                            child: Text(
+                              _user!.moeNo,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        Consumer<UserLevelProvider>(
+                          builder: (_, lp, __) {
+                            final ul = lp.userLevel;
+                            if (ul == null) return const SizedBox.shrink();
+                            return _glassPill(
+                              onTap: _navigateToUserLevel,
+                              child: Text(
+                                'Lv.${ul.level}',
                                 style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5)),
-                            const SizedBox(width: 4),
-                            Icon(Icons.copy_rounded,
-                                size: 13,
-                                color: Colors.white.withValues(alpha: 0.75)),
-                          ]),
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      Consumer<UserLevelProvider>(
-                        builder: (_, lp, __) {
-                          final ul = lp.userLevel;
-                          if (ul == null) return const SizedBox.shrink();
-                          return _glassPill(
-                            onTap: _navigateToUserLevel,
-                            child:
-                                Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(Icons.stars_rounded,
-                                  size: 14, color: Colors.white),
-                              const SizedBox(width: 5),
-                              Text('Lv.${ul.level} ${ul.levelTitle}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600)),
-                              const SizedBox(width: 2),
-                              Icon(Icons.chevron_right_rounded,
-                                  size: 16,
-                                  color: Colors.white.withValues(alpha: 0.7)),
-                            ]),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Stats bar — each item is a tap target
-                MoeReveal(
-                  delay: const Duration(milliseconds: 200),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 11, horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.26),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.42)),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                                child: _statItem('动态', '$_postCount',
-                                    onTap: _goToMyPosts)),
-                            _vDivider(),
-                            Expanded(
-                              child: _statItem('关注', '$_followingCount',
-                                  onTap: _user != null
-                                      ? () {
-                                          HapticFeedback.lightImpact();
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => FollowingPage(
-                                                      userId: _user!.id)));
-                                        }
-                                      : null),
-                            ),
-                            _vDivider(),
-                            Expanded(
-                              child: _statItem('粉丝', '$_followerCount',
-                                  onTap: _user != null
-                                      ? () {
-                                          HapticFeedback.lightImpact();
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => FollowersPage(
-                                                      userId: _user!.id)));
-                                        }
-                                      : null),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _statItem('动态', '$_postCount', onTap: _goToMyPosts),
+              _statItem(
+                '关注',
+                '$_followingCount',
+                onTap: _user == null
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FollowingPage(userId: _user!.id),
+                          ),
+                        );
+                      },
+              ),
+              _statItem(
+                '粉丝',
+                '$_followerCount',
+                onTap: _user == null
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FollowersPage(userId: _user!.id),
+                          ),
+                        );
+                      },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Widget _glassPill({required Widget child, required VoidCallback onTap}) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: child)),
+    return MoePressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.16),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        ),
+        child: child,
+      ),
     );
   }
 
   Widget _statItem(String label, String value, {VoidCallback? onTap}) {
-    final col = Column(mainAxisSize: MainAxisSize.min, children: [
-      Text(value,
-          style: const TextStyle(
-              fontSize: MoeTokens.textLg,
-              fontWeight: MoeTokens.fontWeightDisplay,
-              color: Colors.white,
-              height: 1.05)),
-      const SizedBox(height: MoeTokens.spaceXs),
-      Text(label,
-          style: TextStyle(
-              fontSize: MoeTokens.textXs,
-              fontWeight: MoeTokens.fontWeightSubtitle,
-              color: Colors.white.withValues(alpha: 0.78))),
-    ]);
-    if (onTap != null) {
-      return Material(
-          color: Colors.transparent,
-          child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(14),
-              child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: col)));
-    }
-    return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: col);
+    return Expanded(
+      child: MoePressable(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.78),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-
-  Widget _vDivider() => Container(
-      width: 1, height: 32, color: Colors.white.withValues(alpha: 0.35));
 
   // ─── Quick Actions ────────────────────────────────────────────────────────
 

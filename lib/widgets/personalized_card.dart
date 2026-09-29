@@ -71,17 +71,18 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
     setState(() => _isLoadingWeather = true);
     try {
       final provider = Provider.of<DeviceInfoProvider>(context, listen: false);
-      if (provider.latitude != null && provider.longitude != null) {
-        final weather = await WeatherService.getWeatherByLocation(
-          provider.latitude!,
-          provider.longitude!,
-        );
+      final lat = provider.latitude;
+      final lon = provider.longitude;
+      if (lat != null && lon != null) {
+        final weather = await WeatherService.getWeatherByLocation(lat, lon);
         if (weather != null && mounted) {
           setState(() => _weatherData = weather);
-          return;
         }
+        return;
       }
-      final weather = await WeatherService.getWeatherByCity(_cityOf(provider));
+      final city = _knownCity(provider);
+      if (city == null) return;
+      final weather = await WeatherService.getWeatherByCity(city);
       if (weather != null && mounted) {
         setState(() => _weatherData = weather);
       }
@@ -107,22 +108,31 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
     return '晚上好';
   }
 
-  String _cityOf(DeviceInfoProvider provider) {
-    if (_weatherData != null) return _weatherData!.city;
-    final locationText = provider.locationText;
+  /// 只有定位文案里真有城市时才返回，拿不到就返回 null，不再默认北京。
+  String? _knownCity(DeviceInfoProvider provider) {
+    final locationText = provider.locationText.trim();
     if (locationText.isEmpty ||
         locationText.contains('失败') ||
         locationText.contains('权限') ||
-        locationText.contains('开启')) {
-      return '北京';
+        locationText.contains('开启') ||
+        locationText.startsWith('当前位置')) {
+      return null;
     }
     final parts = locationText.split(' ');
     for (final part in parts) {
       if (part.contains('市') || part.contains('区') || part.contains('县')) {
-        return part.replaceAll(RegExp(r'[市区县]'), '');
+        final city = part.replaceAll(RegExp(r'[市区县]'), '');
+        if (city.isNotEmpty) return city;
       }
     }
-    return parts.isNotEmpty ? parts.first : '北京';
+    final first = parts.isEmpty ? '' : parts.first.trim();
+    return first.isEmpty ? null : first;
+  }
+
+  String _cityLabel(DeviceInfoProvider provider) {
+    final fromWeather = _weatherData?.city.trim() ?? '';
+    if (fromWeather.isNotEmpty) return fromWeather;
+    return _knownCity(provider) ?? '定位';
   }
 
   @override
@@ -194,7 +204,7 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
                     emoji: _weatherData?.getWeatherEmoji() ?? '⛅',
                     temp:
                         _weatherData != null ? '${_weatherData!.temp}°' : '--',
-                    city: _cityOf(deviceInfo),
+                    city: _cityLabel(deviceInfo),
                     onTap: () async {
                       try {
                         await deviceInfo.refreshLocalDeviceContext(

@@ -264,9 +264,8 @@ class ApiService {
   /// 单次 HTTP 超时（原 http 包无默认超时，隧道/弱网下会长时间挂起，表现为「间歇性刷不出」）
   static const Duration _httpTimeout = Duration(seconds: 18);
 
-  // 防止并发刷新token
-  static bool _isRefreshing = false;
-  // 等待刷新token的请求队列（当前实现未使用，先移除避免日志/分析噪音）
+  // 防止并发刷新 token。进行中的刷新共用同一个 Future，避免失败后每个请求再刷一次并反复跳登录页。
+  static Future<String?>? _refreshInFlight;
 
   // 通用请求方法（私有）
   static Future<Map<String, dynamic>> _request(String path,
@@ -525,7 +524,7 @@ class ApiService {
 
   /// 在 token 仍有效、且剩余时间不足 [_proactiveRefreshThreshold] 时刷新，减少用到一半突然 401 的概率。
   static Future<void> _proactiveRefreshIfNeeded() async {
-    if (_isRefreshing) return;
+    if (_refreshInFlight != null) return;
     final token = _currentToken;
     if (token == null || token.isEmpty) return;
     final exp = decodeJwtExpUnixSeconds(token);
@@ -538,17 +537,21 @@ class ApiService {
     await _refreshToken();
   }
 
-  // 刷新token
-  static Future<String?> _refreshToken() async {
-    // 如果正在刷新token，等待刷新完成
-    if (_isRefreshing) {
-      return await Future.delayed(const Duration(milliseconds: 100), () {
-        return _refreshToken();
-      });
-    }
+  // 刷新 token。并发调用等待同一次结果，不再每 100ms 递归重入。
+  static Future<String?> _refreshToken() {
+    final existing = _refreshInFlight;
+    if (existing != null) return existing;
+    final flight = _refreshTokenOnce();
+    _refreshInFlight = flight;
+    return flight.whenComplete(() {
+      if (identical(_refreshInFlight, flight)) {
+        _refreshInFlight = null;
+      }
+    });
+  }
 
+  static Future<String?> _refreshTokenOnce() async {
     try {
-      _isRefreshing = true;
       _log('🔄 正在刷新token...');
 
       // 调用刷新token的API
@@ -597,8 +600,6 @@ class ApiService {
     } catch (e) {
       _log('❌ Token刷新异常: $e');
       return null;
-    } finally {
-      _isRefreshing = false;
     }
   }
 
@@ -1381,9 +1382,9 @@ class ApiService {
   }) async {
     final result = await _request(
       '/api/auth/feishu/authorize-url?${_query({
-        'return_url': returnUrl,
-        'code_challenge': codeChallenge,
-      })}',
+            'return_url': returnUrl,
+            'code_challenge': codeChallenge,
+          })}',
     );
     return OauthAuthorizeUrl.fromJson(_map(result));
   }
@@ -1415,10 +1416,10 @@ class ApiService {
   }) async {
     final result = await _request(
       '/api/auth/wechat/authorize-url?${_query({
-        'flow': flow,
-        'code_challenge': codeChallenge,
-        if (returnUrl.isNotEmpty) 'return_url': returnUrl,
-      })}',
+            'flow': flow,
+            'code_challenge': codeChallenge,
+            if (returnUrl.isNotEmpty) 'return_url': returnUrl,
+          })}',
     );
     return OauthAuthorizeUrl.fromJson(_map(result));
   }

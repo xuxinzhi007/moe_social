@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
+import 'package:http/http.dart' as http;
 
 /// 逆地理编码结果（本机展示用；无 Google Play 时允许降级）。
 class ReverseGeocodeResult {
@@ -45,7 +48,7 @@ class ReverseGeocode {
             (e.message?.contains('No address information') ?? false);
         debugPrint(
           expected
-              ? 'ℹ️ 地理编码不可用（${e.code}），使用本地回退'
+              ? 'ℹ️ 系统地理编码不可用（${e.code}）。无 Google Play 的模拟器会这样，改用坐标反查'
               : '⚠️ 地理编码异常: $e',
         );
       }
@@ -53,6 +56,11 @@ class ReverseGeocode {
       if (kDebugMode) {
         debugPrint('⚠️ 地理编码异常: $e');
       }
+    }
+
+    final remote = await _cityFromCoordinates(latitude, longitude);
+    if (remote != null && remote.isNotEmpty) {
+      return ReverseGeocodeResult(label: remote, degraded: true);
     }
 
     final approx = approximateChinaLabel(latitude, longitude);
@@ -66,21 +74,52 @@ class ReverseGeocode {
     );
   }
 
-  /// 仅取城市名（天气等场景）。
+  /// 仅取城市名（天气等场景）。定位失败时返回空字符串，不猜一个城市。
   static Future<String> cityName(
     double latitude,
     double longitude, {
-    String fallback = '北京',
+    String fallback = '',
   }) async {
     final result = await fromCoordinates(latitude, longitude);
     if (result.fromPlacemark) {
       return _stripAdminSuffix(result.label.split(' ').first);
     }
-    if (result.degraded) {
-      final approx = approximateChinaLabel(latitude, longitude);
-      if (approx != null) return _stripAdminSuffix(approx);
+    final label = result.label.trim();
+    if (label.isNotEmpty && !label.startsWith('当前位置')) {
+      return _stripAdminSuffix(label.split(' ').first);
     }
     return fallback;
+  }
+
+  /// 不依赖 Google Play。模拟器上系统地理编码不可用时，用经纬度反查城市。
+  static Future<String?> _cityFromCoordinates(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      final response = await http
+          .get(Uri.https('geocoding-api.open-meteo.com', '/v1/reverse', {
+            'latitude': '$latitude',
+            'longitude': '$longitude',
+            'language': 'zh',
+            'count': '1',
+          }))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return null;
+      final results =
+          (jsonDecode(response.body) as Map<String, dynamic>)['results'];
+      if (results is! List || results.isEmpty || results.first is! Map) {
+        return null;
+      }
+      final row = results.first as Map;
+      final name = row['name']?.toString().trim() ?? '';
+      if (name.isNotEmpty) return name;
+      final admin = row['admin1']?.toString().trim() ?? '';
+      return admin.isEmpty ? null : admin;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ 坐标反查城市失败: $e');
+      return null;
+    }
   }
 
   static String formatPlacemark(geocoding.Placemark p) {
@@ -124,8 +163,7 @@ class ReverseGeocode {
   }
 
   static String _stripAdminSuffix(String raw) {
-    final cleaned =
-        raw.replaceAll(RegExp(r'(省|市|区|县|自治州|特别行政区)$'), '').trim();
+    final cleaned = raw.replaceAll(RegExp(r'(省|市|区|县|自治州|特别行政区)$'), '').trim();
     return cleaned.isEmpty ? raw : cleaned;
   }
 }

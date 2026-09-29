@@ -200,7 +200,9 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
     bool requestLocationPermission = true,
     bool includeNetworkAndBattery = true,
   }) async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      includeNetworkAndBattery = false;
+    }
 
     String networkType = _networkType;
     String wifiName = _wifiName;
@@ -280,18 +282,27 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
           locationText = '定位权限未开启';
         } else if (permission == LocationPermission.whileInUse ||
             permission == LocationPermission.always) {
-          final position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.low,
-          ).timeout(const Duration(seconds: 10));
+          Position? position;
+          try {
+            position = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.medium,
+            ).timeout(const Duration(seconds: 12));
+          } catch (e) {
+            if (kDebugMode) debugPrint('⚠️ 当前位置超时，改用最近一次定位: $e');
+            position = await Geolocator.getLastKnownPosition();
+          }
+          if (position == null) {
+            locationText = '获取失败';
+          } else {
+            latitude = position.latitude;
+            longitude = position.longitude;
 
-          latitude = position.latitude;
-          longitude = position.longitude;
-
-          final geo = await ReverseGeocode.fromCoordinates(
-            latitude,
-            longitude,
-          );
-          locationText = geo.label;
+            final geo = await ReverseGeocode.fromCoordinates(
+              latitude,
+              longitude,
+            );
+            locationText = geo.label;
+          }
         } else {
           locationText = '需要定位权限';
         }

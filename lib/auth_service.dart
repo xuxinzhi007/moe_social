@@ -290,7 +290,13 @@ class AuthService {
     }
   }
 
+  static bool _logoutInProgress = false;
+
   static void logout() {
+    if (_logoutInProgress || (_token == null && _currentUser == null)) {
+      return;
+    }
+    _logoutInProgress = true;
     MoeToast.dismiss();
     DailyGrowthService.instance.resetSession();
     unawaited(BehaviorAnalyticsService.instance.stop());
@@ -316,6 +322,7 @@ class AuthService {
 
   // 持久化存储认证数据
   static Future<void> _saveAuthData() async {
+    _logoutInProgress = false;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, _token!);
     await prefs.setString(_userIdKey, _currentUser!);
