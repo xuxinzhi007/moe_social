@@ -22,7 +22,6 @@ import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
-import 'widgets/add_friend_bottom_sheet.dart';
 import 'widgets/friend_requests_panel.dart';
 import 'widgets/friends_logged_out_body.dart';
 
@@ -35,14 +34,11 @@ enum _FriendGroup {
 }
 
 class FriendsPage extends StatefulWidget {
-  final bool contactsOnly;
-
   /// 枢纽递增后打开好友申请面板。
   final ValueNotifier<int>? openRequestsTick;
 
   const FriendsPage({
     super.key,
-    this.contactsOnly = false,
     this.openRequestsTick,
   });
 
@@ -118,20 +114,6 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
       PresenceService.online.removeListener(_onPresenceUpdate);
     }
     super.dispose();
-  }
-
-  void _goToRequestsTab() {
-    HapticFeedback.selectionClick();
-    _showRequestsSheet();
-  }
-
-  void _openFriendSearch() {
-    HapticFeedback.selectionClick();
-    if (AuthService.currentUser == null) {
-      MoeToast.error(context, '请先登录');
-      return;
-    }
-    Navigator.pushNamed(context, '/friend-search');
   }
 
   void _showRequestsSheet() {
@@ -369,80 +351,6 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
-  void _showAddFriendDialog() {
-    final rootContext = context;
-    MoeSheet.show<void>(
-      rootContext,
-      builder: (_) => AddFriendBottomSheet(
-        rootContext: rootContext,
-        myMoe: _selfProfile?.moeNo ?? '',
-        onReloadFriends: _loadFriends,
-      ),
-    );
-  }
-
-  PreferredSizeWidget _contactsAppBar() {
-    final moe = MoeTheme.of(context);
-    return AppBar(
-      title: const Text(
-        '同好',
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
-      backgroundColor: moe.cardBackground,
-      elevation: 0,
-      centerTitle: true,
-      foregroundColor: MoeTokens.titleText,
-      actions: [
-        IconButton(
-          tooltip: '搜索',
-          onPressed: _openFriendSearch,
-          icon: Icon(Icons.search_rounded, color: moe.primary),
-        ),
-        IconButton(
-          tooltip: _incomingRequests.isEmpty
-              ? '好友申请'
-              : '好友申请（${_incomingRequests.length}）',
-          onPressed: _goToRequestsTab,
-          icon: Badge(
-            isLabelVisible: _incomingRequests.isNotEmpty,
-            backgroundColor: MoeTokens.warning,
-            label: Text(
-              _incomingRequests.length > 99
-                  ? '99+'
-                  : '${_incomingRequests.length}',
-            ),
-            child: Icon(
-              _incomingRequests.isNotEmpty
-                  ? Icons.mark_email_unread_outlined
-                  : Icons.mail_outline_rounded,
-              color: moe.primary,
-            ),
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: moe.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            tooltip: '添加好友',
-            icon: Icon(Icons.person_add_rounded, color: moe.primary),
-            onPressed: _showAddFriendDialog,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoggedOutScaffold() {
-    return Scaffold(
-      backgroundColor: MoeTheme.of(context).pageBackground,
-      appBar: _contactsAppBar(),
-      body: const FriendsLoggedOutBody(),
-    );
-  }
-
   Widget _buildIncomingRequestsTab() {
     return FriendRequestsPanel(
       requests: _incomingRequests,
@@ -455,94 +363,30 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final pageBg = MoeTheme.of(context).pageBackground;
     if (AuthService.currentUser == null) {
-      if (widget.contactsOnly) return const FriendsLoggedOutBody();
-      return _buildLoggedOutScaffold();
+      return const FriendsLoggedOutBody();
     }
     if (_isLoading) {
-      if (widget.contactsOnly) return const Center(child: MoeLoading());
-      return Scaffold(
-        backgroundColor: pageBg,
-        appBar: _contactsAppBar(),
-        body: const Center(child: MoeLoading()),
-      );
+      return const Center(child: MoeLoading());
     }
     if (_hasError) {
-      if (widget.contactsOnly) {
-        return Center(
-          child: MoeErrorState.fromError(
-            _loadError,
-            scene: MoeErrorScene.contacts,
-            onRetry: _loadFriends,
-          ),
-        );
-      }
-      return Scaffold(
-        backgroundColor: pageBg,
-        appBar: _contactsAppBar(),
-        body: Center(
-          child: MoeErrorState.fromError(
-            _loadError,
-            scene: MoeErrorScene.contacts,
-            onRetry: _loadFriends,
-          ),
+      return Center(
+        child: MoeErrorState.fromError(
+          _loadError,
+          scene: MoeErrorScene.contacts,
+          onRetry: _loadFriends,
         ),
       );
     }
-    if (widget.contactsOnly) {
-      return _buildContactsPanel();
-    }
-    return Scaffold(
-      backgroundColor: pageBg,
-      appBar: _contactsAppBar(),
-      body: _buildContactsPanel(),
-    );
+    return _buildContactsPanel();
   }
 
   Widget _buildContactsPanel() {
     if (_friends.isEmpty) {
       return _buildContactsPanelEmpty();
     }
-
-    final filteredFriends = _getFilteredFriends();
-
-    if (widget.contactsOnly) {
-      return _buildEmbeddedContactsPanel(filteredFriends: filteredFriends);
-    }
-
-    return Column(
-      children: [
-        _buildCompactGroupTabs(),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadFriends,
-            color: _moe.primary,
-            child: filteredFriends.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(18, 24, 18, 28),
-                    children: [
-                      _buildContactsPanelBlankState(
-                        icon: Icons.search_off_rounded,
-                        title: '没有匹配联系人',
-                        subtitle: '切换分组看看',
-                      ),
-                    ],
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(18, 2, 18, 28),
-                    itemCount: filteredFriends.length,
-                    itemBuilder: (context, index) {
-                      return _buildCompactFriendRow(
-                        filteredFriends[index],
-                        index,
-                      );
-                    },
-                  ),
-          ),
-        ),
-      ],
+    return _buildEmbeddedContactsPanel(
+      filteredFriends: _getFilteredFriends(),
     );
   }
 

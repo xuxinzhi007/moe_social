@@ -216,7 +216,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                         onEmptyFindFriends: () => _tabController.animateTo(1),
                       ),
                       FriendsPage(
-                        contactsOnly: true,
                         openRequestsTick: _openRequestsTick,
                       ),
                     ],

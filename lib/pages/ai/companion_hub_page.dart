@@ -13,13 +13,11 @@ import '../../theme/moe_tokens.dart';
 import '../../utils/post_navigation.dart';
 import 'companion_hub_viewmodel.dart';
 import 'companion_profile_edit_page.dart';
-import 'ai_provider_profiles_page.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/moe_action_row.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_motion.dart';
@@ -170,107 +168,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
   Future<void> _openArenaGame() async {
     if (!FeatureFlags.arenaGamePrototype) return;
     await Navigator.of(context).pushNamed('/game/arena');
-  }
-
-  Future<void> _openProviderSettings() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const AiProviderProfilesPage(),
-      ),
-    );
-  }
-
-  // Kept temporarily for a backward-compatible internal entry point.
-  // ignore: unused_element
-  Future<void> _openCompanionTools() async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: MoeTokens.surface1,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                MoeTokens.spaceLg,
-                MoeTokens.spaceMd,
-                MoeTokens.spaceLg,
-                MoeTokens.spaceLg,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    '伙伴工具',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: MoeTokens.textMd,
-                      fontWeight: MoeTokens.fontWeightTitle,
-                      color: MoeTokens.titleText,
-                    ),
-                  ),
-                  const SizedBox(height: MoeTokens.spaceSm),
-                  MoeActionRow(
-                    icon: Icons.psychology_alt_rounded,
-                    title: 'TA 记得的事',
-                    subtitle: const Text('查看和管理你们共同留下的记忆'),
-                    iconColor: MoeTokens.primary,
-                    onTap: () => Navigator.pop(sheetContext, 'memories'),
-                  ),
-                  MoeActionRow(
-                    icon: Icons.edit_note_rounded,
-                    title: '编辑伙伴资料',
-                    subtitle: const Text('调整名字、性格和陪伴方式'),
-                    iconColor: MoeTokens.primary,
-                    onTap: () => Navigator.pop(sheetContext, 'profile'),
-                  ),
-                  MoeActionRow(
-                    icon: Icons.tune_rounded,
-                    title: '模型服务配置',
-                    subtitle: const Text('选择模型和服务提供方'),
-                    iconColor: MoeTokens.secondary,
-                    onTap: () => Navigator.pop(sheetContext, 'provider'),
-                  ),
-                  MoeActionRow(
-                    icon: Icons.refresh_rounded,
-                    title: '刷新近况',
-                    subtitle: const Text('重新加载伙伴状态和今日摘要'),
-                    iconColor: MoeTokens.secondary,
-                    onTap: () => Navigator.pop(sheetContext, 'refresh'),
-                  ),
-                  MoeActionRow(
-                    icon: Icons.notifications_none_rounded,
-                    title: '主动陪伴设置',
-                    subtitle: const Text('控制主动消息、免打扰时间和时区'),
-                    iconColor: MoeTokens.primary,
-                    onTap: () => Navigator.pop(sheetContext, 'proactive'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    if (!mounted || action == null) return;
-    switch (action) {
-      case 'memories':
-        unawaited(_openMemories());
-      case 'profile':
-        if (!_isSavingProfile) unawaited(_editProfile());
-      case 'provider':
-        unawaited(_openProviderSettings());
-      case 'refresh':
-        if (!_hub.isLoading) unawaited(_hub.loadDashboard());
-      case 'proactive':
-        unawaited(Navigator.of(context).pushNamed('/companion-settings'));
-    }
   }
 
   Future<void> _editProfile() async {

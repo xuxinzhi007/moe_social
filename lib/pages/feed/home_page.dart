@@ -12,6 +12,7 @@ import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/post_navigation.dart';
 import '../../providers/companion_presence_provider.dart';
+import '../../providers/main_nav_controller.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/home_stories_bar.dart';
@@ -500,7 +501,7 @@ class _HomePageState extends State<HomePage> {
         secondaryAction: MoeEmptyStateAction(
           label: '找好友',
           icon: Icons.people_rounded,
-          onPressed: () => Navigator.pushNamed(context, '/friends'),
+          onPressed: () => context.read<MainNavController>().requestTab(1),
         ),
       );
     }
@@ -520,7 +521,7 @@ class _HomePageState extends State<HomePage> {
       secondaryAction: MoeEmptyStateAction(
         label: '找好友',
         icon: Icons.people_rounded,
-        onPressed: () => Navigator.pushNamed(context, '/friends'),
+        onPressed: () => context.read<MainNavController>().requestTab(1),
       ),
     );
   }
