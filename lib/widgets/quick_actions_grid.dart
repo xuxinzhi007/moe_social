@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/main_nav_controller.dart';
 import '../utils/responsive.dart';
 import 'motion/moe_pressable.dart';
 import 'motion/moe_reveal.dart';
@@ -40,7 +42,7 @@ class QuickActionsGrid extends StatelessWidget {
         'label': '联系人',
         'hint': '看消息',
         'color': const Color(0xFFFF6B6B),
-        'onTap': () => Navigator.pushNamed(context, '/friends'),
+        'onTap': () => context.read<MainNavController>().requestTab(1),
       },
       {
         'icon': Icons.photo_library_rounded,
