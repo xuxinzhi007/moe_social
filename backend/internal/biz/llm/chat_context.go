@@ -94,6 +94,21 @@ func ApplyServerSystemPrompt(in PlatformChatInput) PlatformChatInput {
 	return in
 }
 
+// AgentProviderProfileID 返回角色卡绑定的模型来源。没有角色时返回空。
+func AgentProviderProfileID(agentsJSON, agentID string) string {
+	agentID = strings.TrimSpace(agentID)
+	if agentID == "" {
+		return ""
+	}
+	for _, item := range aibiz.DecodeJSONArray(agentsJSON) {
+		if strings.TrimSpace(fmt.Sprint(item["id"])) != agentID {
+			continue
+		}
+		return strings.TrimSpace(aibiz.StringValue(item["provider_profile_id"]))
+	}
+	return ""
+}
+
 func findChatAgent(raw string, id string) (chatAgentCard, bool) {
 	for _, item := range aibiz.DecodeJSONArray(raw) {
 		if strings.TrimSpace(fmt.Sprint(item["id"])) != id {

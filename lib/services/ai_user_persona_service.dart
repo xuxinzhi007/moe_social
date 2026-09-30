@@ -1,27 +1,21 @@
 import 'ai_cloud_config_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+/// 用户人设只读 `/api/ai/config` 的 `user_persona`。云端为空就是空。
 class AiUserPersonaService {
   AiUserPersonaService._();
 
   static final AiUserPersonaService _instance = AiUserPersonaService._();
   factory AiUserPersonaService() => _instance;
 
-  static const String _personaKey = 'ai_user_persona_text_v1';
-
   Future<String> loadPersona() async {
     final cloud = await AiCloudConfigService().fetch();
-    final cloudPersona = cloud?.userPersona.trim();
-    if (cloudPersona != null && cloudPersona.isNotEmpty) {
-      return cloudPersona;
+    if (cloud == null) {
+      throw Exception('加载人设失败');
     }
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_personaKey)?.trim() ?? '';
+    return cloud.userPersona.trim();
   }
 
   Future<void> savePersona(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_personaKey, value.trim());
     await AiCloudConfigService().saveUserPersona(value.trim());
   }
 }

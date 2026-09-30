@@ -39,6 +39,31 @@ func TestResolveActiveInferenceUsesSavedProvider(t *testing.T) {
 	}
 }
 
+func TestResolveProfileInferenceUsesBoundProvider(t *testing.T) {
+	t.Setenv(providerKeysSecretEnv, "provider-key-test-secret")
+	encoded, err := encodeProviderAPIKeys(map[string]string{"profile-2": "sk-bound"})
+	if err != nil {
+		t.Fatalf("encodeProviderAPIKeys() error = %v", err)
+	}
+	cfg := &model.AiUserConfig{
+		ProviderProfilesJSON: `[{
+			"id":"profile-2",
+			"provider_type":"openai_compatible",
+			"base_url":"https://bound.example/v1",
+			"default_model":"bound-model"
+		}]`,
+		PreferencesJSON:          `{"last_selected_provider_id":"profile-1"}`,
+		ProviderApiKeysEncrypted: encoded,
+	}
+	got, err := ResolveProfileInference(cfg, "profile-2")
+	if err != nil {
+		t.Fatalf("ResolveProfileInference() error = %v", err)
+	}
+	if got == nil || got.BaseURL != "https://bound.example/v1" || got.APIKey != "sk-bound" {
+		t.Fatalf("ResolveProfileInference() = %+v", got)
+	}
+}
+
 func TestResolveActiveInferenceBuiltinUsesServerDefault(t *testing.T) {
 	store := &providerKeyConfigStoreStub{
 		config: &model.AiUserConfig{

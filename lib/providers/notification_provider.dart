@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../services/chat_service.dart';
 import '../services/notification_service.dart';
 import '../models/notification.dart';
 import '../auth_service.dart';
@@ -116,17 +117,30 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _onPushUnreadUpdated() {
-    final nextDmBySender = _mergeDmUnreadBySender(_notifications);
-    final nextDmUnread =
-        nextDmBySender.values.fold<int>(0, (sum, v) => sum + v);
-    final nextUnreadTotal = _activityUnreadCount + nextDmUnread;
-    final changed = !_mapEquals(_unreadDmBySender, nextDmBySender) ||
-        _unreadCount != nextUnreadTotal;
-    _unreadDmBySender = nextDmBySender;
-    _unreadCount = nextUnreadTotal;
-    if (changed) {
-      notifyListeners();
-    }
+    unawaited(_refreshServerDmUnread());
+  }
+
+  Future<void> _refreshServerDmUnread() async {
+    if (!AuthService.isLoggedIn) return;
+    try {
+      final page =
+          await ChatService.listPrivateConversations(limit: 120, offset: 0);
+      if (!AuthService.isLoggedIn) return;
+      final next = <String, int>{};
+      for (final item in page.items) {
+        final peerId = item.peerUserId.trim();
+        if (peerId.isEmpty || item.unreadCount <= 0) continue;
+        next[peerId] = item.unreadCount;
+      }
+      final nextDmUnread =
+          next.values.fold<int>(0, (sum, value) => sum + value);
+      final nextUnreadTotal = _activityUnreadCount + nextDmUnread;
+      final changed = !_mapEquals(_unreadDmBySender, next) ||
+          _unreadCount != nextUnreadTotal;
+      _unreadDmBySender = next;
+      _unreadCount = nextUnreadTotal;
+      if (changed) notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> refreshUnreadState() async {
@@ -144,6 +158,7 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     } finally {
       _isRefreshingUnread = false;
     }
+    await _refreshServerDmUnread();
   }
 
   Future<void> fetchNotifications({bool refresh = false}) async {
@@ -316,12 +331,11 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     final activityUnread = list.where((n) {
       return !n.isRead && n.type != NotificationModel.directMessage;
     }).length;
-    final dmUnread = _mergeDmUnreadBySender(list);
-    final unreadTotal = activityUnread +
-        dmUnread.values.fold<int>(0, (sum, value) => sum + value);
+    final dmUnread =
+        _unreadDmBySender.values.fold<int>(0, (sum, value) => sum + value);
+    final unreadTotal = activityUnread + dmUnread;
     final changed =
         (replaceList && !_sameNotificationList(_notifications, list)) ||
-            !_mapEquals(_unreadDmBySender, dmUnread) ||
             _unreadCount != unreadTotal ||
             _activityUnreadCount != activityUnread;
 
@@ -330,7 +344,6 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (replaceList) {
       _notifications = list;
     }
-    _unreadDmBySender = dmUnread;
     _activityUnreadCount = activityUnread;
     _unreadCount = unreadTotal;
     notifyListeners();
@@ -339,7 +352,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<List<NotificationItem>> _filterInactiveProactiveNotifications(
     List<NotificationItem> list,
   ) async {
-    if (!list.any((item) => item.type == NotificationModel.companionProactive)) {
+    if (!list
+        .any((item) => item.type == NotificationModel.companionProactive)) {
       return list;
     }
     try {
@@ -361,26 +375,6 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {
       return list;
     }
-  }
-
-  Map<String, int> _mergeDmUnreadBySender(List<NotificationItem> list) {
-    final notifDmUnread = <String, int>{};
-    for (final n in list) {
-      if (n.isRead || n.type != NotificationModel.directMessage) {
-        continue;
-      }
-      final senderId = (n.senderId ?? '').trim();
-      if (senderId.isEmpty) continue;
-      notifDmUnread[senderId] = (notifDmUnread[senderId] ?? 0) + 1;
-    }
-
-    final merged = Map<String, int>.from(notifDmUnread);
-    final pushUnread = ChatPushService.unreadBySender.value;
-    for (final entry in pushUnread.entries) {
-      if (entry.value <= 0) continue;
-      merged[entry.key] = entry.value;
-    }
-    return merged;
   }
 
   bool _mapEquals(Map<String, int> a, Map<String, int> b) {

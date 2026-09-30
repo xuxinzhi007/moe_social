@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"backend/model"
 	"backend/pkg/llminference"
 )
 
@@ -30,7 +31,19 @@ func ResolveActiveInference(ctx context.Context, store AiStore, userID uint) (*l
 	if err != nil {
 		return nil, fmt.Errorf("load ai user config: %w", err)
 	}
-	profileID := selectedProviderID(cfg.PreferencesJSON)
+	return ResolveProfileInference(cfg, "")
+}
+
+// ResolveProfileInference 按指定供应商构造推理配置。
+// profileID 为空时使用偏好里的上次选择。内置后端返回 nil。
+func ResolveProfileInference(cfg *model.AiUserConfig, profileID string) (*llminference.Config, error) {
+	if cfg == nil {
+		return nil, nil
+	}
+	profileID = strings.TrimSpace(profileID)
+	if profileID == "" {
+		profileID = selectedProviderID(cfg.PreferencesJSON)
+	}
 	if profileID == "" || isBuiltinProviderID(profileID) {
 		return nil, nil
 	}

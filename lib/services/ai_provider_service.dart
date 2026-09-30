@@ -80,25 +80,17 @@ class AiProviderService {
     return AiProviderProfile.builtinBackend();
   }
 
-  /// 解析聊天当前使用的 Provider，并修复旧版本留下的失效选择。
+  /// 只读账号已保存的来源。没有记录时用服务器默认，不写偏好。
   Future<AiProviderSelection> resolveActiveProvider({
     List<AiProviderProfile>? profiles,
     String? selectedId,
   }) async {
     final available = profiles ?? await listProfiles();
     final storedId = selectedId ?? await readLastSelectedProfileId();
-    final selection = resolveSelection(
+    return resolveSelection(
       profiles: available,
       selectedId: storedId,
     );
-    if (selection.autoSelected) {
-      try {
-        await saveLastSelectedProfileId(selection.profile.id);
-      } catch (_) {
-        // 当前设备上的自动选择仍然有效，云端偏好下次再补写。
-      }
-    }
-    return selection;
   }
 
   /// 根据已加载的 Provider 列表计算当前选择，供页面和测试共享同一规则。
@@ -115,26 +107,6 @@ class AiProviderService {
             source: AiProviderSelectionSource.explicitCustom,
           );
         }
-      }
-    }
-
-    final canAutoSelect = normalizedId.isEmpty ||
-        AiProviderProfile.isLegacyBuiltinProviderId(normalizedId) ||
-        !AiProviderProfile.isBuiltinProviderId(normalizedId);
-    if (canAutoSelect) {
-      final configured = profiles
-          .where(
-            (profile) =>
-                !profile.isBuiltin &&
-                profile.baseUrl.trim().isNotEmpty &&
-                profile.effectiveModelId.isNotEmpty,
-          )
-          .toList(growable: false);
-      if (configured.length == 1) {
-        return AiProviderSelection(
-          profile: configured.first,
-          source: AiProviderSelectionSource.autoSelectedCustom,
-        );
       }
     }
 
@@ -252,33 +224,33 @@ class AiProviderService {
   Future<void> saveLastSelectedProfileId(String profileId) async {
     final normalized = profileId.trim();
     if (normalized.isEmpty) return;
+    final cloud = AiCloudConfigService();
+    if (!cloud.isAuthenticated) {
+      throw const AiCloudSyncException('请先登录后再选择模型来源');
+    }
+    await cloud.savePreferences({
+      'last_selected_provider_id': normalized,
+    });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastSelectedProfileKey, normalized);
-    final cloud = AiCloudConfigService();
-    if (!cloud.isAuthenticated) return;
-    try {
-      await cloud.savePreferences({
-        'last_selected_provider_id': normalized,
-      });
-    } catch (_) {
-      // 本机选择已保存；网络恢复后下一次配置同步会再次写入。
-    }
   }
 
   Future<String?> readLastSelectedProfileId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final localValue = prefs.getString(_lastSelectedProfileKey)?.trim();
-    if (localValue != null && localValue.isNotEmpty) {
-      return localValue;
-    }
-
     final cloud = await AiCloudConfigService().fetch();
-    final cloudValue =
-        cloud?.preferences['last_selected_provider_id']?.toString().trim();
-    if (cloudValue != null && cloudValue.isNotEmpty) {
+    final prefs = await SharedPreferences.getInstance();
+    if (cloud != null) {
+      final cloudValue =
+          cloud.preferences['last_selected_provider_id']?.toString().trim() ??
+              '';
+      if (cloudValue.isEmpty) {
+        await prefs.remove(_lastSelectedProfileKey);
+        return null;
+      }
       await prefs.setString(_lastSelectedProfileKey, cloudValue);
       return cloudValue;
     }
+    final localValue = prefs.getString(_lastSelectedProfileKey)?.trim();
+    if (localValue != null && localValue.isNotEmpty) return localValue;
     return null;
   }
 }
