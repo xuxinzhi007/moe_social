@@ -9,7 +9,6 @@ import '../../constants/feature_flags.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../pages/ai/ai_provider_profiles_page.dart';
 import '../../providers/companion_presence_provider.dart';
-import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_provider_usage_service.dart';
 import '../../services/ai_tts_helper.dart';
@@ -21,6 +20,7 @@ import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/moe_toast.dart';
+
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
 class CompanionChatPage extends StatefulWidget {
   const CompanionChatPage({super.key, this.initialDraft});
@@ -87,50 +87,24 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     try {
       final providerService = AiProviderService();
       final profiles = await providerService.listProfiles();
-      final customProfiles = profiles.where((item) => !item.isBuiltin).toList();
       final selection =
           await providerService.resolveActiveProvider(profiles: profiles);
       final provider = selection.profile;
+      if (!mounted) return;
       if (provider.isBuiltinBackend) {
-        if (!mounted) return;
-        final waitingForSelection =
-            selection.source == AiProviderSelectionSource.defaultBuiltin &&
-                customProfiles.isNotEmpty;
-        final notConfigured =
-            selection.source == AiProviderSelectionSource.defaultBuiltin &&
-                customProfiles.isEmpty;
         setState(() {
           _activeProvider = null;
           _providerUsage = null;
-          _providerStatus = waitingForSelection
-              ? _ChatProviderStatus.notSelected
-              : notConfigured
-                  ? _ChatProviderStatus.notConfigured
-                  : _ChatProviderStatus.backendDefault;
-          _providerLabel = waitingForSelection
-              ? '请选择模型'
-              : notConfigured
-                  ? '未配置模型'
-                  : '使用系统模型';
+          _providerStatus = _ChatProviderStatus.backendDefault;
+          _providerLabel = '使用系统模型';
         });
         return;
       }
-      final connectivity = await AiProviderConnectivityCache.read(provider.id);
-      final apiKey = await providerService.readApiKey(provider.id);
-      final usage = await AiProviderUsageService().fetchTokenUsage(
-        provider,
-        apiKey,
-      );
-      if (!mounted) return;
       setState(() {
-        _activeProvider = provider;
-        _providerUsage = usage;
-        _providerStatus = connectivity?.isSuccess == true
-            ? _ChatProviderStatus.connected
-            : connectivity?.isSuccess == false
-                ? _ChatProviderStatus.failed
-                : _ChatProviderStatus.untested;
-        _providerLabel = '${provider.name} · ${_providerStatus.label}';
+        _activeProvider = null;
+        _providerUsage = null;
+        _providerStatus = _ChatProviderStatus.backendDefault;
+        _providerLabel = '使用 ${provider.name}';
       });
     } catch (_) {
       if (mounted) {
@@ -702,11 +676,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         ? _state.activityLabel
         : (_voiceEnabled && _autoSpeak ? '自动朗读已开' : _providerLabel);
     final statusColor = switch (_providerStatus) {
-      _ChatProviderStatus.connected => MoeTokens.success,
       _ChatProviderStatus.failed ||
-      _ChatProviderStatus.notConfigured =>
+      _ChatProviderStatus.notConfigured ||
+      _ChatProviderStatus.unknown =>
         MoeTokens.danger,
-      _ => MoeTokens.warning,
+      _ => MoeTokens.caption,
     };
     return Row(
       children: [

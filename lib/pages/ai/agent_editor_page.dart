@@ -766,16 +766,23 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                               (item) => item.id == value,
                               orElse: () => AiProviderProfile.builtinBackend(),
                             );
+                            final knownModels = profile.effectiveModelIds;
+                            final currentModel =
+                                _modelNameController.text.trim();
+                            final modelStillValid = currentModel.isNotEmpty &&
+                                knownModels.contains(currentModel);
                             setState(() {
                               _providerProfileId = value;
                               if (!profile.isBackendOllama) {
                                 _createRealModel = false;
                                 _syncModelOnEdit = false;
                               }
-                              _models = profile.effectiveModelIds;
+                              _models = knownModels;
+                              if (!modelStillValid) {
+                                _modelNameController.text =
+                                    profile.defaultModel.trim();
+                              }
                             });
-                            await AiProviderService()
-                                .saveLastSelectedProfileId(value);
                             unawaited(_loadModels(background: true));
                           },
                         ),

@@ -73,7 +73,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('ignores repeated taps while the like request is pending', (
+  testWidgets('forwards taps while an earlier like callback is still running', (
     tester,
   ) async {
     final requests = <Completer<void>>[];
@@ -102,15 +102,17 @@ void main() {
     await tester.pump();
     await tester.tap(find.byIcon(Icons.favorite_border_rounded));
 
-    expect(calls, 1);
+    expect(calls, 2);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
-    requests.single.complete();
+    for (final request in requests) {
+      request.complete();
+    }
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.favorite_border_rounded));
     await tester.pump();
-    expect(calls, 2);
+    expect(calls, 3);
 
     requests.last.complete();
     await tester.pumpAndSettle();

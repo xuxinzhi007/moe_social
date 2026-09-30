@@ -24,7 +24,7 @@
 
 class ApiEnvConfig {
   /// true = 线上 API；false = 本地 API。上线前由维护者手动切 true。
-  static const bool isProduction = false;
+  static const bool isProduction = true;
 
   /// Debug：REST 日志路径过滤。空 = 全部；例 `/api/user`
   static const String apiLogPathFilter = '';

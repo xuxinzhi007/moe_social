@@ -34,8 +34,19 @@ void main() {
     expect(result.autoSelected, isFalse);
   });
 
-  test('repairs the legacy local provider selection when one custom exists',
-      () {
+  test('uses the server default when nothing was saved', () {
+    final configured = customProfile('only-provider');
+
+    final result = AiProviderService.resolveSelection(
+      profiles: [configured],
+    );
+
+    expect(result.profile.isBuiltinBackend, isTrue);
+    expect(result.source, AiProviderSelectionSource.defaultBuiltin);
+    expect(result.autoSelected, isFalse);
+  });
+
+  test('does not promote a custom provider from a legacy local selection', () {
     final configured = customProfile('xbai');
 
     final result = AiProviderService.resolveSelection(
@@ -43,20 +54,8 @@ void main() {
       selectedId: AiProviderProfile.legacyBuiltinLocalLlamaCppId,
     );
 
-    expect(result.profile.id, configured.id);
-    expect(result.source, AiProviderSelectionSource.autoSelectedCustom);
-    expect(result.autoSelected, isTrue);
-  });
-
-  test('auto selects the only configured provider without a selection', () {
-    final configured = customProfile('only-provider');
-
-    final result = AiProviderService.resolveSelection(
-      profiles: [configured],
-    );
-
-    expect(result.profile.id, configured.id);
-    expect(result.source, AiProviderSelectionSource.autoSelectedCustom);
+    expect(result.profile.isBuiltinBackend, isTrue);
+    expect(result.source, AiProviderSelectionSource.explicitBuiltin);
   });
 
   test('keeps the built-in provider when it was explicitly selected', () {
