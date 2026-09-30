@@ -59,6 +59,8 @@ message CompanionStateMsg {
   bool entity_alive = 13;
   // 与 Profile.world_bind_status 对齐，便于 state 单接口刷新 UI。
   string world_bind_status = 14;
+  // 对话已保存，但记忆提取已停止重试时给用户看的一句说明。空表示没有这类失败。
+  string memory_notice = 15;
 }
 
 message CompanionMomentMsg {

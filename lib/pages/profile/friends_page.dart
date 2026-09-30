@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import '../../auth_service.dart';
 import '../../models/user.dart';
 import '../../services/api_client.dart' show ApiException;
@@ -11,7 +10,7 @@ import '../../services/user_service.dart';
 import '../../widgets/gift_selector.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/avatar_image.dart';
-import '../../providers/notification_provider.dart';
+import '../../services/chat_service.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_error_state.dart';
@@ -58,6 +57,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   bool _hasError = false;
   Object? _loadError;
   Map<String, bool> _onlineStatus = {};
+  Map<String, int> _serverDmUnread = {};
   Timer? _onlineTimer;
   bool _presenceListening = false;
   int _lastSyncTick = -1;
@@ -262,9 +262,26 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
         self = await UserService.getUserInfo(currentUserId);
       } catch (_) {}
       friends.sort((a, b) => a.username.compareTo(b.username));
+      Map<String, int>? serverDmUnread;
+      try {
+        final page = await ChatService.listPrivateConversations(
+          limit: 120,
+          offset: 0,
+        );
+        final nextUnread = <String, int>{};
+        for (final item in page.items) {
+          final peerId = item.peerUserId.trim();
+          if (peerId.isEmpty) continue;
+          nextUnread[peerId] = item.unreadCount;
+        }
+        serverDmUnread = nextUnread;
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _friends = friends;
+        if (serverDmUnread != null) {
+          _serverDmUnread = serverDmUnread;
+        }
         _incomingRequests = incoming;
         _selfProfile = self;
         _isLoading = false;
@@ -513,8 +530,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
 
   Widget _buildCompactFriendRow(User user, int index) {
     final isOnline = _onlineStatus[user.id] ?? false;
-    final dmUnread =
-        context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
+    final dmUnread = _serverDmUnread[user.id] ?? 0;
     final isFavorite = _favoriteFriends.contains(user.id);
     return MoeStaggerReveal(
       key: ValueKey('contacts_panel_${user.id}'),

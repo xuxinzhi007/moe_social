@@ -320,6 +320,45 @@ func TestMemoryExtractionWorkerRetriesAndCompletesJob(t *testing.T) {
 	}
 }
 
+func TestMemoryExtractionStopsAfterMaxAttempts(t *testing.T) {
+	store := newFakeStore()
+	store.logs = []model.CompanionChatLog{
+		{ID: 1, UserID: 7, Role: "user", Content: "记住这个"},
+		{ID: 2, UserID: 7, Role: "assistant", Content: "好"},
+	}
+	store.memoryJobs = []model.CompanionMemoryExtractionJob{{
+		ID:                 1,
+		UserID:             7,
+		UserChatLogID:      1,
+		AssistantChatLogID: 2,
+		Status:             model.CompanionMemoryExtractionQueued,
+		AttemptCount:       memoryExtractionMaxAttempts - 1,
+		NextAttemptAt:      time.Now().Add(-time.Second),
+	}}
+	inference := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "still down", http.StatusServiceUnavailable)
+	}))
+	defer inference.Close()
+	engine := NewEngine(store, nil, llminference.Config{
+		BaseURL:      inference.URL,
+		APIStyle:     llminference.APIOpenAI,
+		Timeout:      time.Second,
+		DefaultModel: "test",
+	}, "test")
+
+	processed, err := engine.processNextMemoryExtractionJob(context.Background())
+	if err != nil || !processed {
+		t.Fatalf("process = (%v, %v)", processed, err)
+	}
+	if store.memoryJobs[0].Status != model.CompanionMemoryExtractionFailed {
+		t.Fatalf("job=%+v, want failed", store.memoryJobs[0])
+	}
+	processed, err = engine.processNextMemoryExtractionJob(context.Background())
+	if err != nil || processed {
+		t.Fatalf("process failed job = (%v, %v), want no work", processed, err)
+	}
+}
+
 func TestMemoryExtractionRetryDelayUsesCappedBackoff(t *testing.T) {
 	tests := []struct {
 		attempt int
@@ -1654,6 +1693,48 @@ func (s *fakeStore) RetryMemoryExtractionJob(
 		return nil
 	}
 	return gorm.ErrRecordNotFound
+}
+
+func (s *fakeStore) FailMemoryExtractionJob(
+	_ context.Context,
+	jobID uint,
+	attemptCount int,
+	lastError string,
+) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for index := range s.memoryJobs {
+		job := &s.memoryJobs[index]
+		if job.ID != jobID ||
+			job.Status != model.CompanionMemoryExtractionRunning ||
+			job.AttemptCount != attemptCount {
+			continue
+		}
+		job.Status = model.CompanionMemoryExtractionFailed
+		job.LeaseUntil = nil
+		job.LastError = lastError
+		job.UpdatedAt = time.Now()
+		return nil
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (s *fakeStore) CountMemoryExtractionJobsByStatus(
+	_ context.Context,
+	userID uint,
+	status string,
+) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var count int64
+	for _, job := range s.memoryJobs {
+		if job.UserID == userID && job.Status == status {
+			count++
+		}
+	}
+	return count, nil
 }
 
 func (s *fakeStore) CreateRelationshipEvent(_ context.Context, event *model.CompanionRelationshipEvent) error {

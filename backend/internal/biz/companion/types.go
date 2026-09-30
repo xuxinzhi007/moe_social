@@ -74,6 +74,7 @@ type State struct {
 	Energy          float64
 	EntityAlive     bool
 	WorldBindStatus string
+	MemoryNotice    string
 }
 
 // Moment 伙伴动态卡片（类朋友圈）。

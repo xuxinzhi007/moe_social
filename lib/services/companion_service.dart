@@ -217,6 +217,7 @@ class CompanionStateData {
   final double energy;
   final bool entityAlive;
   final String worldBindStatus;
+  final String memoryNotice;
 
   const CompanionStateData({
     this.moodThought = '',
@@ -228,6 +229,7 @@ class CompanionStateData {
     this.energy = 0.5,
     this.entityAlive = true,
     this.worldBindStatus = 'unbound',
+    this.memoryNotice = '',
   });
 
   CompanionStateData copyWith({
@@ -240,6 +242,7 @@ class CompanionStateData {
     double? energy,
     bool? entityAlive,
     String? worldBindStatus,
+    String? memoryNotice,
   }) {
     return CompanionStateData(
       moodThought: moodThought ?? this.moodThought,
@@ -251,6 +254,7 @@ class CompanionStateData {
       energy: energy ?? this.energy,
       entityAlive: entityAlive ?? this.entityAlive,
       worldBindStatus: worldBindStatus ?? this.worldBindStatus,
+      memoryNotice: memoryNotice ?? this.memoryNotice,
     );
   }
 
@@ -280,6 +284,8 @@ class CompanionStateData {
       worldBindStatus: m['world_bind_status']?.toString() ??
           m['worldBindStatus']?.toString() ??
           '',
+      memoryNotice:
+          m['memory_notice']?.toString() ?? m['memoryNotice']?.toString() ?? '',
     );
   }
 }

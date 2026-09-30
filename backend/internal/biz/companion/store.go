@@ -57,6 +57,13 @@ type Store interface {
 		retryAt time.Time,
 		lastError string,
 	) error
+	FailMemoryExtractionJob(
+		ctx context.Context,
+		jobID uint,
+		attemptCount int,
+		lastError string,
+	) error
+	CountMemoryExtractionJobsByStatus(ctx context.Context, userID uint, status string) (int64, error)
 
 	// Relationship Events
 	CreateRelationshipEvent(ctx context.Context, event *model.CompanionRelationshipEvent) error

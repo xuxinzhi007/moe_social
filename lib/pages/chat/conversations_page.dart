@@ -366,12 +366,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }
 
     final rows = peerIds.toList();
-    rows.sort((a, b) {
-      final ua = pushUnread[a] ?? 0;
-      final ub = pushUnread[b] ?? 0;
-      if (ua != ub) return ub.compareTo(ua);
-      return lastActivity(b).compareTo(lastActivity(a));
-    });
+    rows.sort((a, b) => lastActivity(b).compareTo(lastActivity(a)));
 
     final filteredRows = rows.where((peerId) {
       if (!_vm.isPeerVisibleInConversationList(
@@ -420,7 +415,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
             peerId: peerId,
             notification: last,
           );
-          final badge = pushUnread[peerId] ?? 0;
+          final badge = 0;
 
           return MoeStaggerReveal(
             index: i,
