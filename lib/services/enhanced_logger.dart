@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 /// 日志等级枚举
 enum LogLevel { debug, info, warn, error, critical }
@@ -123,12 +121,7 @@ class LogEntry {
 class EnhancedLogger {
   static final _instance = EnhancedLogger._internal();
   factory EnhancedLogger() => _instance;
-  EnhancedLogger._internal() {
-    _initDatabase();
-  }
-
-  static const int _maxPersistedLogs = 3000;
-  static const Duration _logRetention = Duration(days: 14);
+  EnhancedLogger._internal();
 
   final StreamController<LogEntry> _logStream = StreamController.broadcast();
   final List<LogEntry> _logBuffer = [];
@@ -136,47 +129,9 @@ class EnhancedLogger {
 
   String? _currentTraceId;
   String? _currentUserId;
-  Database? _database;
 
   Stream<LogEntry> get logStream => _logStream.stream;
   List<LogEntry> get logs => List.unmodifiable(_logBuffer);
-
-  /// 初始化数据库
-  Future<void> _initDatabase() async {
-    try {
-      final documentsDirectory = await getApplicationDocumentsDirectory();
-      final path = '${documentsDirectory.path}/autoglm_logs.db';
-
-      _database = await openDatabase(
-        path,
-        version: 1,
-        onCreate: (Database db, int version) async {
-          await db.execute('''
-            CREATE TABLE logs (
-              id TEXT PRIMARY KEY,
-              timestamp TEXT,
-              level TEXT,
-              category TEXT,
-              message TEXT,
-              metadata TEXT,
-              traceId TEXT,
-              userId TEXT,
-              duration INTEGER
-            )
-          ''');
-
-          // 创建索引
-          await db.execute('CREATE INDEX idx_timestamp ON logs(timestamp)');
-          await db.execute('CREATE INDEX idx_level ON logs(level)');
-          await db.execute('CREATE INDEX idx_category ON logs(category)');
-          await db.execute('CREATE INDEX idx_traceId ON logs(traceId)');
-        },
-      );
-      await _pruneLogs();
-    } catch (e) {
-      debugPrint('Failed to initialize log database: $e');
-    }
-  }
 
   /// 开始追踪
   void startTrace(String traceId, {String? userId}) {
@@ -224,11 +179,6 @@ class EnhancedLogger {
     _addToBuffer(entry);
     _logStream.add(entry);
 
-    // 持久化重要日志
-    if (level.index >= LogLevel.warn.index) {
-      _persistLog(entry);
-    }
-
     // 控制台输出（调试模式）
     if (kDebugMode) {
       debugPrint(entry.format());
@@ -274,44 +224,6 @@ class EnhancedLogger {
     }
   }
 
-  /// 持久化日志
-  Future<void> _persistLog(LogEntry entry) async {
-    try {
-      await _database?.insert('logs', entry.toJson());
-      await _pruneLogs();
-    } catch (e) {
-      debugPrint('Failed to persist log: $e');
-    }
-  }
-
-  Future<void> _pruneLogs() async {
-    final db = _database;
-    if (db == null) return;
-
-    try {
-      final cutoff = DateTime.now().subtract(_logRetention).toIso8601String();
-      await db.delete(
-        'logs',
-        where: 'timestamp < ?',
-        whereArgs: [cutoff],
-      );
-
-      final countResult = await db.rawQuery('SELECT COUNT(*) AS c FROM logs');
-      final count = Sqflite.firstIntValue(countResult) ?? 0;
-      final overflow = count - _maxPersistedLogs;
-      if (overflow > 0) {
-        await db.rawDelete(
-          'DELETE FROM logs WHERE id IN ('
-          'SELECT id FROM logs ORDER BY timestamp ASC LIMIT ?'
-          ')',
-          [overflow],
-        );
-      }
-    } catch (e) {
-      debugPrint('Failed to prune logs: $e');
-    }
-  }
-
   /// 过滤日志
   List<LogEntry> filter({
     LogLevel? level,
@@ -337,7 +249,7 @@ class EnhancedLogger {
     }).toList();
   }
 
-  /// 从数据库查询日志
+  /// 查询当前进程里还留着的日志。
   Future<List<LogEntry>> queryLogs({
     LogLevel? level,
     LogCategory? category,
@@ -347,57 +259,22 @@ class EnhancedLogger {
     int? limit,
     int? offset,
   }) async {
-    if (_database == null) return [];
-
-    try {
-      String whereClause = '1=1';
-      List<dynamic> whereArgs = [];
-
-      if (level != null) {
-        whereClause += ' AND level = ?';
-        whereArgs.add(level.name);
-      }
-      if (category != null) {
-        whereClause += ' AND category = ?';
-        whereArgs.add(category.name);
-      }
-      if (traceId != null) {
-        whereClause += ' AND traceId = ?';
-        whereArgs.add(traceId);
-      }
-      if (since != null) {
-        whereClause += ' AND timestamp >= ?';
-        whereArgs.add(since.toIso8601String());
-      }
-      if (until != null) {
-        whereClause += ' AND timestamp <= ?';
-        whereArgs.add(until.toIso8601String());
-      }
-
-      final results = await _database!.query(
-        'logs',
-        where: whereClause,
-        whereArgs: whereArgs,
-        orderBy: 'timestamp DESC',
-        limit: limit,
-        offset: offset,
-      );
-
-      return results.map((json) => LogEntry.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Failed to query logs: $e');
-      return [];
-    }
+    final matched = filter(
+      level: level,
+      category: category,
+      traceId: traceId,
+      since: since,
+      until: until,
+    );
+    final start = offset ?? 0;
+    if (start >= matched.length) return [];
+    final end = limit == null ? matched.length : start + limit;
+    return matched.sublist(start, end.clamp(start, matched.length));
   }
 
   /// 清空日志
   Future<void> clearLogs() async {
     _logBuffer.clear();
-    try {
-      await _database?.delete('logs');
-    } catch (e) {
-      debugPrint('Failed to clear logs: $e');
-    }
   }
 
   /// 导出日志
@@ -455,7 +332,6 @@ class EnhancedLogger {
   /// 释放资源
   void dispose() {
     _logStream.close();
-    _database?.close();
   }
 }
 

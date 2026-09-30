@@ -8,7 +8,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   battery_plus
   file_selector_windows
   flutter_secure_storage_windows
-  flutter_tts
   gal
   geolocator_windows
   iris_method_channel

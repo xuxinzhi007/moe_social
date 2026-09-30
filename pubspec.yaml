@@ -51,7 +51,6 @@ dependencies:
   agora_rtc_engine: ^6.5.3
   permission_handler: ^12.0.1
   speech_to_text: ^7.0.0
-  flutter_tts: ^3.8.5
   flutter_markdown: ^0.7.7
   dio: ^5.4.0
   open_filex: ^4.5.0
@@ -75,13 +74,9 @@ dependencies:
 
   # AutoGLM系统依赖
   flutter_secure_storage: ^9.2.2  # 安全配置存储
-  sqflite: ^2.3.0                 # 本地数据库（日志持久化）
-  sqflite_common_ffi: ^2.3.4
-  sqflite_common_ffi_web: ^1.0.0
   rive: ^0.14.6
   fluwx: ^5.7.5
   flame: ^1.38.0
-  image: ^4.8.0
   edge_tts: ^0.1.5
 
 dev_dependencies:
@@ -110,14 +105,6 @@ flutter_launcher_icons:
   macos:
     generate: true
 
-# 使用系统 SQLite，避免测试/构建时依赖 GitHub 下载或本地 sqlite3.c。
-hooks:
-  user_defines:
-    sqlite3:
-      source: system
-      name: sqlite3
-      name_windows: winsqlite3
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -142,25 +129,9 @@ flutter:
     - assets/arena/heroes/
     - assets/lottie/chat/
     - assets/lottie/gifts/
-    - assets/pet/
-    - assets/pet/room/
-    - assets/pet/lpc/
-    - assets/pet/lpc/layers/
-    - assets/pet/ui/
-    - assets/pet/character/
-    - assets/pet/clothes/
-    - assets/pet/furniture/
-    - assets/pet/moe_content/
-    - assets/pet/moe_content/avatar/
-    - assets/pet/moe_content/avatar/layers/
-    - assets/pet/moe_content/avatar/layers/base/
-    - assets/pet/moe_content/avatar/layers/slots/
-    - assets/pet/adventure/
-    - assets/pet/farm/
     - assets/farm/crops/
     - assets/farm/tiles/
     - assets/farm/ui/
-    - assets/pet/spine/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

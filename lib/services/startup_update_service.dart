@@ -12,7 +12,6 @@ import 'update_service.dart';
 class StartupUpdateService {
   StartupUpdateService._();
 
-  static const Duration _cooldown = Duration(hours: 24);
   static const Duration _contextRetryDelay = Duration(milliseconds: 400);
 
   /// 在主界面首帧之后调用；内部吞掉异常，不影响主流程。
@@ -23,11 +22,6 @@ class StartupUpdateService {
 
     try {
       if (!await StartupUpdatePreferences.getAutoCheckOnLaunch()) return;
-
-      final last = await StartupUpdatePreferences.getLastAutoCheckTime();
-      if (last != null && DateTime.now().difference(last) < _cooldown) {
-        return;
-      }
 
       var ctx = AuthService.navigatorKey.currentContext;
       if (ctx == null || !ctx.mounted) {
