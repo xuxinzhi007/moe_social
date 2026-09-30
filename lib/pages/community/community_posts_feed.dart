@@ -8,7 +8,6 @@ import '../../theme/moe_theme_extension.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
-import '../../widgets/moe_search_bar.dart';
 import '../../widgets/post_card.dart';
 import '../../utils/post_navigation.dart';
 
@@ -21,7 +20,6 @@ class CommunityPostsFeed extends StatefulWidget {
     this.topicTagId,
     required this.emptyTitle,
     required this.emptySubtitle,
-    this.showTextSearch = false,
     this.showVisualKindRow = false,
     this.topBar,
   });
@@ -30,9 +28,8 @@ class CommunityPostsFeed extends StatefulWidget {
   final String? topicTagId;
   final String emptyTitle;
   final String emptySubtitle;
-  final bool showTextSearch;
 
-  /// 为 true 时展示「全部 / 带图 / 手绘 / 文字」筛选（仅客户端过滤已拉取的列表）。
+  /// 为 true 时，话题条下方展示形态筛选（仅客户端过滤已拉取的列表）。
   final bool showVisualKindRow;
 
   /// 可选顶部条（如话题 Chip），与列表一体滚动。
@@ -48,7 +45,6 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
   List<Post> _posts = [];
   bool _loading = true;
   Object? _loadError;
-  String _searchQuery = '';
   _VisualKind _visualKind = _VisualKind.all;
 
   @override
@@ -95,15 +91,6 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
 
   List<Post> get _filtered {
     var list = _posts;
-    final q = _searchQuery.trim().toLowerCase();
-    if (q.isNotEmpty) {
-      list = list.where((p) {
-        final cap = p.displayCaption.toLowerCase();
-        final name = p.userName.toLowerCase();
-        final tags = p.topicTags.map((t) => t.name.toLowerCase()).join(' ');
-        return cap.contains(q) || name.contains(q) || tags.contains(q);
-      }).toList();
-    }
     if (widget.showVisualKindRow) {
       switch (_visualKind) {
         case _VisualKind.all:
@@ -166,19 +153,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
           parent: BouncingScrollPhysics(),
         ),
         slivers: [
-          if (widget.topBar != null)
-            SliverToBoxAdapter(child: widget.topBar),
-          if (widget.showTextSearch)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: MoeSearchBar(
-                  hintText: '搜索正文、昵称或话题',
-                  onSearch: (s) => setState(() => _searchQuery = s),
-                  onClear: () => setState(() => _searchQuery = ''),
-                ),
-              ),
-            ),
+          if (widget.topBar != null) SliverToBoxAdapter(child: widget.topBar),
           if (widget.showVisualKindRow)
             SliverToBoxAdapter(child: _buildVisualRow()),
           if (list.isEmpty)
@@ -259,31 +234,73 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
 
   Widget _buildVisualRow() {
     final scheme = Theme.of(context).colorScheme;
-    Widget chip(String label, _VisualKind k) {
-      final sel = _visualKind == k;
-      return Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: FilterChip(
-          label: Text(label),
-          selected: sel,
-          onSelected: (_) => setState(() => _visualKind = k),
-          selectedColor: scheme.primary.withValues(alpha: 0.12),
-          checkmarkColor: scheme.primary,
+    const items = <(_VisualKind, String)>[
+      (_VisualKind.all, '全部'),
+      (_VisualKind.image, '带图'),
+      (_VisualKind.handDraw, '手绘'),
+      (_VisualKind.text, '文字'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.55),
+          ),
         ),
-      );
-    }
+        child: Row(
+          children: [
+            for (final item in items)
+              Expanded(
+                child: _VisualSegment(
+                  label: item.$2,
+                  selected: _visualKind == item.$1,
+                  onTap: () => setState(() => _visualKind = item.$1),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-    return SizedBox(
-      height: 48,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-        children: [
-          chip('全部', _VisualKind.all),
-          chip('带图', _VisualKind.image),
-          chip('手绘', _VisualKind.handDraw),
-          chip('文字', _VisualKind.text),
-        ],
+class _VisualSegment extends StatelessWidget {
+  const _VisualSegment({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: selected
+          ? scheme.primary.withValues(alpha: 0.12)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: MoeTokens.textSm,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              color: selected ? scheme.primary : scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }

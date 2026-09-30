@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/checkin_record.dart';
 import '../../providers/checkin_provider.dart';
 import '../../providers/user_level_provider.dart';
 import '../../services/achievement_hooks.dart';
@@ -53,10 +54,13 @@ class _CheckInPageState extends State<CheckInPage>
   late final AnimationController _bounceController;
   late final Animation<double> _rippleAnimation;
   late final Animation<double> _bounceAnimation;
+  late DateTime _visibleMonth;
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _visibleMonth = DateTime(now.year, now.month);
     _setupAnimations();
     _loadData();
   }
@@ -86,6 +90,7 @@ class _CheckInPageState extends State<CheckInPage>
 
       checkInProvider.loadCheckInStatus(widget.userId);
       levelProvider.loadUserLevel(widget.userId);
+      unawaited(_loadStoredHistory(checkInProvider));
     });
   }
 
@@ -154,12 +159,6 @@ class _CheckInPageState extends State<CheckInPage>
                         levelProvider,
                         isCompact: isCompact,
                       ),
-                      const SizedBox(height: MoeTokens.spaceMd),
-                      _buildTaskList(checkInProvider, levelProvider),
-                      const SizedBox(height: MoeTokens.spaceMd),
-                      _buildRewardPreview(checkInProvider),
-                      const SizedBox(height: MoeTokens.spaceMd),
-                      _buildStatsCard(checkInProvider, levelProvider),
                     ]),
                   ),
                 ),
@@ -190,22 +189,52 @@ class _CheckInPageState extends State<CheckInPage>
       ),
       actions: [
         IconButton(
-          tooltip: '签到记录',
-          icon: const Icon(Icons.history_rounded, color: MoeTokens.inkMuted),
-          onPressed: () => _showHistoryPage(context),
+          tooltip: '今日明细',
+          icon: const Icon(Icons.checklist_rounded, color: MoeTokens.inkMuted),
+          onPressed: () => _showDetailsSheet(context),
         ),
       ],
     );
   }
 
+  Future<void> _loadStoredHistory(CheckInProvider provider) async {
+    const pageSize = 100;
+    await provider.loadCheckInHistory(
+      widget.userId,
+      refresh: true,
+      pageSize: pageSize,
+    );
+    var guard = 0;
+    while (mounted && provider.hasMoreHistory && guard < 12) {
+      guard++;
+      await provider.loadCheckInHistory(widget.userId, pageSize: pageSize);
+    }
+  }
+
+  CheckInRecord? _recordOn(DateTime day, CheckInProvider provider) {
+    for (final record in provider.checkInHistory) {
+      final parsed = record.checkInDateTime;
+      if (parsed == null) continue;
+      if (parsed.year == day.year &&
+          parsed.month == day.month &&
+          parsed.day == day.day) {
+        return record;
+      }
+    }
+    return null;
+  }
+
   bool _dayIsStamped(DateTime day, DateTime today, CheckInProvider provider) {
     if (day.isAfter(today)) return false;
+    if (_recordOn(day, provider) != null) return true;
+    if (provider.checkInHistory.isNotEmpty) return false;
     final gap = today.difference(day).inDays;
     if (provider.hasCheckedToday) return gap < provider.consecutiveDays;
     return gap >= 1 && gap <= provider.consecutiveDays;
   }
 
   void _onStampTap({
+    required DateTime day,
     required bool isToday,
     required bool isFuture,
     required bool stamped,
@@ -224,8 +253,136 @@ class _CheckInPageState extends State<CheckInPage>
       return;
     }
     if (stamped) {
-      MoeToast.info(context, '这一天已经盖过章了');
+      final record = _recordOn(day, checkInProvider);
+      final exp = record?.expReward;
+      MoeToast.info(
+        context,
+        exp == null ? '这一天已经盖过章了' : '这一天已签到，+$exp EXP',
+      );
+      return;
     }
+    MoeToast.info(context, '这天没有签到');
+  }
+
+  bool _canShiftMonth(int delta) {
+    final next = DateTime(_visibleMonth.year, _visibleMonth.month + delta);
+    final now = DateTime.now();
+    final current = DateTime(now.year, now.month);
+    final earliest = DateTime(now.year, now.month - 11);
+    return !next.isAfter(current) && !next.isBefore(earliest);
+  }
+
+  void _shiftMonth(int delta) {
+    if (!_canShiftMonth(delta)) return;
+    setState(() {
+      _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month + delta);
+    });
+  }
+
+  Widget _buildMonthCalendar({
+    required List<String> labels,
+    required DateTime today,
+    required CheckInProvider checkInProvider,
+    required UserLevelProvider levelProvider,
+    required bool isChecking,
+    required bool reduceMotion,
+  }) {
+    final first = DateTime(_visibleMonth.year, _visibleMonth.month);
+    final daysInMonth = DateTime(first.year, first.month + 1, 0).day;
+    final lead = first.weekday - 1;
+    final cellCount = lead + daysInMonth;
+    final rows = (cellCount / 7).ceil();
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              onPressed: _canShiftMonth(-1) ? () => _shiftMonth(-1) : null,
+              icon: const Icon(Icons.chevron_left_rounded),
+              color: MoeTokens.titleText,
+            ),
+            Expanded(
+              child: Text(
+                '${first.year}年${first.month}月',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: MoeTokens.titleText,
+                ),
+              ),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              onPressed: _canShiftMonth(1) ? () => _shiftMonth(1) : null,
+              icon: const Icon(Icons.chevron_right_rounded),
+              color: MoeTokens.titleText,
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            for (final label in labels)
+              Expanded(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: MoeTokens.inkMuted,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: MoeTokens.spaceSm),
+        for (var row = 0; row < rows; row++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: MoeTokens.spaceXs),
+            child: Row(
+              children: List.generate(7, (column) {
+                final index = row * 7 + column;
+                if (index < lead || index >= lead + daysInMonth) {
+                  return const Expanded(child: SizedBox(height: 36));
+                }
+                final day = DateTime(first.year, first.month, index - lead + 1);
+                final isToday = day == today;
+                final isFuture = day.isAfter(today);
+                final stamped = _dayIsStamped(day, today, checkInProvider);
+                return Expanded(
+                  child: AnimatedBuilder(
+                    animation: _bounceAnimation,
+                    builder: (context, child) => Transform.scale(
+                      scale:
+                          isToday && !reduceMotion ? _bounceAnimation.value : 1,
+                      child: child,
+                    ),
+                    child: _WeekStamp(
+                      day: day.day,
+                      isToday: isToday,
+                      isFuture: isFuture,
+                      stamped: stamped,
+                      pulsing: isToday && isChecking && !reduceMotion,
+                      pulse: _rippleAnimation,
+                      onTap: () => _onStampTap(
+                        day: day,
+                        isToday: isToday,
+                        isFuture: isFuture,
+                        stamped: stamped,
+                        checkInProvider: checkInProvider,
+                        levelProvider: levelProvider,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildHeroCard(
@@ -239,7 +396,6 @@ class _CheckInPageState extends State<CheckInPage>
     final ctaEnabled = canCheckIn && !hasChecked && !isChecking;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final monday = today.subtract(Duration(days: today.weekday - 1));
     const labels = ['一', '二', '三', '四', '五', '六', '日'];
     final levelGradient = levelProvider.userLevel != null
         ? levelProvider.getLevelGradient(levelProvider.currentLevel)
@@ -308,47 +464,21 @@ class _CheckInPageState extends State<CheckInPage>
             ),
             const SizedBox(height: MoeTokens.spaceXs),
             Text(
-              hasChecked ? '明天再来，印章会接着往后盖。' : '点今天这一格，把印章盖进这一周。',
+              hasChecked ? '明天再来，印章会接着往后盖。' : '点今天这一格，把印章盖进日历。',
               style: const TextStyle(
                 fontSize: 13,
                 height: 1.4,
                 color: MoeTokens.inkMuted,
               ),
             ),
-            const SizedBox(height: MoeTokens.spaceLg),
-            Row(
-              children: List.generate(labels.length, (index) {
-                final day = monday.add(Duration(days: index));
-                final isToday = day == today;
-                final isFuture = day.isAfter(today);
-                final stamped = _dayIsStamped(day, today, checkInProvider);
-                return Expanded(
-                  child: AnimatedBuilder(
-                    animation: _bounceAnimation,
-                    builder: (context, child) => Transform.scale(
-                      scale:
-                          isToday && !reduceMotion ? _bounceAnimation.value : 1,
-                      child: child,
-                    ),
-                    child: _WeekStamp(
-                      label: labels[index],
-                      day: day.day,
-                      isToday: isToday,
-                      isFuture: isFuture,
-                      stamped: stamped,
-                      pulsing: isToday && isChecking && !reduceMotion,
-                      pulse: _rippleAnimation,
-                      onTap: () => _onStampTap(
-                        isToday: isToday,
-                        isFuture: isFuture,
-                        stamped: stamped,
-                        checkInProvider: checkInProvider,
-                        levelProvider: levelProvider,
-                      ),
-                    ),
-                  ),
-                );
-              }),
+            const SizedBox(height: MoeTokens.spaceMd),
+            _buildMonthCalendar(
+              labels: labels,
+              today: today,
+              checkInProvider: checkInProvider,
+              levelProvider: levelProvider,
+              isChecking: isChecking,
+              reduceMotion: reduceMotion,
             ),
             const SizedBox(height: MoeTokens.spaceLg),
             MoePressable(
@@ -1081,18 +1211,78 @@ class _CheckInPageState extends State<CheckInPage>
     MoeToast.error(context, message);
   }
 
-  void _showHistoryPage(BuildContext context) {
-    MoeToast.show(
-      context,
-      '签到历史功能开发中...',
-      icon: Icons.info_outline_rounded,
+  void _showDetailsSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
+            ),
+            margin: const EdgeInsets.fromLTRB(
+              MoeTokens.spaceMd,
+              0,
+              MoeTokens.spaceMd,
+              MoeTokens.spaceMd,
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              MoeTokens.spaceLg,
+              MoeTokens.spaceMd,
+              MoeTokens.spaceLg,
+              MoeTokens.spaceLg,
+            ),
+            decoration: BoxDecoration(
+              color: MoeTokens.pageBackground,
+              borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+            ),
+            child: Consumer2<CheckInProvider, UserLevelProvider>(
+              builder: (context, checkInProvider, levelProvider, _) {
+                return ListView(
+                  shrinkWrap: true,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        margin:
+                            const EdgeInsets.only(bottom: MoeTokens.spaceMd),
+                        decoration: BoxDecoration(
+                          color: MoeTokens.lineSoft,
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusFull),
+                        ),
+                      ),
+                    ),
+                    const Text(
+                      '今日明细',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: MoeTokens.titleText,
+                      ),
+                    ),
+                    const SizedBox(height: MoeTokens.spaceMd),
+                    _buildTaskList(checkInProvider, levelProvider),
+                    const SizedBox(height: MoeTokens.spaceMd),
+                    _buildRewardPreview(checkInProvider),
+                    const SizedBox(height: MoeTokens.spaceMd),
+                    _buildStatsCard(checkInProvider, levelProvider),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
 class _WeekStamp extends StatelessWidget {
   const _WeekStamp({
-    required this.label,
     required this.day,
     required this.isToday,
     required this.isFuture,
@@ -1102,7 +1292,6 @@ class _WeekStamp extends StatelessWidget {
     required this.onTap,
   });
 
-  final String label;
   final int day;
   final bool isToday;
   final bool isFuture;
@@ -1125,15 +1314,6 @@ class _WeekStamp extends StatelessWidget {
       borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
       child: Column(
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: MoeTokens.inkMuted,
-            ),
-          ),
-          const SizedBox(height: 6),
           AnimatedBuilder(
             animation: pulse,
             builder: (context, child) {

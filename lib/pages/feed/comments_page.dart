@@ -3,11 +3,13 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:async';
 import '../../models/comment.dart';
 import '../../models/post.dart';
+import '../../models/user.dart';
 import '../../services/achievement_hooks.dart';
 import '../../auth_service.dart';
 import '../../services/companion_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../utils/moe_error_copy.dart';
+import '../../utils/comment_mentions.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/moe_toast.dart';
@@ -57,9 +59,13 @@ class _CommentsPageState extends State<CommentsPage> {
 
   /// 已展开楼中楼的一级评论 id
   final Set<String> _expandedReplyThreads = {};
+
+  /// 正文超过折叠行数后，用户点开「展开全文」的评论 id
+  final Set<String> _expandedCommentBodies = {};
   final Set<String> _revealedCommentKeys = <String>{};
   static const int _initialReplyVisible = 5;
   static const int _replyLoadStep = 10;
+  static const int _collapsedBodyLines = 6;
 
   void _onVmChanged() {
     if (mounted) setState(() {});
@@ -73,7 +79,40 @@ class _CommentsPageState extends State<CommentsPage> {
       communityIdentity: widget.communityIdentity,
     );
     _vm.addListener(_onVmChanged);
+    _commentController.addListener(_syncMention);
     unawaited(_vm.bootstrap());
+  }
+
+  void _syncMention() {
+    final selection = _commentController.selection.baseOffset;
+    _vm.updateMention(_commentController.text, selection);
+  }
+
+  void _insertAtSign() {
+    final text = _commentController.text;
+    var cursor = _commentController.selection.baseOffset;
+    if (cursor < 0 || cursor > text.length) cursor = text.length;
+    final needsSpace = cursor > 0 && !RegExp(r'\s').hasMatch(text[cursor - 1]);
+    final insert = needsSpace ? ' @' : '@';
+    final next = text.replaceRange(cursor, cursor, insert);
+    _commentController.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: cursor + insert.length),
+    );
+    _commentFocus.requestFocus();
+  }
+
+  void _insertMention(User user) {
+    final edit = applyCommentMention(
+      _commentController.text,
+      _commentController.selection.baseOffset,
+      user.username,
+    );
+    _commentController.value = TextEditingValue(
+      text: edit.text,
+      selection: TextSelection.collapsed(offset: edit.cursor),
+    );
+    _commentFocus.requestFocus();
   }
 
   Future<void> _addComment() async {
@@ -216,6 +255,7 @@ class _CommentsPageState extends State<CommentsPage> {
   @override
   void dispose() {
     _vm.removeListener(_onVmChanged);
+    _commentController.removeListener(_syncMention);
     _vm.dispose();
     _commentFocus.dispose();
     _commentController.dispose();
@@ -327,10 +367,11 @@ class _CommentsPageState extends State<CommentsPage> {
                                 hasScrollBody: false,
                                 child: Center(
                                   child: MoeEmptyState(
-                                    icon: Icons.chat_bubble_outline_rounded,
                                     title: '还没有回应',
                                     subtitle: '说说你的想法，开启这段对话',
                                     showCard: false,
+                                    compact: true,
+                                    image: _CommentEmptyMark(),
                                   ),
                                 ),
                               )
@@ -515,6 +556,7 @@ class _CommentsPageState extends State<CommentsPage> {
                     ],
                   ),
                 ),
+              if (_vm.mentionActive) _buildMentionPicker(scheme),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -557,6 +599,21 @@ class _CommentsPageState extends State<CommentsPage> {
                     ),
                   ),
                   const SizedBox(width: MoeTokens.spaceSm),
+                  MoePressable(
+                    onTap: _insertAtSign,
+                    pressedScale: MoeTokens.motionPressScale,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                    child: const SizedBox(
+                      width: 36,
+                      height: 40,
+                      child: Icon(
+                        Icons.alternate_email_rounded,
+                        color: MoeTokens.primary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: MoeTokens.spaceXs),
                   _vm.isSubmitting
                       ? const Padding(
                           padding: EdgeInsets.all(MoeTokens.spaceXs),
@@ -587,30 +644,107 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 
+  Widget _buildMentionPicker(ColorScheme scheme) {
+    final suggestions = _vm.mentionSuggestions;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MoeTokens.spaceSm),
+      child: Material(
+        color: MoeTokens.cardBackground,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          side: const BorderSide(color: MoeTokens.surfaceBorder),
+        ),
+        child: suggestions.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: MoeTokens.spaceMd,
+                  vertical: MoeTokens.spaceSm,
+                ),
+                child: Text(
+                  '没有匹配的好友',
+                  style: TextStyle(
+                    color: MoeTokens.hintText,
+                    fontSize: MoeTokens.textSm,
+                  ),
+                ),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final user in suggestions)
+                    InkWell(
+                      onTap: () => _insertMention(user),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: MoeTokens.spaceMd,
+                          vertical: MoeTokens.spaceSm,
+                        ),
+                        child: Row(
+                          children: [
+                            NetworkAvatarImage(
+                              imageUrl: user.avatar,
+                              radius: 14,
+                              placeholderIcon: Icons.person,
+                            ),
+                            const SizedBox(width: MoeTokens.spaceSm),
+                            Expanded(
+                              child: Text(
+                                user.username,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: scheme.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: MoeTokens.textBase,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+      ),
+    );
+  }
+
   Widget _buildThreadToggle({
     required String label,
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: MoeTokens.primary),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: MoeTokens.primary,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MoeTokens.spaceSm),
+      child: MoePressable(
+        onTap: onTap,
+        pressedScale: MoeTokens.motionPressScale,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MoeTokens.spaceMd,
+            vertical: MoeTokens.spaceXs,
+          ),
+          decoration: BoxDecoration(
+            color: MoeTokens.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: MoeTokens.primary),
+              const SizedBox(width: MoeTokens.spaceXs),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: MoeTokens.primary,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -645,7 +779,7 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 
-  /// 一级评论 + 可收起楼中楼（紧凑样式，与主评论气泡区分）。
+  /// 一级评论，回复默认收成一颗胶囊，展开后沿左侧细线排成同一套行样式。
   Widget _buildTopLevelThread(Comment root) {
     final replies = _allRepliesUnderRoot(root.id);
     final expanded = _isReplyThreadExpanded(root.id);
@@ -654,7 +788,7 @@ class _CommentsPageState extends State<CommentsPage> {
     final remaining = replies.length - visible;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: MoeTokens.spaceXl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -662,123 +796,118 @@ class _CommentsPageState extends State<CommentsPage> {
           if (replies.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(
-                left: MoeTokens.space3xl + MoeTokens.spaceLg,
+                left: MoeTokens.spaceLg,
                 top: MoeTokens.spaceXs,
               ),
-              child: expanded
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final reply in shown) _buildCompactReplyRow(reply),
-                        if (remaining > 0)
-                          _buildThreadToggle(
-                            label: '展开更多 $remaining 条回复',
-                            icon: Icons.expand_more_rounded,
-                            onTap: () =>
-                                _showMoreReplies(root.id, replies.length),
-                          ),
-                        _buildThreadToggle(
-                          label: '收起回复',
-                          icon: Icons.expand_less_rounded,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: MoeTokens.primary.withValues(alpha: 0.22),
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: MoeTokens.spaceMd),
+                  child: expanded
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final reply in shown)
+                              _buildCommentRow(reply, isReply: true),
+                            if (remaining > 0)
+                              _buildThreadToggle(
+                                label: '再看 $remaining 条',
+                                icon: Icons.add_rounded,
+                                onTap: () =>
+                                    _showMoreReplies(root.id, replies.length),
+                              ),
+                            _buildThreadToggle(
+                              label: '收起',
+                              icon: Icons.expand_less_rounded,
+                              onTap: () => _toggleReplyThread(
+                                root.id,
+                                replyCount: replies.length,
+                              ),
+                            ),
+                          ],
+                        )
+                      : _buildThreadToggle(
+                          label: '${replies.length} 条回复',
+                          icon: Icons.subdirectory_arrow_right_rounded,
                           onTap: () => _toggleReplyThread(
                             root.id,
                             replyCount: replies.length,
                           ),
                         ),
-                      ],
-                    )
-                  : _buildThreadToggle(
-                      label: '展开 ${replies.length} 条回复',
-                      icon: Icons.expand_more_rounded,
-                      onTap: () => _toggleReplyThread(
-                        root.id,
-                        replyCount: replies.length,
-                      ),
-                    ),
+                ),
+              ),
             ),
         ],
       ),
     );
   }
 
-  /// 楼中楼紧凑行：无大气泡，与主评论视觉层级一致但更轻。
-  Widget _buildCompactReplyRow(Comment comment) {
-    final text = _displayContent(comment);
-    final replyName = comment.replyToUserName.trim();
-
+  Widget _buildCommentRow(Comment comment, {required bool isReply}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: isReply ? MoeTokens.spaceMd : 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           NetworkAvatarImage(
             imageUrl: comment.userAvatar,
-            radius: 12,
+            radius: isReply ? 14 : 18,
             placeholderIcon: Icons.person,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: MoeTokens.spaceSm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text.rich(
-                  TextSpan(
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.45,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                MoePressable(
+                  onTap: () => _startReply(comment),
+                  pressedScale: 1,
+                  pressedOpacity: 0.72,
+                  child: Row(
                     children: [
-                      TextSpan(
-                        text: '${comment.userName} ',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      if (comment.authorIsBot)
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: AiBotBadge(
-                              compact: true,
-                              agentKey: comment.authorBotAgentKey,
-                            ),
-                          ),
-                        ),
-                      if (replyName.isNotEmpty)
-                        TextSpan(
-                          text: '@$replyName ',
+                      Flexible(
+                        child: Text(
+                          comment.userName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: MoeTokens.primary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
+                            fontSize: isReply ? 12 : 13,
+                            color: MoeTokens.titleText,
                           ),
                         ),
-                      TextSpan(text: text),
+                      ),
+                      if (comment.authorIsBot) ...[
+                        const SizedBox(width: MoeTokens.spaceXs),
+                        AiBotBadge(
+                          compact: true,
+                          agentKey: comment.authorBotAgentKey,
+                        ),
+                      ],
+                      const SizedBox(width: MoeTokens.spaceSm),
+                      Text(
+                        _formatTime(comment.createdAt),
+                        style: const TextStyle(
+                          color: MoeTokens.hintText,
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: MoeTokens.spaceXs),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _formatTime(comment.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 11,
-                      ),
-                    ),
-                    const Spacer(),
+                    Expanded(child: _buildCommentBody(comment, isReply)),
+                    const SizedBox(width: MoeTokens.spaceSm),
                     _buildCommentLikeAction(comment),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => _startReply(comment),
-                      child: Text(
-                        '回复',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ],
@@ -789,143 +918,18 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 
-  Widget _buildCommentRow(Comment comment, {required bool isReply}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        NetworkAvatarImage(
-          imageUrl: comment.userAvatar,
-          radius: isReply ? 14 : 18,
-          placeholderIcon: Icons.person,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: comment.userName,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: isReply ? 12 : 13,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                          if (comment.authorIsBot)
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 6),
-                                child: AiBotBadge(
-                                  compact: true,
-                                  agentKey: comment.authorBotAgentKey,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatTime(comment.createdAt),
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isReply ? MoeTokens.spaceMd : MoeTokens.spaceLg,
-                  vertical: isReply ? MoeTokens.spaceSm : MoeTokens.spaceMd,
-                ),
-                decoration: BoxDecoration(
-                  color: MoeTokens.cardBackground,
-                  borderRadius: BorderRadius.only(
-                    topRight: const Radius.circular(MoeTokens.radiusLg),
-                    bottomLeft: const Radius.circular(MoeTokens.radiusLg),
-                    bottomRight: const Radius.circular(MoeTokens.radiusLg),
-                    topLeft: const Radius.circular(MoeTokens.radiusSm),
-                  ),
-                  border: Border.all(color: MoeTokens.surfaceBorder),
-                ),
-                child: _buildCommentBody(comment, isReply),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _buildCommentLikeAction(comment),
-                  const SizedBox(width: 12),
-                  InkWell(
-                    onTap: () => _startReply(comment),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.reply_rounded,
-                            color: Colors.grey[400],
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '回复',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildCommentBody(Comment comment, bool isReply) {
     final text = _displayContent(comment);
     final replyName = comment.replyToUserName.trim();
-    final showMention = replyName.isNotEmpty;
-    if (!showMention) {
-      return Text(
-        text,
-        style: TextStyle(
-          height: 1.5,
-          fontSize: isReply ? 13 : 14,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      );
-    }
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(
-          height: 1.5,
-          fontSize: isReply ? 13 : 14,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        children: [
+    final expanded = _expandedCommentBodies.contains(comment.id);
+    final span = TextSpan(
+      style: TextStyle(
+        height: 1.5,
+        fontSize: isReply ? 13 : 14,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+      children: [
+        if (replyName.isNotEmpty)
           TextSpan(
             text: '@$replyName ',
             style: TextStyle(
@@ -933,9 +937,73 @@ class _CommentsPageState extends State<CommentsPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          TextSpan(text: text),
-        ],
-      ),
+        ...commentMentionSpans(
+          text,
+          TextStyle(
+            height: 1.5,
+            fontSize: isReply ? 13 : 14,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          TextStyle(
+            height: 1.5,
+            fontSize: isReply ? 13 : 14,
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: span,
+          maxLines: _collapsedBodyLines,
+          textDirection: Directionality.of(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final overflow = painter.didExceedMaxLines;
+        painter.dispose();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MoePressable(
+              onTap: () => _startReply(comment),
+              pressedScale: 1,
+              pressedOpacity: 0.72,
+              child: Text.rich(
+                span,
+                maxLines: expanded ? null : _collapsedBodyLines,
+                overflow:
+                    expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              ),
+            ),
+            if (overflow)
+              MoePressable(
+                onTap: () {
+                  setState(() {
+                    if (expanded) {
+                      _expandedCommentBodies.remove(comment.id);
+                    } else {
+                      _expandedCommentBodies.add(comment.id);
+                    }
+                  });
+                },
+                pressedScale: MoeTokens.motionPressScale,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: MoeTokens.spaceXs),
+                  child: Text(
+                    expanded ? '收起' : '展开全文',
+                    style: const TextStyle(
+                      color: MoeTokens.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -953,4 +1021,80 @@ class _CommentsPageState extends State<CommentsPage> {
       return '${time.month}月${time.day}日';
     }
   }
+}
+
+/// 评论空态插图：叠放的小纸条，替代大号渐变圆。
+class _CommentEmptyMark extends StatelessWidget {
+  const _CommentEmptyMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return const CustomPaint(
+      painter: _CommentEmptyMarkPainter(),
+      child: SizedBox.expand(),
+    );
+  }
+}
+
+class _CommentEmptyMarkPainter extends CustomPainter {
+  const _CommentEmptyMarkPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final back = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        size.width * 0.22,
+        size.height * 0.06,
+        size.width * 0.58,
+        size.height * 0.52,
+      ),
+      const Radius.circular(MoeTokens.radiusMd),
+    );
+    canvas.drawRRect(
+      back,
+      Paint()..color = MoeTokens.secondary.withValues(alpha: 0.38),
+    );
+
+    final front = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        size.width * 0.08,
+        size.height * 0.24,
+        size.width * 0.68,
+        size.height * 0.62,
+      ),
+      const Radius.circular(MoeTokens.radiusLg),
+    );
+    canvas.drawRRect(front, Paint()..color = MoeTokens.cardBackground);
+    canvas.drawRRect(
+      front,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = MoeTokens.primary.withValues(alpha: 0.4),
+    );
+
+    final line = Paint()
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 3
+      ..color = MoeTokens.primary.withValues(alpha: 0.5);
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.46),
+      Offset(size.width * 0.56, size.height * 0.46),
+      line,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.6),
+      Offset(size.width * 0.42, size.height * 0.6),
+      line..color = MoeTokens.secondary.withValues(alpha: 0.75),
+    );
+
+    canvas.drawCircle(
+      Offset(size.width * 0.78, size.height * 0.3),
+      7,
+      Paint()..color = MoeTokens.accent,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

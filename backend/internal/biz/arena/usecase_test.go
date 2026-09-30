@@ -63,6 +63,42 @@ func TestEnsureProfileDefaults(t *testing.T) {
 	}
 }
 
+func TestGetStateRepairsEmptyRoster(t *testing.T) {
+	repo := newMemRepo()
+	repo.byUser["u1"] = &model.ArenaProfile{
+		ID:              1,
+		UserID:          "u1",
+		StarCrystals:    100,
+		TowerFloor:      3,
+		OwnedHeroesJSON: "[]",
+		FormationJSON:   "[]",
+		DeckJSON:        "[]",
+		ProgressJSON:    "{}",
+	}
+	repo.nextID = 2
+	uc := arenabiz.NewUsecase(repo)
+	st, err := uc.GetState(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.StarCrystals != 100 {
+		t.Fatalf("crystals=%d", st.StarCrystals)
+	}
+	if st.TowerFloor != 3 {
+		t.Fatalf("floor=%d", st.TowerFloor)
+	}
+	if len(st.OwnedHeroes) != 3 {
+		t.Fatalf("owned=%v", st.OwnedHeroes)
+	}
+	if len(st.FormationHeroIDs) != arenabiz.FormationSize {
+		t.Fatalf("formation=%v", st.FormationHeroIDs)
+	}
+	saved := repo.byUser["u1"]
+	if saved == nil || saved.OwnedHeroesJSON == "[]" || saved.OwnedHeroesJSON == "" {
+		t.Fatalf("roster was not persisted: %+v", saved)
+	}
+}
+
 func TestSummonDeductsAndTenGuarantee(t *testing.T) {
 	repo := newMemRepo()
 	uc := arenabiz.NewUsecaseWithRand(repo, rand.New(rand.NewSource(1)))

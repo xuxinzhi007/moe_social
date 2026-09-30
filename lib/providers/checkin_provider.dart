@@ -150,7 +150,11 @@ class CheckInProvider extends ChangeNotifier {
   }
 
   /// 加载签到历史记录
-  Future<void> loadCheckInHistory(String userId, {bool refresh = false}) async {
+  Future<void> loadCheckInHistory(
+    String userId, {
+    bool refresh = false,
+    int pageSize = 100,
+  }) async {
     if (_isLoadingHistory && !refresh) return;
 
     try {
@@ -166,7 +170,7 @@ class CheckInProvider extends ChangeNotifier {
       final result = await GrowthService.getCheckInHistory(
         userId,
         page: _historyPage,
-        pageSize: 20,
+        pageSize: pageSize,
       );
       final records = result.records;
       final total = result.total;

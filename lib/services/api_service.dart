@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart'
 import '../models/community_group.dart';
 import 'media_category.dart';
 import '../models/post.dart';
+import '../models/post_search_hit.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
 import '../models/private_message_item.dart';
@@ -757,6 +758,27 @@ class ApiService {
     }
   }
 
+  /// GET `/api/posts/search` — 按正文、昵称或话题检索公开动态。
+  static Future<List<PostSearchHit>> searchPosts({
+    required String query,
+    int limit = 20,
+    String? viewerUserId,
+  }) async {
+    final parts = <String>[
+      'query=${Uri.encodeQueryComponent(query)}',
+      'limit=$limit',
+    ];
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      parts.add('viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}');
+    }
+    final result = await _request('/api/posts/search?${parts.join('&')}');
+    final items = ApiResponse.listOf(result, keys: const ['items']);
+    return [
+      for (final raw in items)
+        if (raw is Map) PostSearchHit.fromJson(Map<String, dynamic>.from(raw)),
+    ];
+  }
+
   /// ===== 日志工具：默认不输出图片/头像等大字段，避免刷屏 =====
   static String _pathLabel(Uri uri) {
     final path = uri.path;
@@ -1031,13 +1053,16 @@ class ApiService {
   /// 更新帖子正文 / 图片 / 话题标签（仅帖子作者可调用）。
   static Future<Post> updatePost(
     String postId, {
+    required String userId,
     String? content,
     List<String>? images,
     List<Map<String, dynamic>>? topicTags,
     String? handDrawCard,
     String? handDrawThumbUrl,
   }) async {
-    final body = <String, dynamic>{};
+    final body = <String, dynamic>{
+      'user_id': userId,
+    };
     if (content != null) body['content'] = content;
     if (images != null) body['images'] = images;
     if (topicTags != null) body['topic_tags'] = topicTags;

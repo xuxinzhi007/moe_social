@@ -388,23 +388,26 @@ class _CreatePostPageState extends State<CreatePostPage> {
               Container(
                 margin: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
                 alignment: Alignment.center,
-                child: SizedBox(
-                  height: 36,
-                  width: 76,
-                  child: LoadingButton(
-                    operationKey: LoadingKeys.createPost,
-                    onPressed: _publishPost,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shadowColor: primaryColor.withValues(alpha: 0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                child: _PublishReady(
+                  ready: _composerReady,
+                  child: SizedBox(
+                    height: 36,
+                    width: 76,
+                    child: LoadingButton(
+                      operationKey: LoadingKeys.createPost,
+                      onPressed: _publishPost,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shadowColor: primaryColor.withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        padding: EdgeInsets.zero,
                       ),
-                      padding: EdgeInsets.zero,
+                      child: Text(_vm.isEditMode ? '保存' : '发布'),
                     ),
-                    child: Text(_vm.isEditMode ? '保存' : '发布'),
                   ),
                 ),
               ),
@@ -474,8 +477,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.wb_sunny_rounded,
-              size: 18, color: MoeTokens.pastelOrange),
+          const _SwayIcon(
+            icon: Icons.wb_sunny_rounded,
+            color: MoeTokens.pastelOrange,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -595,8 +600,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   child: MoeInputField(
                     controller: _contentController,
                     hintText: '写下此刻的想法…',
-                    maxLines: 8,
-                    minLines: 3,
+                    maxLines: 6,
+                    minLines: 2,
                     filled: true,
                     fillColor: MoeTokens.softChipBg,
                     keyboardType: TextInputType.multiline,
@@ -613,16 +618,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 const SizedBox(height: MoeTokens.spaceMd),
                 _buildFormActions(textTheme),
                 if (hasAttachments) ...[
-                  const SizedBox(height: MoeTokens.spaceMd),
-                  _buildAttachments(textTheme),
+                  const SizedBox(height: MoeTokens.spaceSm),
+                  _buildAttachmentStrip(),
                 ],
                 if (!_vm.isEditMode) ...[
-                  const SizedBox(height: MoeTokens.spaceLg),
+                  const SizedBox(height: MoeTokens.spaceMd),
                   _buildSectionTitle(textTheme, '心情'),
                   const SizedBox(height: MoeTokens.spaceSm),
                   _buildMoodChips(textTheme),
                 ],
-                const SizedBox(height: MoeTokens.spaceLg),
+                const SizedBox(height: MoeTokens.spaceMd),
                 _buildTopicHeader(textTheme),
                 const SizedBox(height: MoeTokens.spaceSm),
                 _buildTopicPicker(textTheme),
@@ -638,29 +643,38 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return Row(
       children: [
         Expanded(
-          child: _formActionChip(
-            icon: Icons.brush_rounded,
-            label: '手绘',
-            color: MoeTokens.primary,
-            onTap: _openHandDrawEditor,
+          child: _RiseIn(
+            index: 0,
+            child: _formActionChip(
+              icon: Icons.brush_rounded,
+              label: '手绘',
+              color: MoeTokens.primary,
+              onTap: _openHandDrawEditor,
+            ),
           ),
         ),
         const SizedBox(width: MoeTokens.spaceSm),
         Expanded(
-          child: _formActionChip(
-            icon: Icons.photo_outlined,
-            label: '相册',
-            color: MoeTokens.pastelTeal,
-            onTap: _addImage,
+          child: _RiseIn(
+            index: 1,
+            child: _formActionChip(
+              icon: Icons.photo_outlined,
+              label: '相册',
+              color: MoeTokens.pastelTeal,
+              onTap: _addImage,
+            ),
           ),
         ),
         const SizedBox(width: MoeTokens.spaceSm),
         Expanded(
-          child: _formActionChip(
-            icon: Icons.cloud_outlined,
-            label: '图库',
-            color: MoeTokens.pastelBlue,
-            onTap: _openCloudGallery,
+          child: _RiseIn(
+            index: 2,
+            child: _formActionChip(
+              icon: Icons.cloud_outlined,
+              label: '图库',
+              color: MoeTokens.pastelBlue,
+              onTap: _openCloudGallery,
+            ),
           ),
         ),
       ],
@@ -857,138 +871,124 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
+  bool get _composerReady =>
+      _contentController.text.trim().isNotEmpty ||
+      _vm.handDrawCard != null ||
+      _vm.composerImages.isNotEmpty;
+
   Widget _buildMoodChips(TextTheme textTheme) {
+    final moods = _moodLabels.keys.toList();
     return Row(
       children: [
-        for (final mood in _moodLabels.keys) ...[
-          Expanded(child: _moodChip(mood, textTheme)),
-          if (mood != _moodLabels.keys.last)
-            const SizedBox(width: MoeTokens.spaceSm),
+        for (var i = 0; i < moods.length; i++) ...[
+          Expanded(
+            child: _RiseIn(
+              index: i,
+              child: _moodChip(moods[i], textTheme),
+            ),
+          ),
+          if (i != moods.length - 1) const SizedBox(width: MoeTokens.spaceSm),
         ],
       ],
     );
   }
 
-  Widget _buildAttachments(TextTheme textTheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_vm.handDrawCard != null) ...[
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: MoeTokens.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.brush_rounded,
-                        size: 14, color: MoeTokens.primary),
-                    const SizedBox(width: 4),
-                    Text(
-                      '手绘卡片',
-                      style: textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: MoeTokens.primary,
-                      ),
-                    ),
-                  ],
-                ),
+  static const double _attachmentExtent = 76;
+  static const double _handDrawThumbWidth = 132;
+
+  Widget _buildAttachmentStrip() {
+    return SizedBox(
+      height: _attachmentExtent + 8,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.only(top: 8, right: 8),
+        children: [
+          if (_vm.handDrawCard != null) ...[
+            _buildHandDrawThumb(),
+            const SizedBox(width: MoeTokens.spaceSm),
+          ],
+          for (final slot in _vm.composerImages) ...[
+            _buildImageThumb(
+              imageProvider: slot.file != null
+                  ? FileImage(slot.file!)
+                  : NetworkImage(resolveMediaUrl(slot.remoteUrl ?? ''))
+                      as ImageProvider,
+              uploading: slot.uploading,
+              error: slot.error,
+              onRetry: slot.error == null
+                  ? null
+                  : () => _vm.retryComposerImage(slot),
+              onRemove: () => _removeImage(slot),
+            ),
+            const SizedBox(width: MoeTokens.spaceSm),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHandDrawThumb() {
+    return SizedBox(
+      width: _handDrawThumbWidth,
+      height: _attachmentExtent,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GestureDetector(
+            onTap: _openHandDrawEditor,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+              child: SizedBox(
+                width: _handDrawThumbWidth,
+                height: _attachmentExtent,
+                child: HandDrawCardStatic(data: _vm.handDrawCard!),
               ),
-              const Spacer(),
-              GestureDetector(
-                onTap: _openHandDrawEditor,
-                child: Text(
-                  '改画',
-                  style: textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: MoeTokens.primary,
+            ),
+          ),
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: IgnorePointer(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                ),
+                child: const Text(
+                  '手绘',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: MoeTokens.textXs,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: _removeHandDraw,
-                child: Icon(
-                  Icons.delete_outline_rounded,
-                  size: 18,
-                  color: Colors.red[300],
+            ),
+          ),
+          Positioned(
+            top: -6,
+            right: -6,
+            child: GestureDetector(
+              onTap: _removeHandDraw,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  color: MoeTokens.danger,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 12,
+                  color: Colors.white,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              height: 128,
-              width: double.infinity,
-              child: HandDrawCardStatic(data: _vm.handDrawCard!),
             ),
           ),
         ],
-        if (_vm.handDrawCard != null && _vm.composerImages.isNotEmpty)
-          const SizedBox(height: 12),
-        if (_vm.composerImages.isNotEmpty) ...[
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: MoeTokens.pastelTeal.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.image_rounded,
-                        size: 14, color: MoeTokens.pastelTeal),
-                    const SizedBox(width: 4),
-                    Text(
-                      '图片',
-                      style: textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: MoeTokens.pastelTeal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${_vm.composerImages.length} 张',
-                style: textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: MoeTokens.greyDisabled,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final slot in _vm.composerImages)
-                _buildImageThumb(
-                  imageProvider: slot.file != null
-                      ? FileImage(slot.file!)
-                      : NetworkImage(resolveMediaUrl(slot.remoteUrl ?? ''))
-                          as ImageProvider,
-                  uploading: slot.uploading,
-                  error: slot.error,
-                  onRetry: slot.error == null
-                      ? null
-                      : () => _vm.retryComposerImage(slot),
-                  onRemove: () => _removeImage(slot),
-                ),
-            ],
-          ),
-        ],
-      ],
+      ),
     );
   }
 
@@ -1004,7 +1004,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return MoePressable(
       onTap: () => _vm.setMoodTag(selected ? null : mood),
       pressedScale: MoeTokens.motionPressScaleStrong,
-      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
       child: AnimatedScale(
         duration: motion,
         curve: Curves.easeInOut,
@@ -1012,40 +1012,37 @@ class _CreatePostPageState extends State<CreatePostPage> {
         child: AnimatedContainer(
           duration: motion,
           curve: Curves.easeInOut,
-          height: 68,
+          height: 36,
           alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color:
                 selected ? color.withValues(alpha: 0.2) : MoeTokens.softChipBg,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
             border: Border.all(
               color: selected
                   ? color.withValues(alpha: 0.7)
                   : MoeTokens.surfaceBorder,
             ),
-            boxShadow: selected ? MoeTokens.shadowSm() : null,
           ),
-          child: Column(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedScale(
-                duration: motion,
-                curve: Curves.easeInOut,
-                scale: selected ? 1.08 : 1,
-                child: Icon(
-                  icon,
-                  size: 22,
-                  color: selected ? color : MoeTokens.inkMuted,
-                ),
+              _MoodBounceIcon(
+                selected: selected,
+                icon: icon,
+                color: color,
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: selected ? color : MoeTokens.inkMuted,
+              const SizedBox(width: 2),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: selected ? color : MoeTokens.inkMuted,
+                  ),
                 ),
               ),
             ],
@@ -1068,8 +1065,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
         GestureDetector(
           onTap: onRetry,
           child: Container(
-            width: 80,
-            height: 80,
+            width: _attachmentExtent,
+            height: _attachmentExtent,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -1141,5 +1138,223 @@ class _CreatePostPageState extends State<CreatePostPage> {
     _vm.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+}
+
+/// 有内容时发布按钮回弹到完整尺寸，空内容时略收一点。
+class _PublishReady extends StatelessWidget {
+  const _PublishReady({required this.ready, required this.child});
+
+  static const double _idleScale = 0.94;
+  static const double _idleOpacity = 0.72;
+
+  final bool ready;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = moeReduceMotion(context);
+    final duration = reduce ? Duration.zero : MoeTokens.motionMedium;
+    return AnimatedScale(
+      scale: ready || reduce ? 1 : _idleScale,
+      duration: duration,
+      curve: Curves.easeOutBack,
+      child: AnimatedOpacity(
+        opacity: ready ? 1 : _idleOpacity,
+        duration: reduce ? Duration.zero : MoeTokens.motionFast,
+        child: child,
+      ),
+    );
+  }
+}
+
+/// 问候图标左右轻摆，不循环位移布局。
+class _SwayIcon extends StatefulWidget {
+  const _SwayIcon({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  State<_SwayIcon> createState() => _SwayIconState();
+}
+
+class _SwayIconState extends State<_SwayIcon>
+    with SingleTickerProviderStateMixin {
+  static const Duration _swayDuration = Duration(milliseconds: 1600);
+  static const double _swayRadians = 0.28;
+
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _swayDuration);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (moeReduceMotion(context)) {
+      _controller.stop();
+      return;
+    }
+    if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = Icon(widget.icon, size: 18, color: widget.color);
+    if (moeReduceMotion(context)) return icon;
+    return AnimatedBuilder(
+      animation: _controller,
+      child: icon,
+      builder: (context, child) {
+        final angle = (_controller.value - 0.5) * _swayRadians * 2;
+        return Transform.rotate(angle: angle, child: child);
+      },
+    );
+  }
+}
+
+/// 进入时错开上浮，只用于按钮和心情，不包住输入框。
+class _RiseIn extends StatefulWidget {
+  const _RiseIn({required this.index, required this.child});
+
+  final int index;
+  final Widget child;
+
+  @override
+  State<_RiseIn> createState() => _RiseInState();
+}
+
+class _RiseInState extends State<_RiseIn> with SingleTickerProviderStateMixin {
+  static const Duration _step = Duration(milliseconds: 70);
+  static const double _riseDistance = 10;
+
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: MoeTokens.motionMedium,
+    );
+    final delay = _step * widget.index;
+    if (delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      Future<void>.delayed(delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (moeReduceMotion(context)) return widget.child;
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    return AnimatedBuilder(
+      animation: curved,
+      child: widget.child,
+      builder: (context, child) {
+        return Opacity(
+          opacity: curved.value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - curved.value) * _riseDistance),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 选中心情时图标弹性放大一次。
+class _MoodBounceIcon extends StatefulWidget {
+  const _MoodBounceIcon({
+    required this.selected,
+    required this.icon,
+    required this.color,
+  });
+
+  final bool selected;
+  final IconData icon;
+  final Color color;
+
+  @override
+  State<_MoodBounceIcon> createState() => _MoodBounceIconState();
+}
+
+class _MoodBounceIconState extends State<_MoodBounceIcon>
+    with SingleTickerProviderStateMixin {
+  static const double _startScale = 0.72;
+  static const double _overshoot = 0.36;
+
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: MoeTokens.motionSlow,
+    );
+    if (widget.selected) _controller.value = 1;
+  }
+
+  @override
+  void didUpdateWidget(covariant _MoodBounceIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected && !oldWidget.selected) {
+      _controller.forward(from: 0);
+    } else if (!widget.selected && oldWidget.selected) {
+      _controller.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = Icon(
+      widget.icon,
+      size: 16,
+      color: widget.selected ? widget.color : MoeTokens.inkMuted,
+    );
+    if (moeReduceMotion(context) || !widget.selected) return icon;
+    return AnimatedBuilder(
+      animation: _controller,
+      child: icon,
+      builder: (context, child) {
+        final t = Curves.elasticOut.transform(_controller.value);
+        return Transform.scale(
+          scale: _startScale + _overshoot * t,
+          child: child,
+        );
+      },
+    );
   }
 }

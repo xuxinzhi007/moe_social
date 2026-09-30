@@ -16,6 +16,39 @@ void main() {
     );
   }
 
+  test('empty cloud roster restores a playable starter formation', () {
+    final model = localModel();
+    model.applyState(
+      const ArenaStateDto(
+        userId: 'u1',
+        starCrystals: 100,
+        towerFloor: 4,
+        formationHeroIds: [],
+        ownedHeroes: [],
+      ),
+    );
+
+    expect(model.starCrystals, 100);
+    expect(model.towerFloor, 4);
+    expect(model.ownedCount, 3);
+    expect(model.formationHeroes, hasLength(3));
+    expect(model.teamPower, greaterThan(0));
+    expect(
+      model.formationHeroes.map((hero) => hero.id),
+      ArenaViewModel.starterHeroIds,
+    );
+  });
+
+  test('playing a card publishes a strike for the battle animation', () {
+    final model = localModel();
+
+    model.playCard(0);
+
+    expect(model.strike, isNotNull);
+    expect(model.strike!.id, 1);
+    expect(model.strike!.damage, isNot(0));
+  });
+
   test('starts with three owned heroes and the first real portrait hero', () {
     final model = localModel();
 

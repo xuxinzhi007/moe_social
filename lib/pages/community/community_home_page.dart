@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
@@ -128,6 +129,18 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                           child: _buildHeader(scheme),
                         ),
                       ),
+                      if (!onCirclesTab)
+                        IconButton(
+                          tooltip: '搜索动态',
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            Navigator.pushNamed(context, '/community-search');
+                          },
+                          icon: Icon(
+                            Icons.search_rounded,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
                       IconButton(
                         tooltip: onCirclesTab ? '新建群组' : '发帖',
                         onPressed: _onPrimaryActionPressed,

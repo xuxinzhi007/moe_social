@@ -247,9 +247,24 @@ func (u *Usecase) EnsureProfile(ctx context.Context, userID string) (*model.Aren
 	return p, nil
 }
 
+// loadProfile 读取存档。拥有列表为空时补回初始三人并写回。
+func (u *Usecase) loadProfile(ctx context.Context, userID string) (*model.ArenaProfile, error) {
+	p, err := u.EnsureProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !repairRoster(p) {
+		return p, nil
+	}
+	if err := u.repo.Save(ctx, p); err != nil {
+		return nil, fmt.Errorf("arena repair roster: %w", err)
+	}
+	return p, nil
+}
+
 // GetState 读取存档 DTO。
 func (u *Usecase) GetState(ctx context.Context, userID string) (*State, error) {
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +276,7 @@ func (u *Usecase) SetFormation(ctx context.Context, userID string, heroIDs []str
 	if len(heroIDs) != FormationSize {
 		return nil, fmt.Errorf("arena formation: need %d heroes", FormationSize)
 	}
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +322,7 @@ func (u *Usecase) Summon(ctx context.Context, userID string, count int) (*Summon
 	if count == 10 {
 		cost = TenSummonCost
 	}
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +375,7 @@ func (u *Usecase) HomeGift(ctx context.Context, userID, heroID string) (*State, 
 	if _, ok := heroByID(heroID); !ok {
 		return nil, fmt.Errorf("arena gift: unknown hero %s", heroID)
 	}
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +411,7 @@ func (u *Usecase) HomeGift(ctx context.Context, userID, heroID string) (*State, 
 
 // HomeTrain 训练：挂下场生命 buff。
 func (u *Usecase) HomeTrain(ctx context.Context, userID string) (*State, error) {
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +427,7 @@ func (u *Usecase) HomeTrain(ctx context.Context, userID string) (*State, error) 
 
 // SaveMeta 保存爬塔节点 / 可选清空战斗 buff。
 func (u *Usecase) SaveMeta(ctx context.Context, userID string, selectedTowerNode *int, clearBuffs bool) (*State, error) {
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -446,7 +461,7 @@ func (u *Usecase) SetSkin(ctx context.Context, userID, heroID, skinID string) (*
 	if _, ok := heroByID(heroID); !ok {
 		return nil, fmt.Errorf("arena skin: unknown hero %s", heroID)
 	}
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -476,7 +491,7 @@ func (u *Usecase) SaveDeck(ctx context.Context, userID string, deck []DeckCard) 
 	if err != nil {
 		return nil, err
 	}
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +505,7 @@ func (u *Usecase) SaveDeck(ctx context.Context, userID string, deck []DeckCard) 
 
 // ClearTower 通关结算。
 func (u *Usecase) ClearTower(ctx context.Context, userID string, won bool, bonusHeroID string, deck []DeckCard) (*ClearTowerResult, error) {
-	p, err := u.EnsureProfile(ctx, userID)
+	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -598,6 +613,84 @@ func hasSROrAbove(pulls []SummonPull) bool {
 		}
 	}
 	return false
+}
+
+// repairRoster 给空拥有列表补回初始三人，并修正无法上场的编队。
+// 已有英雄时不改拥有列表，只在编队人数或归属不合法时重排。
+func repairRoster(p *model.ArenaProfile) bool {
+	if p == nil {
+		return false
+	}
+	owned := normalizeOwned(decodeOwned(p.OwnedHeroesJSON))
+	changed := false
+	if len(owned) == 0 {
+		owned = make([]OwnedHero, 0, len(defaultFormation))
+		for _, id := range defaultFormation {
+			owned = append(owned, newOwnedFromCatalog(id))
+		}
+		p.OwnedHeroesJSON = mustJSON(owned)
+		changed = true
+	}
+	ownedSet := make(map[string]struct{}, len(owned))
+	for _, hero := range owned {
+		ownedSet[hero.HeroID] = struct{}{}
+	}
+	formation := decodeStrings(p.FormationJSON)
+	if formationPlayable(formation, ownedSet) {
+		if changed {
+			p.UpdatedAt = time.Now()
+		}
+		return changed
+	}
+	next := make([]string, 0, FormationSize)
+	for _, id := range defaultFormation {
+		if _, ok := ownedSet[id]; ok {
+			next = append(next, id)
+		}
+	}
+	for _, hero := range owned {
+		if len(next) >= FormationSize {
+			break
+		}
+		if _, ok := indexOf(next, hero.HeroID); ok {
+			continue
+		}
+		next = append(next, hero.HeroID)
+	}
+	if len(next) == FormationSize {
+		p.FormationJSON = mustJSON(next)
+		changed = true
+	}
+	if changed {
+		p.UpdatedAt = time.Now()
+	}
+	return changed
+}
+
+func formationPlayable(ids []string, owned map[string]struct{}) bool {
+	if len(ids) != FormationSize {
+		return false
+	}
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if _, ok := owned[id]; !ok {
+			return false
+		}
+		if _, dup := seen[id]; dup {
+			return false
+		}
+		seen[id] = struct{}{}
+	}
+	return true
+}
+
+func indexOf(ids []string, id string) (int, bool) {
+	for i, item := range ids {
+		if item == id {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 func toState(p *model.ArenaProfile) *State {

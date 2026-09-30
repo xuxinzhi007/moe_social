@@ -380,12 +380,23 @@ class CreatePostViewModel extends ChangeNotifier {
       }
     }
 
+    final userId = authorUserId ?? AuthService.currentUser;
+    if (userId == null || userId.isEmpty) {
+      throw ApiException('请先登录', 401);
+    }
     return PostService.updatePost(
       init.id,
+      userId: userId,
       content: caption,
       images: imageUrls,
       topicTags: selectedTopicTags
-          .map((t) => {'name': t.name, 'color': t.color})
+          .map(
+            (t) => {
+              'name': t.name,
+              'color':
+                  '#${t.color.toARGB32().toRadixString(16).substring(2).padLeft(6, '0')}',
+            },
+          )
           .toList(),
       handDrawCard: handJson,
       handDrawThumbUrl: thumbUrl,

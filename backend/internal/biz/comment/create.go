@@ -106,19 +106,33 @@ func Create(ctx context.Context, st CommentStore, in CreateInput) (CreateResult,
 	if len(notifyContent) > 200 {
 		notifyContent = notifyContent[:200]
 	}
+	alreadyNotified := map[uint]struct{}{uint(userID): {}}
 	if parentID > 0 {
 		parent, err := tx.GetComment(parentID)
 		if err == nil && parent.UserID != uint(userID) {
 			_ = tx.CreateNotification(&model.Notification{
-				UserID: parent.UserID, SenderID: uint(userID), Type: 2,
+				UserID: parent.UserID, SenderID: uint(userID), Type: notificationTypeComment,
 				PostID: uint(postID), Content: notifyContent, IsRead: false,
 			})
+			alreadyNotified[parent.UserID] = struct{}{}
 		}
 	} else if uint(userID) != post.UserID {
 		_ = tx.CreateNotification(&model.Notification{
-			UserID: post.UserID, SenderID: uint(userID), Type: 2,
+			UserID: post.UserID, SenderID: uint(userID), Type: notificationTypeComment,
 			PostID: uint(postID), Content: notifyContent, IsRead: false,
 		})
+		alreadyNotified[post.UserID] = struct{}{}
+	}
+	if names := mentionUsernames(content); len(names) > 0 {
+		friends, err := st.ListAcceptedFriendsByUsernames(ctx, uint(userID), names)
+		if err == nil {
+			for _, friendID := range mentionNotifyIDs(uint(userID), alreadyNotified, friends) {
+				_ = tx.CreateNotification(&model.Notification{
+					UserID: friendID, SenderID: uint(userID), Type: notificationTypeCommentMention,
+					PostID: uint(postID), Content: notifyContent, IsRead: false,
+				})
+			}
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return CreateResult{}, err
