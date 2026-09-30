@@ -56,6 +56,8 @@ class ArenaDeckCardDto {
     this.sourceHeroId,
     this.sourceHeroName = '队伍',
     this.targeting = 'single_enemy',
+    this.elements = const [],
+    this.trait = '',
   });
 
   final String name;
@@ -67,6 +69,8 @@ class ArenaDeckCardDto {
   final String? sourceHeroId;
   final String sourceHeroName;
   final String targeting;
+  final List<String> elements;
+  final String trait;
 
   factory ArenaDeckCardDto.fromJson(Map<String, dynamic> json) {
     return ArenaDeckCardDto(
@@ -79,6 +83,8 @@ class ArenaDeckCardDto {
       sourceHeroId: json['source_hero_id']?.toString(),
       sourceHeroName: (json['source_hero_name'] ?? '队伍').toString(),
       targeting: (json['targeting'] ?? 'single_enemy').toString(),
+      elements: _stringList(json['elements']),
+      trait: (json['trait'] ?? '').toString(),
     );
   }
 
@@ -93,7 +99,17 @@ class ArenaDeckCardDto {
           'source_hero_id': sourceHeroId,
         'source_hero_name': sourceHeroName,
         'targeting': targeting,
+        if (elements.isNotEmpty) 'elements': elements,
+        if (trait.isNotEmpty) 'trait': trait,
       };
+}
+
+List<String> _stringList(Object? raw) {
+  if (raw is! List) return const [];
+  return raw
+      .map((item) => item.toString())
+      .where((item) => item.isNotEmpty)
+      .toList();
 }
 
 class ArenaStateDto {

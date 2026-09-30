@@ -25,7 +25,7 @@ const (
 	TowerWinShardBonus    = 4
 	HomeGiftCost          = 80
 	HomeGiftBondGain      = 5
-	MaxDeckCards          = 24
+	MaxDeckCards          = 96
 	MaxHeroBond           = 100
 	MaxSelectedTowerNodes = 5
 )
@@ -60,8 +60,10 @@ type DeckCard struct {
 	Color          int    `json:"color"`
 	Damage         int    `json:"damage"`
 	SourceHeroID   string `json:"source_hero_id"`
-	SourceHeroName string `json:"source_hero_name"`
-	Targeting      string `json:"targeting"`
+	SourceHeroName string   `json:"source_hero_name"`
+	Targeting      string   `json:"targeting"`
+	Elements       []string `json:"elements,omitempty"`
+	Trait          string   `json:"trait,omitempty"`
 }
 
 // Progress 会话级可持久化进度。
@@ -613,6 +615,39 @@ func (u *Usecase) ClearTower(ctx context.Context, userID string, won bool, bonus
 	return &ClearTowerResult{State: toState(p), CrystalReward: reward}, nil
 }
 
+func sanitizeTrait(trait string) string {
+	switch strings.TrimSpace(trait) {
+	case "破甲", "连击", "回能", "溅射", "续航":
+		return strings.TrimSpace(trait)
+	default:
+		return ""
+	}
+}
+
+func sanitizeElements(elements []string) []string {
+	if len(elements) == 0 {
+		return nil
+	}
+	allowed := map[string]struct{}{
+		"星": {}, "刃": {}, "霜": {}, "月": {}, "潮": {}, "炎": {}, "光": {}, "影": {},
+	}
+	out := make([]string, 0, 2)
+	for _, mark := range elements {
+		mark = strings.TrimSpace(mark)
+		if _, ok := allowed[mark]; !ok {
+			continue
+		}
+		out = append(out, mark)
+		if len(out) == 2 {
+			break
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 func sanitizeDeck(deck []DeckCard) ([]DeckCard, error) {
 	if len(deck) > MaxDeckCards {
 		return nil, fmt.Errorf("arena deck: too many cards")
@@ -637,6 +672,8 @@ func sanitizeDeck(deck []DeckCard) ([]DeckCard, error) {
 			SourceHeroID:   strings.TrimSpace(c.SourceHeroID),
 			SourceHeroName: strings.TrimSpace(c.SourceHeroName),
 			Targeting:      targeting,
+			Elements:       sanitizeElements(c.Elements),
+			Trait:          sanitizeTrait(c.Trait),
 		})
 	}
 	return out, nil

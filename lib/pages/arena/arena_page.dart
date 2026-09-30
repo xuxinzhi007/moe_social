@@ -6,21 +6,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../game/arena/arena_battle_game.dart';
+import '../../game/arena/arena_combos.dart';
 import '../../game/arena/arena_view_model.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import 'arena_camp_preview_page.dart';
 
 const _friendlySlots = <Alignment>[
-  Alignment(-.78, .22),
-  Alignment(-.52, -.02),
-  Alignment(-.26, .22),
+  Alignment(-.72, .42),
+  Alignment(-.46, .08),
+  Alignment(-.20, .42),
 ];
 
 const _enemySlots = <Alignment>[
-  Alignment(.26, .22),
-  Alignment(.52, -.02),
-  Alignment(.78, .22),
+  Alignment(.20, .42),
+  Alignment(.46, .08),
+  Alignment(.72, .42),
 ];
 
 class ArenaPage extends StatefulWidget {
@@ -51,8 +52,21 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
   late final ArenaBattleGame _game;
   late final AnimationController _uiPulse;
   late final AnimationController _strikeCtrl;
+  late final AnimationController _castCtrl;
   late final bool _ownsModel;
   int _seenStrikeId = 0;
+  final List<ArenaCard> _playQueue = <ArenaCard>[];
+  final List<ArenaCard> _pendingQueue = <ArenaCard>[];
+  bool _comboSlam = false;
+  bool _comboResolved = false;
+  bool _muteStrike = false;
+  int _comboImpact = 0;
+  final List<ArenaCard> _comboCards = <ArenaCard>[];
+  ArenaCard? _castCard;
+  int _castTarget = 0;
+  bool _castCommitted = false;
+  bool _showCardCodex = false;
+  String _codexElement = '全部';
   bool _formationSaved = false;
   bool _showSummonPool = false;
 
@@ -69,8 +83,14 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
     )..repeat();
     _strikeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: const Duration(milliseconds: 680),
     );
+    _castCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 880),
+    );
+    _castCtrl.addListener(_onCastTick);
+    _castCtrl.addStatusListener(_onCastStatus);
     _model.addListener(_onArenaStrike);
     unawaited(SystemChrome.setPreferredOrientations(const [
       DeviceOrientation.landscapeLeft,
@@ -99,15 +119,220 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
   }
 
   void _onArenaStrike() {
+    if (_muteStrike) return;
     final strike = _model.strike;
     if (strike == null || strike.id == _seenStrikeId) return;
     _seenStrikeId = strike.id;
     _strikeCtrl.forward(from: 0);
   }
 
+  void _onHandTap(int index) {
+    if (_model.finished || _castCtrl.isAnimating) return;
+    if (index < 0 || index >= _model.hand.length) return;
+    final card = _model.hand[index];
+    final queuedAt = _playQueue.indexWhere((entry) => identical(entry, card));
+    if (queuedAt >= 0) {
+      final onlyCard = _playQueue.length == 1;
+      if (onlyCard && card.targeting != ArenaCardTargeting.singleEnemy) {
+        _confirmQueue();
+        return;
+      }
+      setState(() => _playQueue.removeAt(queuedAt));
+      return;
+    }
+    if (_model.energy < card.cost) {
+      _model.playCard(index);
+      return;
+    }
+    final queuedCost =
+        _playQueue.fold<int>(0, (sum, entry) => sum + entry.cost);
+    if (_model.energy < queuedCost + card.cost) {
+      _model.noteBattle('能量不够把「${card.name}」连进去');
+      return;
+    }
+    setState(() => _playQueue.add(card));
+  }
+
+  void _onEnemyTap(int index) {
+    if (_castCtrl.isAnimating) return;
+    _model.selectEnemy(index);
+    if (_playQueue.isEmpty) return;
+    _confirmQueue();
+  }
+
+  void _confirmQueue() {
+    if (_playQueue.isEmpty || _castCtrl.isAnimating) return;
+    if (_playQueue.length >= 2) {
+      _beginComboCast();
+      return;
+    }
+    _comboSlam = false;
+    _pendingQueue
+      ..clear()
+      ..addAll(_playQueue);
+    _playQueue.clear();
+    _castNextQueued();
+  }
+
+  void _beginComboCast() {
+    _comboSlam = true;
+    _comboResolved = false;
+    _comboImpact = 0;
+    _comboCards
+      ..clear()
+      ..addAll(_playQueue);
+    _playQueue.clear();
+    _pendingQueue.clear();
+    setState(() {
+      _castCard = null;
+      _castTarget = _model.selectedEnemyIndex;
+    });
+    _castCtrl.duration = const Duration(milliseconds: 1280);
+    _castCtrl.forward(from: 0);
+  }
+
+  void _resolveCombo() {
+    final before = <int>[
+      for (var index = 0; index < _enemySlots.length; index++)
+        _model.enemyHpAt(index),
+    ];
+    final playerBefore = _model.playerHp;
+    _muteStrike = true;
+    for (final card in _comboCards) {
+      final index = _model.hand.indexWhere((entry) => identical(entry, card));
+      if (index >= 0) _model.playCard(index);
+    }
+    _muteStrike = false;
+    final strike = _model.strike;
+    if (strike != null) _seenStrikeId = strike.id;
+    var dealt = 0;
+    for (var index = 0; index < before.length; index++) {
+      dealt += before[index] - _model.enemyHpAt(index);
+    }
+    final healed = _model.playerHp - playerBefore;
+    _comboImpact = dealt > 0 ? dealt : (healed > 0 ? -healed : 0);
+  }
+
+  void _castNextQueued() {
+    if (!mounted || _pendingQueue.isEmpty) return;
+    final card = _pendingQueue.removeAt(0);
+    final index = _model.hand.indexWhere((entry) => identical(entry, card));
+    if (index < 0) {
+      _castNextQueued();
+      return;
+    }
+    _beginCast(index);
+  }
+
+  void _beginCast(int index) {
+    final card = _model.hand[index];
+    _castCommitted = false;
+    setState(() {
+      _castCard = card;
+      _castTarget = _model.selectedEnemyIndex;
+    });
+    _castCtrl.duration = const Duration(milliseconds: 880);
+    _castCtrl.forward(from: 0);
+  }
+
+  void _onCastTick() {
+    if (_comboSlam) {
+      if (!_comboResolved && _castCtrl.value >= .74) {
+        _comboResolved = true;
+        _resolveCombo();
+      }
+      return;
+    }
+    final card = _castCard;
+    if (card == null) return;
+    if (!_castCommitted && _castCtrl.value >= .42) {
+      _castCommitted = true;
+      final index = _model.hand.indexWhere((entry) => identical(entry, card));
+      if (index >= 0) _model.playCard(index);
+    }
+  }
+
+  void _onCastStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed || !mounted) return;
+    if (!_comboSlam && _pendingQueue.isNotEmpty) {
+      _castNextQueued();
+      return;
+    }
+    setState(() {
+      _castCard = null;
+      _comboSlam = false;
+      _comboResolved = false;
+      _comboImpact = 0;
+      _comboCards.clear();
+    });
+  }
+
+  void _endTurn() {
+    if (_castCtrl.isAnimating) return;
+    setState(() {
+      _playQueue.clear();
+      _pendingQueue.clear();
+      _comboCards.clear();
+      _comboSlam = false;
+      _comboResolved = false;
+      _comboImpact = 0;
+    });
+    _model.endTurn();
+  }
+
+  ArenaCard get _comboAim {
+    for (final card in _comboCards) {
+      if (card.damage >= 0) return card;
+    }
+    return _comboCards.last;
+  }
+
+  Alignment _castAnchor(ArenaCard card) {
+    switch (card.targeting) {
+      case ArenaCardTargeting.allEnemies:
+        return const Alignment(.46, .2);
+      case ArenaCardTargeting.allyTeam:
+        return const Alignment(-.46, .2);
+      case ArenaCardTargeting.singleEnemy:
+        final index = _castTarget.clamp(0, _enemySlots.length - 1);
+        return _enemySlots[index];
+    }
+  }
+
+  String get _playHint {
+    if (_castCtrl.isAnimating && _comboSlam && _comboCards.isNotEmpty) {
+      final names = _comboCards.map((card) => card.name).join('、');
+      return _comboResolved ? '组合命中 · $names' : '组合汇聚 · $names';
+    }
+    if (_castCtrl.isAnimating && _castCard != null) {
+      return '「${_castCard!.name}」出手中';
+    }
+    if (_playQueue.isEmpty) return '';
+    final preview = _model.previewComboChain(_playQueue);
+    final combo =
+        preview == null ? '' : '将触发「${preview.name}」${preview.formula} · ';
+    if (_playQueue.length == 1) {
+      final card = _playQueue.first;
+      switch (card.targeting) {
+        case ArenaCardTargeting.singleEnemy:
+          return '已举起「${card.name}」· $combo点敌影释放';
+        case ArenaCardTargeting.allEnemies:
+          return '已举起「${card.name}」· $combo再点一次打全体';
+        case ArenaCardTargeting.allyTeam:
+          return '已举起「${card.name}」· $combo再点一次治疗';
+      }
+    }
+    final names = _playQueue.map((card) => card.name).join('、');
+    return '连打 $names · $combo点敌影一起打出';
+  }
+
   @override
   void dispose() {
     _model.removeListener(_onArenaStrike);
+    _castCtrl
+      ..removeListener(_onCastTick)
+      ..removeStatusListener(_onCastStatus)
+      ..dispose();
     _strikeCtrl.dispose();
     _uiPulse.dispose();
     if (_ownsModel) {
@@ -1074,7 +1299,9 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
   Widget _buildCollection() {
     return _panelScaffold(
       title: '英雄图鉴',
-      subtitle: '总览所有英雄，点选卡片进入养成详情。后续可扩展筛选、阵营和职业分类。',
+      subtitle: _showCardCodex
+          ? '通用卡牌 ${_model.catalogCards.length} 张，不绑定英雄。英雄的能力在编队里生效。'
+          : '总览所有英雄，点选卡片进入养成详情。后续可扩展筛选、阵营和职业分类。',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1105,44 +1332,158 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
                   () => _model.navigate(ArenaView.summon),
                 ),
               ),
+              const SizedBox(width: 8),
+              _codexTab('英雄', !_showCardCodex, () {
+                setState(() => _showCardCodex = false);
+              }),
+              const SizedBox(width: 6),
+              _codexTab('卡牌', _showCardCodex, () {
+                setState(() => _showCardCodex = true);
+              }),
             ],
           ),
+          if (_showCardCodex) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final element in ['全部', ...ArenaCombos.elements])
+                  ChoiceChip(
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    label: Text(element),
+                    selected: _codexElement == element,
+                    onSelected: (_) => setState(() => _codexElement = element),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Expanded(
             child: _SurfaceCard(
-              child: GridView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: _model.heroes.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 2.34,
-                ),
-                itemBuilder: (context, index) {
-                  final hero = _model.heroes[index];
-                  return _HeroCollectionCard(
-                    hero: hero,
-                    owned: _model.isOwned(hero),
-                    selected: index == _model.selectedHero,
-                    shards: _model.shardsOf(hero),
-                    stars: _model.starsOf(hero),
-                    power: _model.powerOf(hero),
-                    inFormation: _model.formationHeroes
-                        .any((formationHero) => formationHero.id == hero.id),
-                    imageAsset: _model.portraitAssetOf(hero),
-                    tint: _model.portraitTintOf(hero),
-                    onTap: () {
-                      _model.selectHero(index);
-                      _model.navigate(ArenaView.character);
-                    },
-                  );
-                },
-              ),
+              child: _showCardCodex
+                  ? _cardCodexGrid()
+                  : GridView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: _model.heroes.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 2.34,
+                      ),
+                      itemBuilder: (context, index) {
+                        final hero = _model.heroes[index];
+                        return _HeroCollectionCard(
+                          hero: hero,
+                          owned: _model.isOwned(hero),
+                          selected: index == _model.selectedHero,
+                          shards: _model.shardsOf(hero),
+                          stars: _model.starsOf(hero),
+                          power: _model.powerOf(hero),
+                          inFormation: _model.formationHeroes.any(
+                              (formationHero) => formationHero.id == hero.id),
+                          imageAsset: _model.portraitAssetOf(hero),
+                          tint: _model.portraitTintOf(hero),
+                          onTap: () {
+                            _model.selectHero(index);
+                            _model.navigate(ArenaView.character);
+                          },
+                        );
+                      },
+                    ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _codexTab(String label, bool selected, VoidCallback onTap) {
+    return MoePressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(99),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? _ArenaColors.violet : const Color(0xFFE9DCC3),
+          borderRadius: BorderRadius.circular(99),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : _ArenaColors.violet,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cardCodexGrid() {
+    final cards = _codexElement == '全部'
+        ? _model.catalogCards
+        : _model.catalogCards
+            .where((card) => card.elements.contains(_codexElement))
+            .toList();
+    return GridView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: cards.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 2.15,
+      ),
+      itemBuilder: (context, index) {
+        final card = cards[index];
+        final effect =
+            card.damage < 0 ? '治疗 ${-card.damage}' : '伤害 ${card.damage}';
+        final aim = switch (card.targeting) {
+          ArenaCardTargeting.allEnemies => '全体',
+          ArenaCardTargeting.allyTeam => '治疗',
+          ArenaCardTargeting.singleEnemy => '单体',
+        };
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Color(card.color).withValues(alpha: .22),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Color(card.color).withValues(alpha: .7)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${card.elements.join('·')} · ${card.cost}费 · $aim',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: _ArenaColors.violet,
+                ),
+              ),
+              Text(
+                card.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+              ),
+              Text(
+                card.trait == '无' ? effect : '$effect · ${card.trait}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 10, color: _ArenaColors.muted),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1307,6 +1648,19 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
                     ),
                   ),
                   const Divider(height: 22),
+                  const Text(
+                    '编队能力',
+                    style: TextStyle(
+                      color: _ArenaColors.violet,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '不是卡牌。上场后，同元素的通用牌伤害 +4。',
+                    style: TextStyle(color: _ArenaColors.muted, fontSize: 10),
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     '✦  ${hero.skillName}',
                     style: const TextStyle(fontWeight: FontWeight.w900),
@@ -1488,7 +1842,9 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
   Widget _buildBattleStatusLine() {
     final phase = _model.finished
         ? (_model.won ? '胜利' : '失败')
-        : 'T${_model.turn} · 连携 ${_model.combo}';
+        : 'T${_model.turn} · 场纹 ${_model.fieldRune}';
+    final hint = _playHint;
+    final status = hint.isEmpty ? _model.battleMessage : hint;
     return Container(
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1510,7 +1866,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _model.battleMessage,
+              status,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -1541,38 +1897,96 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
 
   Widget _buildBattleField() {
     return AnimatedBuilder(
-      animation: _strikeCtrl,
+      animation: Listenable.merge([_strikeCtrl, _castCtrl]),
       builder: (context, _) {
         final strike = _model.strike;
         final t = _strikeCtrl.value;
-        final shaking = strike != null &&
+        final comboHit =
+            _comboSlam && _castCtrl.isAnimating && _castCtrl.value >= .74;
+        final shaking = !comboHit &&
+            strike != null &&
             strike.damage > 0 &&
             _strikeCtrl.isAnimating &&
             t < 1;
-        final dx = shaking ? math.sin(t * math.pi * 8) * 4 * (1 - t) : 0.0;
+        final punch = comboHit ? 14.0 : 5.0;
+        final shakeT =
+            comboHit ? ((_castCtrl.value - .74) / .26).clamp(0.0, 1.0) : t;
+        final dx = (shaking || comboHit)
+            ? math.sin(shakeT * math.pi * 8) * punch * (1 - shakeT)
+            : 0.0;
+        final dy =
+            comboHit ? math.sin(shakeT * math.pi * 5) * 6 * (1 - shakeT) : 0.0;
+        final castCard = _castCard;
+        final previewBurst = _previewBurst;
         return Transform.translate(
-          offset: Offset(dx, 0),
+          offset: Offset(dx, dy),
           child: Stack(
             children: [
+              const Positioned(
+                left: 48,
+                right: 48,
+                bottom: 8,
+                child: _BattleGround(),
+              ),
               ..._buildBattleUnits(),
+              if (_comboSlam && _comboCards.isNotEmpty && _castCtrl.isAnimating)
+                _BattleComboCast(
+                  cards: _comboCards,
+                  t: _castCtrl.value,
+                  target: _castAnchor(_comboAim),
+                  impact: _comboResolved ? _comboImpact : null,
+                )
+              else if (castCard != null && _castCtrl.isAnimating)
+                _BattleCastFlight(
+                  card: castCard,
+                  t: _castCtrl.value,
+                  target: _castAnchor(castCard),
+                ),
               if (strike != null && _strikeCtrl.isAnimating)
                 _BattleStrikeLayer(strike: strike, t: t),
-              if (!_model.hasPendingReward &&
-                  _model.combo > 0 &&
-                  _model.lastPlayedCard != null)
+              if (previewBurst != null)
                 Positioned(
-                  left: 150,
-                  right: 150,
+                  left: 90,
+                  right: 90,
                   top: 0,
-                  child: _BattleComboBurst(
-                    combo: _model.combo,
-                    card: _model.lastPlayedCard!,
-                  ),
+                  child: previewBurst,
                 ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget? get _previewBurst {
+    if (_model.hasPendingReward) return null;
+    if (_comboSlam && _comboCards.isNotEmpty && !_comboResolved) {
+      final preview = _model.previewComboChain(_comboCards);
+      if (preview != null) {
+        return _BattleComboBurst(
+          combo: preview,
+          card: _comboCards.last,
+          charged: true,
+        );
+      }
+    }
+    if (_playQueue.isNotEmpty) {
+      final preview = _model.previewComboChain(_playQueue);
+      if (preview != null) {
+        return _BattleComboBurst(
+          combo: preview,
+          card: _playQueue.last,
+          charged: _playQueue.length >= 2,
+        );
+      }
+    }
+    final played = _model.lastPlayedCard;
+    final combo = _model.activeCombo;
+    if (played == null || combo == null) return null;
+    return _BattleComboBurst(
+      combo: combo,
+      card: played,
+      charged: _comboSlam,
     );
   }
 
@@ -1600,6 +2014,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
 
     return Container(
       height: 124,
+      clipBehavior: Clip.none,
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
       decoration: BoxDecoration(
         color: _ArenaColors.cream.withValues(alpha: .46),
@@ -1639,8 +2054,13 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
                       energy: _model.energy,
                       finished: _model.finished,
                       lastPlayedCardIndex: -1,
+                      queuedCards: _playQueue,
+                      hiddenCards: [
+                        if (_castCard != null) _castCard!,
+                        if (_comboSlam) ..._comboCards,
+                      ],
                       pulse: _uiPulse.value,
-                      onPlay: _model.playCard,
+                      onPlay: _onHandTap,
                     ),
                   ),
           ),
@@ -1662,7 +2082,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
             minHeight: 40,
           )
         else
-          _darkButton('结束回合', _model.endTurn, minHeight: 44),
+          _darkButton('结束回合', _endTurn, minHeight: 44),
         if (_model.finished && !_model.won) ...[
           const SizedBox(height: 6),
           _goldButton(
@@ -1693,8 +2113,8 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
         Align(
           alignment: friendlyPositions[index],
           child: SizedBox(
-            width: 76,
-            height: 112,
+            width: 92,
+            height: 128,
             child: _BattleUnit(
               hero: index < team.length ? team[index] : null,
               label: index < team.length ? team[index].name : '空位',
@@ -1714,8 +2134,8 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
         Align(
           alignment: enemyPositions[index],
           child: SizedBox(
-            width: 76,
-            height: 112,
+            width: 92,
+            height: 128,
             child: _BattleUnit(
               label: '敌影 ${index + 1}',
               intentLabel:
@@ -1727,7 +2147,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
               selected: index == _model.selectedEnemyIndex && !_model.finished,
               hp: _model.enemyHpAt(index),
               maxHp: _model.encounterMaxHp,
-              onTap: () => _model.selectEnemy(index),
+              onTap: () => _onEnemyTap(index),
             ),
           ),
         ),
@@ -4475,6 +4895,8 @@ class _BattleHandStack extends StatelessWidget {
     required this.energy,
     required this.finished,
     required this.lastPlayedCardIndex,
+    this.queuedCards = const [],
+    this.hiddenCards = const [],
     required this.pulse,
     required this.onPlay,
   });
@@ -4483,6 +4905,8 @@ class _BattleHandStack extends StatelessWidget {
   final int energy;
   final bool finished;
   final int lastPlayedCardIndex;
+  final List<ArenaCard> queuedCards;
+  final List<ArenaCard> hiddenCards;
   final double pulse;
   final ValueChanged<int> onPlay;
 
@@ -4504,29 +4928,83 @@ class _BattleHandStack extends StatelessWidget {
         final cardTop = math.max(0.0, constraints.maxHeight - cardHeight);
 
         return Stack(
-          clipBehavior: Clip.hardEdge,
+          clipBehavior: Clip.none,
           children: [
             for (var index = 0; index < cards.length; index++)
-              Positioned(
-                left: start + step * index,
-                top: cardTop,
-                child: Transform.rotate(
-                  angle: (index - middle) * .04,
-                  alignment: Alignment.bottomCenter,
-                  child: _SkillCard(
-                    card: cards[index],
-                    enabled: !finished && energy >= cards[index].cost,
-                    highlighted: index == lastPlayedCardIndex,
-                    pulse: pulse,
-                    width: cardWidth,
-                    height: cardHeight,
-                    onTap: () => onPlay(index),
-                  ),
-                ),
+              _queuedHandCard(
+                index: index,
+                cards: cards,
+                cardWidth: cardWidth,
+                cardHeight: cardHeight,
+                start: start,
+                step: step,
+                middle: middle,
+                cardTop: cardTop,
               ),
           ],
         );
       },
+    );
+  }
+
+  Widget _queuedHandCard({
+    required int index,
+    required List<ArenaCard> cards,
+    required double cardWidth,
+    required double cardHeight,
+    required double start,
+    required double step,
+    required double middle,
+    required double cardTop,
+  }) {
+    final queuedAt =
+        queuedCards.indexWhere((card) => identical(card, cards[index]));
+    final raised = index == lastPlayedCardIndex || queuedAt >= 0;
+    final lift = queuedAt >= 0 && queuedCards.length > 1 ? 28.0 : 16.0;
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutBack,
+      left: start + step * index,
+      top: cardTop - (raised ? lift : 0),
+      child: Transform.rotate(
+        angle: (index - middle) * .04,
+        alignment: Alignment.bottomCenter,
+        child: Opacity(
+          opacity:
+              hiddenCards.any((card) => identical(card, cards[index])) ? 0 : 1,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _SkillCard(
+                card: cards[index],
+                enabled: !finished && energy >= cards[index].cost,
+                highlighted: raised,
+                pulse: pulse,
+                width: cardWidth,
+                height: cardHeight,
+                onTap: () => onPlay(index),
+              ),
+              if (queuedAt >= 0)
+                Positioned(
+                  right: -4,
+                  top: -6,
+                  child: CircleAvatar(
+                    radius: 9,
+                    backgroundColor: _ArenaColors.violet,
+                    child: Text(
+                      '${queuedAt + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -4561,7 +5039,14 @@ class _SkillCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 170),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(0, highlighted ? -6 : 0, 0),
+          transformAlignment: Alignment.bottomCenter,
+          transform: Matrix4.translationValues(0, highlighted ? -10 : 0, 0)
+            ..scaleByDouble(
+              highlighted ? 1.06 : 1.0,
+              highlighted ? 1.06 : 1.0,
+              1,
+              1,
+            ),
           width: width,
           height: height,
           padding: const EdgeInsets.all(7),
@@ -4606,7 +5091,7 @@ class _SkillCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '${card.sourceHeroName}技',
+                      '${card.elements.join('·')}${card.trait == '无' ? '' : ' · ${card.trait}'}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -4667,6 +5152,317 @@ class _SkillCard extends StatelessWidget {
   }
 }
 
+class _BattleGround extends StatelessWidget {
+  const _BattleGround();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.elliptical(420, 46)),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF8FBF9A).withValues(alpha: .18),
+            const Color(0xFF2F6B4F).withValues(alpha: .28),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BattleComboCast extends StatelessWidget {
+  const _BattleComboCast({
+    required this.cards,
+    required this.t,
+    required this.target,
+    required this.impact,
+  });
+
+  final List<ArenaCard> cards;
+  final double t;
+  final Alignment target;
+  final int? impact;
+
+  static const double _gatherEnd = .36;
+  static const double _fuseEnd = .56;
+  static const double _hitAt = .74;
+
+  @override
+  Widget build(BuildContext context) {
+    final meet = Alignment(target.x * .42, target.y - .22);
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          if (t < _fuseEnd) ..._gathering(meet),
+          if (t >= _gatherEnd) _fusedBolt(meet),
+          if (t >= _hitAt) _impactBurst(),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _gathering(Alignment meet) {
+    final gather = Curves.easeOutBack.transform((t / _gatherEnd).clamp(0, 1));
+    final fuse = t <= _gatherEnd
+        ? 0.0
+        : ((t - _gatherEnd) / (_fuseEnd - _gatherEnd)).clamp(0.0, 1.0);
+    return [
+      for (var index = 0; index < cards.length; index++)
+        _card(
+          cards[index],
+          Alignment.lerp(
+            Alignment(-.42 + index * .28, 1.2),
+            meet,
+            gather,
+          )!,
+          (1 - fuse).clamp(0.0, 1.0),
+          .9 + .2 * gather,
+          (index - (cards.length - 1) / 2) * .35 * (1 - gather),
+        ),
+    ];
+  }
+
+  Widget _fusedBolt(Alignment meet) {
+    final fuse = ((t - _gatherEnd) / (_fuseEnd - _gatherEnd)).clamp(0.0, 1.0);
+    final travel = t <= _fuseEnd
+        ? 0.0
+        : Curves.easeIn.transform(
+            ((t - _fuseEnd) / (_hitAt - _fuseEnd)).clamp(0.0, 1.0),
+          );
+    final pos = Alignment.lerp(meet, target, travel)!;
+    final flash = t >= _hitAt ? (1 - (t - _hitAt) / .16).clamp(0.0, 1.0) : fuse;
+    final lead = cards.first;
+    return Align(
+      alignment: pos,
+      child: Transform.rotate(
+        angle: travel * .8,
+        child: Opacity(
+          opacity: t >= _hitAt ? flash : 1,
+          child: Container(
+            width: 54 + 28 * fuse,
+            height: 74 + 18 * fuse,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(lead.color),
+                  Color(cards.last.color),
+                  Colors.white,
+                ],
+              ),
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: .85),
+                  blurRadius: 18 + 24 * fuse,
+                  spreadRadius: 2 + 8 * fuse,
+                ),
+                BoxShadow(
+                  color: Color(lead.color).withValues(alpha: .8),
+                  blurRadius: 28,
+                ),
+              ],
+            ),
+            child: Text(
+              lead.icon,
+              style: const TextStyle(fontSize: 30),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _impactBurst() {
+    final p = ((t - _hitAt) / (1 - _hitAt)).clamp(0.0, 1.0);
+    final label = impact == null
+        ? ''
+        : impact! < 0
+            ? '+${-impact!}'
+            : '-$impact';
+    return Stack(
+      children: [
+        Align(
+          alignment: target,
+          child: Opacity(
+            opacity: (1 - p).clamp(0.0, 1.0),
+            child: Container(
+              width: 48 + 140 * p,
+              height: 48 + 140 * p,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 4 * (1 - p),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _ArenaColors.goldLight.withValues(alpha: .7),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (label.isNotEmpty)
+          Align(
+            alignment: target,
+            child: Transform.translate(
+              offset: Offset(0, -36 - 52 * p),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: impact! < 0
+                      ? const Color(0xFF2F8F78)
+                      : const Color(0xFFFF4D6A),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  shadows: const [
+                    Shadow(color: Colors.white, blurRadius: 8),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _card(
+    ArenaCard card,
+    Alignment alignment,
+    double opacity,
+    double scale,
+    double angle,
+  ) {
+    return Align(
+      alignment: alignment,
+      child: Opacity(
+        opacity: opacity,
+        child: Transform.rotate(
+          angle: angle,
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: 58,
+              height: 78,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Color(card.color),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(card.color).withValues(alpha: .75),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
+              child: Text(card.icon, style: const TextStyle(fontSize: 26)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BattleCastFlight extends StatelessWidget {
+  const _BattleCastFlight({
+    required this.card,
+    required this.t,
+    required this.target,
+  });
+
+  final ArenaCard card;
+  final double t;
+  final Alignment target;
+
+  @override
+  Widget build(BuildContext context) {
+    final travel = Curves.easeIn.transform((t / .42).clamp(0.0, 1.0));
+    final fade = t < .42 ? 1.0 : (1 - (t - .42) / .2).clamp(0.0, 1.0);
+    final base = Alignment.lerp(const Alignment(0, 1.15), target, travel)!;
+    final arched = Alignment(base.x, base.y - math.sin(travel * math.pi) * .48);
+    final smash = t < .42 ? 0.0 : ((t - .42) / .14).clamp(0.0, 1.0);
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          _flyingCard(card, arched, fade, travel, smash, 68, 90),
+          if (smash > 0)
+            Align(
+              alignment: target,
+              child: Opacity(
+                opacity: (1 - smash).clamp(0.0, 1.0),
+                child: Container(
+                  width: 36 + 80 * smash,
+                  height: 36 + 80 * smash,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _flyingCard(
+    ArenaCard card,
+    Alignment alignment,
+    double opacity,
+    double travel,
+    double smash,
+    double width,
+    double height,
+  ) {
+    final scaleX = 1.16 - .22 * travel + .5 * smash;
+    final scaleY = 1.16 - .18 * travel - .4 * smash;
+    return Align(
+      alignment: alignment,
+      child: Opacity(
+        opacity: opacity,
+        child: Transform.rotate(
+          angle: -.6 * (1 - travel) + .4 * travel,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
+            child: Container(
+              width: width,
+              height: height,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Color(card.color),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(card.color).withValues(alpha: .8),
+                    blurRadius: 18 + 16 * smash,
+                    spreadRadius: 2 + 4 * smash,
+                  ),
+                ],
+              ),
+              child: Text(card.icon, style: TextStyle(fontSize: width * .44)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BattleStrikeLayer extends StatelessWidget {
   const _BattleStrikeLayer({
     required this.strike,
@@ -4690,8 +5486,7 @@ class _BattleStrikeLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final travel = (t / .42).clamp(0.0, 1.0);
-    final impact = t < .42 ? 0.0 : ((t - .42) / .58).clamp(0.0, 1.0);
+    final impact = t < .08 ? 0.0 : ((t - .08) / .92).clamp(0.0, 1.0);
     final color = Color(strike.color);
     final label =
         strike.damage < 0 ? '+${-strike.damage}' : '-${strike.damage}';
@@ -4700,73 +5495,49 @@ class _BattleStrikeLayer extends StatelessWidget {
     return IgnorePointer(
       child: Stack(
         children: [
-          if (strike.damage > 0 &&
-              strike.targeting != ArenaCardTargeting.allyTeam)
-            for (final target in _anchors)
-              Align(
-                alignment: Alignment.lerp(
-                  const Alignment(-.42, .28),
-                  target,
-                  travel,
-                )!,
-                child: Opacity(
-                  opacity: travel < 1 ? .95 : 0,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: .85),
-                          blurRadius: 14,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           for (final target in _anchors) ...[
-            Align(
-              alignment: target,
-              child: Opacity(
-                opacity: impact <= 0 ? 0 : (1 - impact).clamp(0.0, 1.0),
-                child: Transform.rotate(
-                  angle: -.7,
-                  child: Container(
-                    width: 62 * (0.4 + impact),
-                    height: 8,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          color,
-                          Colors.white,
-                        ],
+            _impactMark(strike.school, target, impact, color),
+            for (var spark = 0; spark < 6; spark++)
+              Align(
+                alignment: target,
+                child: Transform.translate(
+                  offset: Offset(
+                    math.cos(spark * math.pi / 3) * 36 * impact,
+                    math.sin(spark * math.pi / 3) * 28 * impact,
+                  ),
+                  child: Opacity(
+                    opacity: impact <= 0 ? 0 : (1 - impact).clamp(0.0, 1.0),
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             Align(
               alignment: target,
               child: Transform.translate(
-                offset: Offset(0, -18 - 42 * impact),
+                offset: Offset(0, -28 - 48 * impact),
                 child: Opacity(
-                  opacity: impact <= 0 ? 0 : (1 - impact * .35).clamp(0.0, 1.0),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: labelColor,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      shadows: const [
-                        Shadow(color: Color(0x66000000), blurRadius: 6),
-                      ],
+                  opacity: impact <= 0 ? 0 : (1 - impact * .2).clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: impact < .22
+                        ? .35 + impact / .22 * 1.05
+                        : 1.4 - impact * .45,
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: labelColor,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        shadows: const [
+                          Shadow(color: Color(0x66000000), blurRadius: 6),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -4777,79 +5548,171 @@ class _BattleStrikeLayer extends StatelessWidget {
       ),
     );
   }
+
+  Widget _impactMark(
+    String school,
+    Alignment target,
+    double impact,
+    Color color,
+  ) {
+    final fade = impact <= 0 ? 0.0 : (1 - impact).clamp(0.0, 1.0);
+    switch (school) {
+      case '爆发':
+        return Align(
+          alignment: target,
+          child: Opacity(
+            opacity: fade,
+            child: Container(
+              width: 28 + 90 * impact,
+              height: 28 + 90 * impact,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 4 * (1 - impact * .6)),
+              ),
+            ),
+          ),
+        );
+      case '庇护':
+        return Align(
+          alignment: target,
+          child: Opacity(
+            opacity: fade,
+            child: Transform.translate(
+              offset: Offset(0, -20 * impact),
+              child: Icon(
+                Icons.favorite_rounded,
+                color: const Color(0xFF2F8F78),
+                size: 18 + 22 * impact,
+              ),
+            ),
+          ),
+        );
+      case '敌袭':
+        return Align(
+          alignment: target,
+          child: Opacity(
+            opacity: fade,
+            child: Transform.rotate(
+              angle: .4,
+              child: Icon(
+                Icons.flash_on_rounded,
+                color: const Color(0xFFD4476A),
+                size: 22 + 28 * impact,
+              ),
+            ),
+          ),
+        );
+      default:
+        return Align(
+          alignment: target,
+          child: Opacity(
+            opacity: fade,
+            child: Transform.rotate(
+              angle: -.8,
+              child: Container(
+                width: 18 + 78 * impact,
+                height: 7,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, color, Colors.white],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+    }
+  }
 }
 
 class _BattleComboBurst extends StatelessWidget {
   const _BattleComboBurst({
     required this.combo,
     required this.card,
+    this.charged = false,
   });
 
-  final int combo;
+  final ArenaCombo combo;
   final ArenaCard card;
+  final bool charged;
 
   @override
   Widget build(BuildContext context) => IgnorePointer(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 160),
-          child: Container(
-            key: ValueKey('${card.name}-$combo'),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Colors.white.withValues(alpha: .0),
-                  _ArenaColors.ink.withValues(alpha: .84),
-                  Color(card.color).withValues(alpha: .78),
-                  Colors.white.withValues(alpha: .0),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
+          scale: charged ? 1.12 : 1,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: Container(
+              key: ValueKey('${card.name}-${combo.name}'),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.white.withValues(alpha: .0),
+                    _ArenaColors.ink.withValues(alpha: .84),
+                    Color(card.color).withValues(alpha: .78),
+                    Colors.white.withValues(alpha: .0),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x6630263C),
+                    blurRadius: 18,
+                    spreadRadius: 2,
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x6630263C),
-                  blurRadius: 18,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.flash_on_rounded,
-                  color: _ArenaColors.goldLight,
-                  size: 18,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '连携 $combo',
-                  style: const TextStyle(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.flash_on_rounded,
                     color: _ArenaColors.goldLight,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    shadows: [
-                      Shadow(color: _ArenaColors.ink, blurRadius: 6),
-                    ],
+                    size: 18,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    '${card.sourceHeroName} · ${card.name}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 6),
+                  Text(
+                    combo.name,
+                    style: const TextStyle(
+                      color: _ArenaColors.goldLight,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      shadows: [
+                        Shadow(color: _ArenaColors.ink, blurRadius: 6),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    combo.formula,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      '${card.sourceHeroName} · ${card.name}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

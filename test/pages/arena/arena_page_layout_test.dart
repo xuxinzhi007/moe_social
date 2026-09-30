@@ -75,6 +75,12 @@ void main() {
     expect(find.text('潮汐'), findsWidgets);
     expect(find.text('法师'), findsWidgets);
     expect(find.textContaining('星潮回响'), findsWidgets);
+    await tester.tap(find.text('卡牌'));
+    await tester.pump();
+    expect(find.text('星刺'), findsOneWidget);
+    expect(find.textContaining('64'), findsWidgets);
+    await tester.tap(find.text('英雄'));
+    await tester.pump();
     expect(tester.takeException(), isNull, reason: '图鉴');
 
     await tester.tap(find.text('澜星').first);
@@ -138,17 +144,34 @@ void main() {
     expect(find.text('我方生命'), findsOneWidget);
     expect(find.text('敌方生命'), findsOneWidget);
     expect(find.text('结束回合'), findsOneWidget);
-    expect(find.text('星潮回响'), findsOneWidget);
-    expect(find.text('澜星技'), findsOneWidget);
-    expect(find.text('兔突技'), findsOneWidget);
-    expect(find.text('猫影技'), findsOneWidget);
-    await tester.tap(find.text('敌影 2'));
+    final opening = model.hand;
+    expect(opening, hasLength(4));
+    expect(model.drawCount, 60);
+    final first = opening[0];
+    final second = opening[1];
+    expect(find.text(first.name), findsWidgets);
+    await tester.tap(find.text(first.name).first);
     await tester.pump();
-    expect(find.textContaining('目标：敌影 2'), findsOneWidget);
-    await tester.tap(find.text('闪耀突刺'));
-    await tester.pump(const Duration(milliseconds: 220));
-    expect(find.textContaining('连携 1'), findsWidgets);
-    expect(find.text('兔突 · 闪耀突刺'), findsOneWidget);
+    if (first.targeting == ArenaCardTargeting.singleEnemy) {
+      expect(find.textContaining('点敌影释放'), findsOneWidget);
+      await tester.tap(find.text('敌影 2'));
+    } else {
+      await tester.tap(find.text(first.name).first);
+    }
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.tap(find.text(second.name).first);
+    await tester.pump();
+    if (second.targeting == ArenaCardTargeting.singleEnemy) {
+      expect(find.textContaining('点敌影释放'), findsOneWidget);
+      await tester.tap(find.text('敌影 2'));
+    } else {
+      await tester.tap(find.text(second.name).first);
+    }
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.text(model.activeCombo!.name), findsWidgets);
+    expect(find.textContaining(model.activeCombo!.formula), findsWidgets);
     expect(find.textContaining('敌影 2'), findsWidgets);
     expect(tester.takeException(), isNull, reason: '战斗出牌反馈');
     await tester.pump(const Duration(milliseconds: 500));
@@ -181,9 +204,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('狐火'), findsOneWidget);
-    expect(find.text('狐火技'), findsOneWidget);
-    expect(find.text('兔突技'), findsNothing);
+    expect(find.text('狐火'), findsWidgets);
+    expect(find.text(model.hand.first.name), findsWidgets);
+    expect(find.textContaining('狐火技'), findsNothing);
     expect(tester.takeException(), isNull, reason: '战斗应使用编辑后的编队');
   });
 }
