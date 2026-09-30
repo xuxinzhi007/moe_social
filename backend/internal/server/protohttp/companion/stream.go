@@ -33,6 +33,21 @@ func RegisterChatStreamRoute(s *khttp.Server, app *companionapp.AppService) {
 	r.POST("/api/companion/chat/stream", func(ctx khttp.Context) error {
 		return handleChatStream(ctx, app)
 	})
+	r.GET("/api/companion/chat/context", func(ctx khttp.Context) error {
+		return handleChatContext(ctx, app)
+	})
+}
+
+func handleChatContext(ctx khttp.Context, app *companionapp.AppService) error {
+	userID, err := actorUserID(ctx.Request().Context())
+	if err != nil {
+		return err
+	}
+	usage, err := app.ChatContext(ctx.Request().Context(), userID)
+	if err != nil {
+		return err
+	}
+	return ctx.Result(http.StatusOK, usage)
 }
 
 func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {

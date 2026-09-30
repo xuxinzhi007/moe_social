@@ -41,6 +41,8 @@ import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
 import '../pages/arena/arena_page.dart';
 import '../pages/companion/companion_chat_page.dart' deferred as companion_chat;
+import '../pages/ai/character_card_plaza_page.dart'
+    deferred as character_card_plaza;
 import '../pages/companion/companion_memories_page.dart'
     deferred as companion_memories;
 import '../pages/life/life_entity_detail.dart';
@@ -298,6 +300,10 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/messages': (context) => _deferred(
           message_center.loadLibrary,
           () => message_center.MessageCenterPage(),
+        ),
+    '/character-card-plaza': (context) => _deferred(
+          character_card_plaza.loadLibrary,
+          () => character_card_plaza.CharacterCardPlazaPage(),
         ),
     '/ai-chat': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;

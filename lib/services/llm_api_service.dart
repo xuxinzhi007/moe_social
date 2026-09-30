@@ -145,6 +145,8 @@ class LlmApiService {
       throw ApiException(payload['message']?.toString() ?? '加载本人模型失败');
     }
     final models = payload['models'];
+    // protojson 省略空 repeated，空列表不会带 models 字段。
+    if (models == null) return const [];
     if (models is! List) throw const FormatException('模型列表格式错误');
     return models
         .map((e) =>

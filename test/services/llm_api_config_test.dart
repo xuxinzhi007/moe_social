@@ -200,6 +200,17 @@ void main() {
     expect(methods, ['GET', 'GET', 'POST', 'DELETE']);
   });
 
+  test('omitted models field is an empty list', () async {
+    await http.runWithClient(() async {
+      expect(await LlmApiService.listManagedModels(), isEmpty);
+    },
+        () => MockClient((request) async => envelope({
+              'code': 200,
+              'message': '获取受管模型成功',
+              'success': true,
+            })));
+  });
+
   test('management refuses anonymous list without HTTP', () async {
     ApiService.setToken(null);
     await http.runWithClient(() async {

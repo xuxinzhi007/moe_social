@@ -198,12 +198,13 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _profiles.any((p) => p.id == _profileId)
-                    ? _profileId
-                    : AiProviderProfile.builtinBackendId,
+                value: AiProviderProfile.selectableId(
+                  AiProviderProfile.uniqueWithBuiltin(_profiles),
+                  _profileId,
+                ),
                 isExpanded: true,
                 decoration: AiTheme.inputDecoration(labelText: 'API 来源'),
-                items: _profiles
+                items: AiProviderProfile.uniqueWithBuiltin(_profiles)
                     .map(
                       (p) => DropdownMenuItem(
                         value: p.id,
