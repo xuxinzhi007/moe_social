@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -15,7 +14,7 @@ import '../../services/direct_chat_sync_bus.dart';
 import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
 
-/// 私信气泡数据（本地缓存 + 服务端展开共用）。
+/// 私信气泡。历史来自服务端；尚未确认的发送中消息只留在这次打开的内存里。
 class DirectChatMessage {
   const DirectChatMessage({
     required this.senderId,
@@ -54,7 +53,6 @@ class DirectChatViewModel extends ChangeNotifier {
   bool _hasMoreServer = false;
   bool _loadingServerPage = false;
   String? _oldestServerCursorId;
-  DateTime? _clearedAt;
   Object? _bootstrapError;
   String? _historySyncWarning;
   bool _disposed = false;
@@ -122,8 +120,9 @@ class DirectChatViewModel extends ChangeNotifier {
       if (_disposed) return;
       _currentUserId = userId;
       await DirectChatLocalReader.releaseMisusedClearMarkers();
-      _clearedAt = await _loadClearedAt(userId);
-      await _loadLocalMessages(userId);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_storageKey(userId));
+      await prefs.remove(_clearMarkerKey(userId));
       await _fetchInitialServerHistory();
       mergePendingWsMessages();
       _notify();
@@ -172,8 +171,6 @@ class DirectChatViewModel extends ChangeNotifier {
         } else {
           time = DateTime.now();
         }
-        if (!_isAfterClearMarker(time)) continue;
-
         final hasSimilar = _messages.any((m) {
           if (m.senderId != from) return false;
           if (m.content != content) return false;
@@ -219,7 +216,6 @@ class DirectChatViewModel extends ChangeNotifier {
       for (final m in page.items) {
         add.addAll(_expandServerItem(m));
       }
-      add.removeWhere((m) => !_isAfterClearMarker(m.time));
       final existing = <String>{};
       for (final x in _messages) {
         if (x.serverId != null) existing.add(x.serverId!);
@@ -270,7 +266,6 @@ class DirectChatViewModel extends ChangeNotifier {
       } else {
         time = DateTime.now();
       }
-      if (!_isAfterClearMarker(time)) return;
       final sid = _serverSlotFromWsId(map['server_message_id'], content);
       _messages.add(
         DirectChatMessage(
@@ -472,21 +467,15 @@ class DirectChatViewModel extends ChangeNotifier {
     if (currentUserId == null || currentUserId.isEmpty) return '请先登录';
     try {
       await ChatService.clearPrivateChatHistory(peerUserId: peerUserId);
-    } catch (_) {
-      // 服务端清理失败仍清本地，避免卡死。
+    } catch (e) {
+      return MoeErrorCopy.toast(e, scene: MoeErrorScene.messages);
     }
-    final now = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _clearMarkerKey(currentUserId),
-      now.toIso8601String(),
-    );
+    await prefs.remove(_clearMarkerKey(currentUserId));
     await prefs.remove(_storageKey(currentUserId));
     if (_disposed) return null;
-    _clearedAt = now;
     _messages.clear();
-    _hasMoreServer = false;
-    _oldestServerCursorId = null;
+    await _fetchInitialServerHistory();
     DirectChatSyncBus.bump();
     _notify();
     return null;
@@ -515,9 +504,7 @@ class DirectChatViewModel extends ChangeNotifier {
       for (final m in page.items) {
         expanded.addAll(_expandServerItem(m));
       }
-      expanded.removeWhere((m) => !_isAfterClearMarker(m.time));
-      final localCopy = List<DirectChatMessage>.from(_messages);
-      _applyMergedLocalAndServer(localCopy, expanded);
+      _replaceWithServerHistory(expanded);
       _hasMoreServer = page.hasMore;
       _oldestServerCursorId =
           page.items.isNotEmpty ? page.items.first.id : null;
@@ -528,44 +515,7 @@ class DirectChatViewModel extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> _loadLocalMessages(String currentUserId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey(currentUserId));
-    if (raw == null || raw.isEmpty) return;
-    final list = json.decode(raw) as List<dynamic>;
-    final messages = list
-        .map((item) {
-          final map = item as Map<String, dynamic>;
-          final sid = map['serverId']?.toString();
-          return DirectChatMessage(
-            senderId: map['senderId'] as String,
-            content: map['content'] as String,
-            time: DateTime.tryParse(map['time'] as String? ?? '') ??
-                DateTime.now(),
-            serverId: sid != null && sid.isNotEmpty ? sid : null,
-          );
-        })
-        .where((m) => _isAfterClearMarker(m.time))
-        .toList();
-    if (_disposed) return;
-    _messages
-      ..clear()
-      ..addAll(messages);
-  }
-
   Future<void> _saveMessages() async {
-    final currentUserId = _currentUserId;
-    if (currentUserId == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    final list = _messages
-        .map((m) => {
-              'senderId': m.senderId,
-              'content': m.content,
-              'time': m.time.toIso8601String(),
-              if (m.serverId != null) 'serverId': m.serverId,
-            })
-        .toList();
-    await prefs.setString(_storageKey(currentUserId), json.encode(list));
     DirectChatSyncBus.bump();
   }
 
@@ -595,29 +545,16 @@ class DirectChatViewModel extends ChangeNotifier {
     return out;
   }
 
-  void _applyMergedLocalAndServer(
-    List<DirectChatMessage> local,
-    List<DirectChatMessage> serverExpanded,
-  ) {
-    final merged = <DirectChatMessage>[];
-    final seen = <String>{};
-    for (final s in serverExpanded) {
-      merged.add(s);
-      if (s.serverId != null) seen.add(s.serverId!);
-    }
-    for (final l in local) {
-      if (l.serverId != null) {
-        if (seen.contains(l.serverId!)) continue;
-        seen.add(l.serverId!);
-        merged.add(l);
-        continue;
-      }
-      final dup = serverExpanded.any((s) =>
-          s.senderId == l.senderId &&
-          s.content == l.content &&
-          s.time.difference(l.time).inSeconds.abs() < 120);
-      if (dup) continue;
-      merged.add(l);
+  void _replaceWithServerHistory(List<DirectChatMessage> serverExpanded) {
+    final pending = _messages.where((m) => m.serverId == null).toList();
+    final merged = List<DirectChatMessage>.from(serverExpanded);
+    for (final message in pending) {
+      final duplicated = serverExpanded.any((server) =>
+          server.senderId == message.senderId &&
+          server.content == message.content &&
+          server.time.difference(message.time).inSeconds.abs() < 120);
+      if (duplicated) continue;
+      merged.add(message);
     }
     merged.sort((a, b) => a.time.compareTo(b.time));
     _messages
@@ -641,19 +578,6 @@ class DirectChatViewModel extends ChangeNotifier {
   String _clearMarkerKey(String currentUserId) {
     final ids = [currentUserId, peerUserId]..sort();
     return 'direct_chat_cleared_${ids.join('_')}';
-  }
-
-  Future<DateTime?> _loadClearedAt(String currentUserId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_clearMarkerKey(currentUserId));
-    if (raw == null || raw.isEmpty) return null;
-    return DateTime.tryParse(raw);
-  }
-
-  bool _isAfterClearMarker(DateTime time) {
-    final clearedAt = _clearedAt;
-    if (clearedAt == null) return true;
-    return time.isAfter(clearedAt);
   }
 
   void _notify() {

@@ -171,7 +171,7 @@ cd moe-admin && npm run build
 
 ## 8. 技能使用
 
-- Go 改动：`golang-style`、`effective-go`、`implementation-guardrails`、`golang-gin-database`。
+- Go 改动：`golang-style`、`effective-go`、`implementation-guardrails`。
 - 提交：`git-commit`。
 - 前端改动：参考 `frontend-ai-spec.mdc`（Moe UI 色系、组件规范）。
 

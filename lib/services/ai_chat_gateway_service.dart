@@ -98,25 +98,6 @@ class AiChatGatewayService {
     return '模型服务请求失败，请稍后重试';
   }
 
-  static void _logProviderFailure({
-    required Uri uri,
-    required int statusCode,
-    required String body,
-    required String model,
-    int? messageCount,
-    int? systemChars,
-  }) {
-    if (!kDebugMode) return;
-    final preview = body.length > 1200 ? '${body.substring(0, 1200)}…' : body;
-    debugPrint(
-      '❌ [Provider] chat/completions failed '
-      'status=$statusCode model=$model '
-      'messages=$messageCount systemChars=$systemChars '
-      'url=$uri',
-    );
-    debugPrint('❌ [Provider] response: $preview');
-  }
-
   Future<List<String>> fetchModelsForAgent(AiAgent agent) async {
     final profile = await AiProviderService().resolveProfile(
       agent.providerProfileId,
@@ -223,25 +204,11 @@ class AiChatGatewayService {
     double? temperature,
     double? topP,
   }) async {
-    final profile = await AiProviderService().resolveProfile(
-      agent.providerProfileId,
-    );
-    if (profile.isBackendOllama) {
-      return _sendToBackendInference(
-        agent: agent,
-        messages: messages,
-        sessionId: sessionId,
-        sourceMsgId: sourceMsgId,
-        temperature: temperature,
-        topP: topP,
-      );
-    }
-
-    final model = _effectiveModel(agent, profile);
-    return _sendToOpenAiCompatible(
-      profile: profile,
-      model: model,
+    return _sendToBackendInference(
+      agent: agent,
       messages: messages,
+      sessionId: sessionId,
+      sourceMsgId: sourceMsgId,
       temperature: temperature,
       topP: topP,
     );
@@ -305,176 +272,6 @@ class AiChatGatewayService {
     throw Exception('响应格式异常');
   }
 
-  /// Codex / o 系列等推理模型通常不接受自定义 temperature，强行传入会 400。
-  static bool supportsSamplingParams(String model) {
-    final id = model.trim().toLowerCase();
-    if (id.contains('codex')) return false;
-    if (RegExp(r'\bo[0-9](?:-|$|/)').hasMatch(id)) return false;
-    if (id.contains('reasoning')) return false;
-    return true;
-  }
-
-  Map<String, dynamic> _openAiChatBody({
-    required String model,
-    required List<Map<String, dynamic>> messages,
-    required bool stream,
-    double? temperature,
-    double? topP,
-  }) {
-    final body = <String, dynamic>{
-      'model': model,
-      'messages': messages,
-      'stream': stream,
-    };
-    if (supportsSamplingParams(model)) {
-      if (temperature != null && temperature >= 0) {
-        body['temperature'] = temperature;
-      }
-      if (topP != null && topP > 0) body['top_p'] = topP;
-    }
-    return body;
-  }
-
-  List<Map<String, dynamic>> _toDynamicMessages(
-    List<Map<String, String>> messages,
-  ) =>
-      messages
-          .map(
-            (m) => {
-              'role': m['role'] ?? '',
-              'content': m['content'] ?? '',
-            },
-          )
-          .toList();
-
-  Future<String> _sendToOpenAiCompatible({
-    required AiProviderProfile profile,
-    required String model,
-    required List<Map<String, String>> messages,
-    double? temperature,
-    double? topP,
-  }) async {
-    final apiKey = await AiProviderService().readApiKey(profile.id);
-    if (profile.requiresApiKey && apiKey.trim().isEmpty) {
-      throw Exception(
-        '请先在「模型来源」中为「${profile.name}」填写 API Key，再开始聊天',
-      );
-    }
-    final baseUrl = await _resolveProviderBaseUrl(profile);
-    final uri = Uri.parse('${_normalizeBaseUrl(baseUrl)}/chat/completions');
-    ApiService.logDirectHttp('POST', uri);
-    final headers = await _buildProviderHeaders(profile, uri: uri);
-    final payloadMessages = profile.supportsSystemMessages
-        ? messages
-        : _foldSystemMessagesIntoConversation(messages);
-    final dynamicMessages = _toDynamicMessages(payloadMessages);
-    final systemChars = payloadMessages
-        .where((m) => m['role'] == 'system')
-        .fold<int>(0, (sum, m) => sum + (m['content'] ?? '').length);
-    final sendTemp = supportsSamplingParams(model) ? temperature : null;
-    final useStream = profile.supportsStreaming && !profile.isLlamaCppServer;
-    if (kDebugMode) {
-      debugPrint(
-        '📤 [Provider] chat model=$model messages=${payloadMessages.length} '
-        'stream=$useStream systemChars=$systemChars '
-        'temperature=${sendTemp ?? 'default'}',
-      );
-    }
-    final response = await http
-        .post(
-          uri,
-          headers: headers,
-          body: jsonEncode(
-            _openAiChatBody(
-              model: model,
-              messages: dynamicMessages,
-              stream: useStream,
-              temperature: temperature,
-              topP: topP,
-            ),
-          ),
-        )
-        .timeout(const Duration(seconds: 180));
-
-    if (response.statusCode != 200 &&
-        _providerRejectsSystemMessages(response.bodyBytes)) {
-      final fallbackMessages = _foldSystemMessagesIntoConversation(messages);
-      final retry = await http
-          .post(
-            uri,
-            headers: headers,
-            body: jsonEncode(
-              _openAiChatBody(
-                model: model,
-                messages: _toDynamicMessages(fallbackMessages),
-                stream: useStream,
-                temperature: temperature,
-                topP: topP,
-              ),
-            ),
-          )
-          .timeout(const Duration(seconds: 180));
-      if (retry.statusCode == 200) {
-        final decoded =
-            LlmResponseParser.decodeJsonOrNdjson(utf8.decode(retry.bodyBytes));
-        final content = _extractOpenAiCompatibleContent(decoded);
-        if (content.isNotEmpty) return content;
-        throw Exception('Provider 响应格式异常');
-      }
-      final retryBody = utf8.decode(retry.bodyBytes);
-      _logProviderFailure(
-        uri: uri,
-        statusCode: retry.statusCode,
-        body: retryBody,
-        model: model,
-        messageCount: fallbackMessages.length,
-        systemChars: systemChars,
-      );
-      throw Exception('Provider 请求失败 (${retry.statusCode}): $retryBody');
-    }
-
-    final body = utf8.decode(response.bodyBytes);
-    if (response.statusCode != 200) {
-      _logProviderFailure(
-        uri: uri,
-        statusCode: response.statusCode,
-        body: body,
-        model: model,
-        messageCount: payloadMessages.length,
-        systemChars: systemChars,
-      );
-      throw Exception('Provider 请求失败 (${response.statusCode}): $body');
-    }
-
-    final decoded = LlmResponseParser.decodeJsonOrNdjson(body);
-    if (decoded is Map && decoded['error'] != null) {
-      _logProviderFailure(
-        uri: uri,
-        statusCode: response.statusCode,
-        body: body,
-        model: model,
-        messageCount: payloadMessages.length,
-        systemChars: systemChars,
-      );
-      throw Exception('Provider 请求失败 (200): $body');
-    }
-    final content = _extractOpenAiCompatibleContent(decoded);
-    if (content.isEmpty) {
-      _logProviderFailure(
-        uri: uri,
-        statusCode: response.statusCode,
-        body: body,
-        model: model,
-        messageCount: payloadMessages.length,
-        systemChars: systemChars,
-      );
-      throw Exception(
-        'Provider 空回复: 模型 $model 返回 HTTP 200 但 content 为空（可能不适合当前对话场景）',
-      );
-    }
-    return content;
-  }
-
   Future<Map<String, String>> _buildProviderHeaders(
     AiProviderProfile profile, {
     Uri? uri,
@@ -497,37 +294,6 @@ class AiChatGatewayService {
 
   List<String> _extractModelNames(dynamic decoded) {
     return AiModelListParser.extract(decoded);
-  }
-
-  String _extractOpenAiCompatibleContent(dynamic decoded) {
-    if (decoded is List) {
-      return LlmResponseParser.extractChatContent(decoded, terminalMode: true)
-          .trim();
-    }
-    if (decoded is! Map) return '';
-    if (decoded['error'] != null) throw FormatException('模型服务返回错误');
-    final choices = decoded['choices'];
-    if (choices is! List || choices.isEmpty) return '';
-    final first = choices.first;
-    if (first is! Map) return '';
-    final message = first['message'];
-    if (message is! Map) return '';
-    final content = message['content'];
-    if (content is String && content.trim().isNotEmpty) return content.trim();
-    if (content is List) {
-      final buffer = StringBuffer();
-      for (final part in content) {
-        if (part is Map && part['type'] == 'text' && part['text'] is String) {
-          buffer.write(part['text']);
-        }
-      }
-      if (buffer.isNotEmpty) return buffer.toString().trim();
-    }
-    for (final key in ['reasoning_content', 'reasoning']) {
-      final alt = message[key];
-      if (alt is String && alt.trim().isNotEmpty) return alt.trim();
-    }
-    return '';
   }
 
   String _normalizeApiKey(String raw) {
@@ -562,58 +328,5 @@ class AiChatGatewayService {
     final explicit = agent.modelName.trim();
     if (explicit.isNotEmpty) return explicit;
     return profile.defaultModel.trim();
-  }
-
-  bool _providerRejectsSystemMessages(List<int> bodyBytes) {
-    final body = utf8.decode(bodyBytes).toLowerCase();
-    return body.contains('system messages are not allowed') ||
-        body.contains('"detail":"system messages are not allowed"');
-  }
-
-  List<Map<String, String>> _foldSystemMessagesIntoConversation(
-    List<Map<String, String>> messages,
-  ) {
-    final systemContents = <String>[];
-    final normalized = <Map<String, String>>[];
-
-    for (final message in messages) {
-      final role = (message['role'] ?? '').trim();
-      final content = (message['content'] ?? '').trim();
-      if (content.isEmpty) continue;
-      if (role == 'system') {
-        systemContents.add(content);
-        continue;
-      }
-      normalized.add({'role': role, 'content': content});
-    }
-
-    if (systemContents.isEmpty) return normalized;
-
-    final injectedPrompt = StringBuffer()
-      ..writeln('请严格遵循以下角色设定与回复规则：')
-      ..writeln(systemContents.join('\n\n'))
-      ..writeln()
-      ..write('在后续对话中不要重复解释这些规则，直接按设定回答。');
-
-    if (normalized.isEmpty) {
-      return [
-        {'role': 'user', 'content': injectedPrompt.toString().trim()},
-      ];
-    }
-
-    final first = normalized.first;
-    if (first['role'] == 'user') {
-      normalized[0] = {
-        'role': 'user',
-        'content':
-            '${injectedPrompt.toString().trim()}\n\n[用户消息]\n${first['content'] ?? ''}',
-      };
-      return normalized;
-    }
-
-    return [
-      {'role': 'user', 'content': injectedPrompt.toString().trim()},
-      ...normalized,
-    ];
   }
 }

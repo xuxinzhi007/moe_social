@@ -107,9 +107,7 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
     if (!background && mounted && localIds.isNotEmpty) {
       setState(() => _models = localIds);
     }
-    if (profile.isOpenAiCompatible &&
-        localIds.isNotEmpty &&
-        !background) {
+    if (profile.isOpenAiCompatible && localIds.isNotEmpty && !background) {
       return;
     }
 
@@ -219,7 +217,6 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
                     _profileId = value;
                     _models = _selectedProfile.effectiveModelIds;
                   });
-                  await AiProviderService().saveLastSelectedProfileId(value);
                   await _loadModels(background: true);
                 },
               ),
@@ -286,8 +283,7 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
                 onSelected: (_) {
                   setState(() => _modelController.text = id);
                 },
-                selectedColor:
-                    AiBrandTokens.primary.withValues(alpha: 0.15),
+                selectedColor: AiBrandTokens.primary.withValues(alpha: 0.15),
                 checkmarkColor: AiBrandTokens.primary,
               );
             }).toList(),
