@@ -15,7 +15,6 @@ import '../../providers/companion_presence_provider.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/post_card.dart';
-import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/motion/moe_pressable.dart';
@@ -172,7 +171,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Feed 优先：轻顶栏 → Stories → 轻陪伴 → 粘性文字分段 → 帖子。
+    // Feed 优先：轻顶栏 → 问候卡 → 粘性文字分段 → 帖子。
     // 发帖入口固定在筛选栏右侧，不叠加 FAB 或大海报。
     return AdaptivePageScaffold(
       template: PageTemplate.fullscreen,
@@ -190,9 +189,6 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.fromLTRB(16, 8, 16, 2),
                 child: PersonalizedCard(),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: const HomeStoriesBar(),
             ),
             SliverPersistentHeader(
               pinned: true,

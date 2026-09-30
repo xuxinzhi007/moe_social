@@ -36,8 +36,8 @@ func (a *AppService) HomeTrain(ctx context.Context, userID string) (*arenabiz.St
 	return a.uc.HomeTrain(ctx, userID)
 }
 
-func (a *AppService) SaveMeta(ctx context.Context, userID string, selectedTowerNode *int, clearBuffs bool) (*arenabiz.State, error) {
-	return a.uc.SaveMeta(ctx, userID, selectedTowerNode, clearBuffs)
+func (a *AppService) SaveMeta(ctx context.Context, userID string, selectedTowerNode *int, clearBuffs bool, crystalDelta int) (*arenabiz.State, error) {
+	return a.uc.SaveMeta(ctx, userID, selectedTowerNode, clearBuffs, crystalDelta)
 }
 
 func (a *AppService) SetSkin(ctx context.Context, userID, heroID, skinID string) (*arenabiz.State, error) {

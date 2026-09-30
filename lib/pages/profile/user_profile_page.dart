@@ -4,7 +4,6 @@ import '../../models/user.dart';
 import '../../models/post.dart';
 import '../../models/achievement_badge.dart';
 import '../../auth_service.dart';
-import '../../services/chat_service.dart';
 import '../../services/post_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/moe_error_copy.dart';
@@ -25,7 +24,6 @@ import '../../theme/moe_tokens.dart';
 import '../feed/create_post_page.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
-import '../chat/voice_call_launcher.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -232,19 +230,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  String _friendRelationLabel() {
-    switch (_friendRelation) {
-      case 'friend':
-        return '已是好友';
-      case 'pending_out':
-        return '已申请';
-      case 'pending_in':
-        return '待处理';
-      default:
-        return '加好友';
-    }
-  }
-
   bool get _isSelf =>
       AuthService.isLoggedIn &&
       AuthService.currentUser != null &&
@@ -356,178 +341,193 @@ class _UserProfilePageState extends State<UserProfilePage> {
             const Positioned.fill(child: ProfileBg()),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Stack(
                 children: [
-                  Row(
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Hero(
-                        tag: widget.heroTag ?? 'user_avatar_${widget.userId}',
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Hero(
+                            tag: widget.heroTag ??
+                                'user_avatar_${widget.userId}',
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: hasFrame
+                                  ? DynamicAvatar(
+                                      avatarUrl: avatar ?? '',
+                                      size: avatarSize,
+                                      frameId: frameId,
+                                    )
+                                  : NetworkAvatarImage(
+                                      imageUrl: avatar ?? '',
+                                      radius: avatarSize / 2,
+                                      placeholderIcon: Icons.person,
+                                    ),
+                            ),
                           ),
-                          child: hasFrame
-                              ? DynamicAvatar(
-                                  avatarUrl: avatar ?? '',
-                                  size: avatarSize,
-                                  frameId: frameId,
-                                )
-                              : NetworkAvatarImage(
-                                  imageUrl: avatar ?? '',
-                                  radius: avatarSize / 2,
-                                  placeholderIcon: Icons.person,
-                                ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    name,
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          height: 1.15,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_user?.isVip == true) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.18),
+                                          borderRadius: BorderRadius.circular(
+                                            MoeTokens.radiusFull,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(0xFFFFE082)
+                                                .withValues(alpha: 0.9),
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'VIP',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFFFFF8E1),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                if (sig.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    sig,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      height: 1.15,
-                                    ),
-                                  ),
-                                ),
-                                if (_user?.isVip == true) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
+                                    style: TextStyle(
+                                      fontSize: 12,
                                       color:
-                                          Colors.white.withValues(alpha: 0.18),
-                                      borderRadius: BorderRadius.circular(
-                                        MoeTokens.radiusFull,
-                                      ),
-                                      border: Border.all(
-                                        color: const Color(0xFFFFE082)
-                                            .withValues(alpha: 0.9),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'VIP',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFFFFF8E1),
-                                      ),
+                                          Colors.white.withValues(alpha: 0.9),
                                     ),
                                   ),
                                 ],
-                              ],
-                            ),
-                            if (sig.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                sig,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                if (moe.isNotEmpty)
-                                  _glassPill(
-                                    onTap: _isSelf
-                                        ? () {
-                                            Clipboard.setData(
-                                              ClipboardData(text: moe),
-                                            );
-                                            MoeToast.success(
-                                              context,
-                                              '已复制 Moe 号',
-                                            );
-                                          }
-                                        : null,
-                                    child: Text(
-                                      moe,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                _glassPill(
-                                  child: Text(
-                                    '魅力 $charmLabel',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                _glassPill(
-                                  child: Text(
-                                    '收礼 $giftValueLabel',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                                const SizedBox(height: 4),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (moe.isNotEmpty) ...[
+                                          _glassPill(
+                                            onTap: _isSelf
+                                                ? () {
+                                                    Clipboard.setData(
+                                                      ClipboardData(text: moe),
+                                                    );
+                                                    MoeToast.success(
+                                                      context,
+                                                      '已复制 Moe 号',
+                                                    );
+                                                  }
+                                                : null,
+                                            child: Text(
+                                              moe,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+                                        _glassPill(
+                                          child: Text(
+                                            '魅力 $charmLabel',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        _glassPill(
+                                          child: Text(
+                                            '收礼 $giftValueLabel',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _headerStat('动态', postsLabel, onTap: _scrollToPosts),
-                      _headerStat(
-                        '关注',
-                        _isLoadingStats ? '…' : '$_followingCount',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (context) =>
-                                  FollowingPage(userId: widget.userId),
-                            ),
-                          );
-                        },
-                      ),
-                      _headerStat(
-                        '粉丝',
-                        _isLoadingStats ? '…' : '$_followersCount',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (context) =>
-                                  FollowersPage(userId: widget.userId),
-                            ),
-                          );
-                        },
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _headerStat('动态', postsLabel, onTap: _scrollToPosts),
+                          _headerStat(
+                            '关注',
+                            _isLoadingStats ? '…' : '$_followingCount',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (context) =>
+                                      FollowingPage(userId: widget.userId),
+                                ),
+                              );
+                            },
+                          ),
+                          _headerStat(
+                            '粉丝',
+                            _isLoadingStats ? '…' : '$_followersCount',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (context) =>
+                                      FollowersPage(userId: widget.userId),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -538,23 +538,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
         ),
       ),
     );
-  }
-
-  Future<void> _onSendFriendRequest() async {
-    final me = AuthService.currentUser;
-    if (me == null) {
-      MoeToast.error(context, '请先登录');
-      return;
-    }
-    try {
-      await UserService.sendFriendRequestByUserId(me, widget.userId);
-      if (mounted) {
-        setState(() => _friendRelation = 'pending_out');
-        MoeToast.success(context, '已发送好友申请');
-      }
-    } catch (e) {
-      if (mounted) MoeToast.error(context, e.toString());
-    }
   }
 
   Future<void> _toggleFollow() async {
@@ -625,10 +608,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
             SliverToBoxAdapter(
               child: _buildBadgeShelf(unlocked),
             ),
-          if (!_isSelf) SliverToBoxAdapter(child: _buildVisitorActions()),
           ..._buildPostsSlivers(),
         ],
       ),
+      bottomNavigationBar: _isSelf ? null : _buildProfileActions(),
     );
   }
 
@@ -708,118 +691,88 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildVisitorActions() {
-    final showFriend =
-        AuthService.isLoggedIn && AuthService.currentUser != widget.userId;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        MoeTokens.spaceLg,
-        12,
-        MoeTokens.spaceLg,
-        0,
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+  Widget _relationAction() {
+    final isFriend = _friendRelation == 'friend';
+    final oneWay = !isFriend && _isFollowing;
+    final label = isFriend ? '已是好友' : (oneWay ? '已关注' : '关注');
+    final icon = isFriend
+        ? Icons.people_alt_rounded
+        : (oneWay ? Icons.check_rounded : Icons.add_rounded);
+    return _profileAction(
+      icon: icon,
+      label: label,
+      onTap: isFriend ? null : _toggleFollow,
+    );
+  }
+
+  Widget _profileAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onTap,
+  }) {
+    return MoePressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (showFriend)
-            _visitorChip(
-              icon: Icons.how_to_reg_rounded,
-              label: _friendRelationLabel(),
-              onTap: _friendRelation == 'none' ? _onSendFriendRequest : null,
+          Icon(icon, size: 18, color: MoeTokens.primary),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: MoeTokens.primary,
             ),
-          _visitorChip(
-            icon: _isFollowing ? Icons.check_rounded : Icons.add_rounded,
-            label: _isFollowing ? '已关注' : '关注',
-            filled: !_isFollowing,
-            onTap: _toggleFollow,
-          ),
-          _visitorChip(
-            icon: Icons.chat_bubble_outline_rounded,
-            label: '私信',
-            onTap: _openDirectChat,
-          ),
-          _visitorChip(
-            icon: Icons.card_giftcard_rounded,
-            label: '送礼',
-            onTap: _showGiftSelector,
-          ),
-          _visitorChip(
-            icon: Icons.phone_rounded,
-            label: '通话',
-            onTap: _startVoiceCall,
           ),
         ],
       ),
     );
   }
 
-  Widget _visitorChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback? onTap,
-    bool filled = false,
-  }) {
-    final enabled = onTap != null;
-    final fg = !enabled
-        ? MoeTokens.titleText.withValues(alpha: 0.38)
-        : (filled ? Colors.white : MoeTokens.primary);
-    return MoePressable(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: filled && enabled ? MoeTokens.primary : MoeTokens.surface1,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-          border: Border.all(
-            color:
-                filled && enabled ? MoeTokens.primary : MoeTokens.surfaceBorder,
-          ),
+  Widget _buildProfileActions() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          MoeTokens.spaceMd,
+          0,
+          MoeTokens.spaceMd,
+          MoeTokens.spaceSm,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: fg),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: fg,
-              ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: MoeTokens.surface1.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+            border: Border.all(color: MoeTokens.surfaceBorder),
+            boxShadow: MoeTokens.shadowSm(),
+          ),
+          child: SizedBox(
+            height: 52,
+            child: Row(
+              children: [
+                Expanded(child: _relationAction()),
+                Expanded(
+                  child: _profileAction(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: '私信',
+                    onTap: _openDirectChat,
+                  ),
+                ),
+                Expanded(
+                  child: _profileAction(
+                    icon: Icons.card_giftcard_rounded,
+                    label: '送礼',
+                    onTap: _showGiftSelector,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
-  }
-
-  Future<void> _startVoiceCall() async {
-    if (_user == null) return;
-    if (AuthService.currentUser == null) {
-      MoeToast.error(context, '请先登录');
-      return;
-    }
-    try {
-      final callData = await ChatService.voiceCall(widget.userId);
-      final channelName = callData['channel_name']?.toString();
-      if (channelName == null || channelName.isEmpty) {
-        throw Exception('invalid channel');
-      }
-      if (!mounted) return;
-      await openVoiceCallPage(
-        context,
-        channelName: channelName,
-        userName: widget.userName ?? 'User',
-        userAvatar: widget.userAvatar ?? '',
-      );
-    } catch (_) {
-      if (mounted) {
-        MoeToast.error(context, '发起通话失败，请重试');
-      }
-    }
   }
 
   void _openDirectChat() {

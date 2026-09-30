@@ -181,7 +181,7 @@ func TestHomeGiftAndDeckPersist(t *testing.T) {
 	}
 
 	node := 1
-	stMeta, err := uc.SaveMeta(context.Background(), "u1", &node, false)
+	stMeta, err := uc.SaveMeta(context.Background(), "u1", &node, false, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +189,7 @@ func TestHomeGiftAndDeckPersist(t *testing.T) {
 		t.Fatalf("node=%d", stMeta.SelectedTowerNode)
 	}
 
-	stClear, err := uc.SaveMeta(context.Background(), "u1", nil, true)
+	stClear, err := uc.SaveMeta(context.Background(), "u1", nil, true, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

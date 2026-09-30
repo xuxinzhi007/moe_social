@@ -77,6 +77,7 @@ class ArenaService {
   Future<ArenaStateDto?> saveMeta({
     int? selectedTowerNode,
     bool clearBuffs = false,
+    int crystalDelta = 0,
   }) async {
     try {
       final res = await ApiService.put(
@@ -85,6 +86,7 @@ class ArenaService {
           if (selectedTowerNode != null)
             'selected_tower_node': selectedTowerNode,
           'clear_buffs': clearBuffs,
+          if (crystalDelta != 0) 'crystal_delta': crystalDelta,
         },
       );
       return _stateFrom(res);

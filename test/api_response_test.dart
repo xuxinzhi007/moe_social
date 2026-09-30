@@ -42,4 +42,38 @@ void main() {
     final map = ApiResponse.object(json, keys: const ['user']);
     expect(map['username'], 'flat');
   });
+
+  test('follow list reads proto users while total stays on the envelope', () {
+    final json = {
+      'code': 0,
+      'msg': 'ok',
+      'data': {
+        'users': [
+          {
+            'id': '2',
+            'username': 'friend',
+            'created_at': '2024-01-01T00:00:00Z',
+            'updated_at': '2024-01-01T00:00:00Z',
+          },
+        ],
+        'total': 2,
+      },
+    };
+
+    final missed = ApiResponse.listOf(
+      json,
+      keys: const ['followings', 'data'],
+    );
+    expect(missed, isEmpty);
+    expect(ApiResponse.intField(json, 'total'), 2);
+
+    final users = ApiResponse.listOf(
+      json,
+      keys: const ['users', 'followings', 'data'],
+    );
+    expect(users, hasLength(1));
+    expect(
+        User.fromJson(Map<String, dynamic>.from(users.first as Map)).username,
+        'friend');
+  });
 }

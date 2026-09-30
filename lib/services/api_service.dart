@@ -2101,7 +2101,8 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/following?page=$page&page_size=$pageSize');
-    final followingsJson = _list(result, keys: const ['followings', 'data']);
+    final followingsJson =
+        _list(result, keys: const ['users', 'followings', 'data']);
     final followings = followingsJson
         .whereType<Map>()
         .map((json) => User.fromJson(Map<String, dynamic>.from(json)))
@@ -2117,7 +2118,8 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/followers?page=$page&page_size=$pageSize');
-    final followersJson = _list(result, keys: const ['followers', 'data']);
+    final followersJson =
+        _list(result, keys: const ['users', 'followers', 'data']);
     final followers = followersJson
         .whereType<Map>()
         .map((json) => User.fromJson(Map<String, dynamic>.from(json)))
