@@ -426,7 +426,7 @@ func (u *Usecase) HomeTrain(ctx context.Context, userID string) (*State, error) 
 }
 
 // SaveMeta 保存爬塔节点 / 可选清空战斗 buff。
-func (u *Usecase) SaveMeta(ctx context.Context, userID string, selectedTowerNode *int, clearBuffs bool) (*State, error) {
+func (u *Usecase) SaveMeta(ctx context.Context, userID string, selectedTowerNode *int, clearBuffs bool, crystalDelta int) (*State, error) {
 	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -442,6 +442,13 @@ func (u *Usecase) SaveMeta(ctx context.Context, userID string, selectedTowerNode
 	if clearBuffs {
 		prog.RestBuffReady = false
 		prog.BondBuffReady = false
+	}
+	if crystalDelta != 0 {
+		next := p.StarCrystals + crystalDelta
+		if next < 0 {
+			return nil, fmt.Errorf("arena meta: insufficient crystals")
+		}
+		p.StarCrystals = next
 	}
 	p.ProgressJSON = mustJSON(prog)
 	p.UpdatedAt = time.Now()

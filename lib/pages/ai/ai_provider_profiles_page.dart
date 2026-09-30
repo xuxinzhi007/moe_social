@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -178,21 +180,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     return url.trim();
   }
 
-  // ── 动态描述 ──
-
-  String _descriptionFor(AiProviderProfile p) {
-    final host = Uri.tryParse(p.baseUrl)?.host.toLowerCase() ?? '';
-    if (host.contains('openai.com')) return 'OpenAI 官方 API';
-    if (host.contains('deepseek')) return 'DeepSeek 深度求索';
-    if (host.contains('openrouter')) return 'OpenRouter 模型聚合';
-    if (host.contains('siliconflow')) return 'SiliconFlow 硅基流动';
-    if (host.contains('anthropic')) return 'Anthropic Claude';
-    if (host.contains('google')) return 'Google AI';
-    if (p.isBackendOllama || p.isBuiltin) return '走 Moe 后端，不直连模型';
-    if (p.isLlamaCppServer) return '本机 llama.cpp 推理';
-    return 'OpenAI 兼容中转站';
-  }
-
   IconData _iconFor(AiProviderProfile p) {
     if (p.isBuiltin || p.isBackendOllama) return Icons.dns_rounded;
     final host = Uri.tryParse(p.baseUrl)?.host.toLowerCase() ?? '';
@@ -238,8 +225,23 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     : '仅本机保存')
             : '无需 Key';
 
+    final summary = [
+      if (host.isNotEmpty) host,
+      profile.isBuiltin
+          ? '服务端模型'
+          : modelCount > 0
+              ? '$modelCount 个模型'
+              : '未设置模型',
+      keyLabel,
+      if (defaultModel.isNotEmpty) defaultModel,
+    ].join(' · ');
+
     return AiSurfaceCard(
       onTap: () {
+        if (!isActive) {
+          unawaited(_selectForChat(profile));
+          return;
+        }
         if (profile.isBuiltin) {
           _openBuiltin(profile);
         } else {
@@ -247,196 +249,128 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
         }
       },
       padding: const EdgeInsets.fromLTRB(
-        MoeTokens.spaceLg,
         MoeTokens.spaceMd,
-        MoeTokens.spaceXs,
-        MoeTokens.spaceMd,
+        MoeTokens.spaceSm,
+        0,
+        MoeTokens.spaceSm,
       ),
-      border: isActive
-          ? Border.all(color: accent.withValues(alpha: 0.72), width: 2)
-          : null,
-      child: Column(
+      border:
+          isActive ? Border.all(color: accent.withValues(alpha: 0.55)) : null,
+      child: Row(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                ),
-                child: Icon(_iconFor(profile), color: accent, size: 22),
-              ),
-              const SizedBox(width: MoeTokens.spaceMd),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            profile.isBuiltin ? 'Moe 后端' : profile.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: MoeTokens.fontWeightTitle,
-                              fontSize: MoeTokens.textMd,
-                              color: AiBrandTokens.titleColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: MoeTokens.spaceSm),
-                        if (isActive)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: MoeTokens.spaceSm,
-                              vertical: MoeTokens.spaceXs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accent,
-                              borderRadius: BorderRadius.circular(
-                                MoeTokens.radiusFull,
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.check_rounded,
-                                    size: 14, color: Colors.white),
-                                SizedBox(width: 3),
-                                Text(
-                                  '当前使用',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: MoeTokens.fontWeightSubtitle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else if (!profile.isBuiltin)
-                          _StatusPill(status: _statusFor(profile)),
-                      ],
-                    ),
-                    const SizedBox(height: MoeTokens.spaceXs),
-                    Text(
-                      _descriptionFor(profile),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AiTheme.caption,
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuButton<String>(
-                tooltip: '更多操作',
-                padding: EdgeInsets.zero,
-                icon: const Icon(
-                  Icons.more_horiz_rounded,
-                  color: MoeTokens.inkMuted,
-                ),
-                iconSize: 22,
-                offset: const Offset(0, 8),
-                position: PopupMenuPosition.under,
-                color: MoeTokens.surface3,
-                elevation: 6,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                ),
-                onSelected: (value) {
-                  if (value == 'edit' && !profile.isBuiltin) {
-                    _showEditor(initial: profile);
-                  }
-                  if (value == 'delete' && !profile.isBuiltin) {
-                    _delete(profile);
-                  }
-                  if (value == 'select') _selectForChat(profile);
-                  if (value == 'inspect') _openLlmConfig();
-                },
-                itemBuilder: (_) => [
-                  if (!isActive)
-                    const PopupMenuItem(
-                      value: 'select',
-                      height: 44,
-                      child: _ProviderActionMenuItem(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        label: '设为聊天服务',
-                        color: MoeTokens.primary,
-                      ),
-                    ),
-                  if (profile.isBuiltin)
-                    const PopupMenuItem(
-                      value: 'inspect',
-                      height: 44,
-                      child: _ProviderActionMenuItem(
-                        icon: Icons.settings_outlined,
-                        label: '查看后端配置',
-                        color: MoeTokens.titleText,
-                      ),
-                    ),
-                  if (!profile.isBuiltin)
-                    const PopupMenuItem(
-                      value: 'edit',
-                      height: 44,
-                      child: _ProviderActionMenuItem(
-                        icon: Icons.edit_outlined,
-                        label: '编辑',
-                        color: MoeTokens.titleText,
-                      ),
-                    ),
-                  if (!profile.isBuiltin)
-                    const PopupMenuItem(
-                      value: 'delete',
-                      height: 44,
-                      child: _ProviderActionMenuItem(
-                        icon: Icons.delete_outline_rounded,
-                        label: '删除',
-                        color: MoeTokens.danger,
-                      ),
-                    ),
-                ],
-              ),
-            ],
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+            ),
+            child: Icon(_iconFor(profile), color: accent, size: 18),
           ),
-          const SizedBox(height: MoeTokens.spaceMd),
-          Divider(height: 1, color: MoeTokens.lineSoft.withValues(alpha: 0.7)),
-          const SizedBox(height: MoeTokens.spaceMd),
-          Wrap(
-            spacing: MoeTokens.spaceSm,
-            runSpacing: MoeTokens.spaceXs,
-            children: [
-              if (host.isNotEmpty)
-                _MetaChip(icon: Icons.link_rounded, label: host),
-              _MetaChip(
-                icon: Icons.smart_toy_outlined,
-                label: profile.isBuiltin
-                    ? '服务端模型'
-                    : modelCount > 0
-                        ? '$modelCount 个模型'
-                        : '未设置模型',
-                muted: !profile.isBuiltin && modelCount == 0,
-              ),
-              _MetaChip(
-                icon: profile.requiresApiKey
-                    ? Icons.lock_outline_rounded
-                    : Icons.lock_open_outlined,
-                label: keyLabel,
-                muted: profile.requiresApiKey &&
-                    _apiKeyConfigured[profile.id] != true,
-              ),
-              if (isActive)
-                const _MetaChip(
-                  icon: Icons.check_circle_rounded,
-                  label: '聊天当前使用',
+          const SizedBox(width: MoeTokens.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  profile.isBuiltin ? 'Moe 后端' : profile.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: MoeTokens.fontWeightTitle,
+                    fontSize: MoeTokens.textBase,
+                    color: AiBrandTokens.titleColor,
+                  ),
                 ),
-              if (defaultModel.isNotEmpty)
-                _MetaChip(
-                  icon: Icons.star_outline_rounded,
-                  label: defaultModel,
+                const SizedBox(height: 2),
+                Text(
+                  summary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AiTheme.caption,
+                ),
+              ],
+            ),
+          ),
+          if (isActive)
+            Padding(
+              padding: const EdgeInsets.only(left: MoeTokens.spaceXs),
+              child: Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: accent,
+              ),
+            )
+          else if (!profile.isBuiltin)
+            Padding(
+              padding: const EdgeInsets.only(left: MoeTokens.spaceXs),
+              child: _StatusPill(status: _statusFor(profile)),
+            ),
+          PopupMenuButton<String>(
+            tooltip: '更多操作',
+            padding: EdgeInsets.zero,
+            icon: const Icon(
+              Icons.more_horiz_rounded,
+              color: MoeTokens.inkMuted,
+            ),
+            iconSize: 22,
+            offset: const Offset(0, 8),
+            position: PopupMenuPosition.under,
+            color: MoeTokens.surface3,
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+            ),
+            onSelected: (value) {
+              if (value == 'edit' && !profile.isBuiltin) {
+                _showEditor(initial: profile);
+              }
+              if (value == 'delete' && !profile.isBuiltin) {
+                _delete(profile);
+              }
+              if (value == 'select') _selectForChat(profile);
+              if (value == 'inspect') _openLlmConfig();
+            },
+            itemBuilder: (_) => [
+              if (!isActive)
+                const PopupMenuItem(
+                  value: 'select',
+                  height: 44,
+                  child: _ProviderActionMenuItem(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: '设为聊天服务',
+                    color: MoeTokens.primary,
+                  ),
+                ),
+              if (profile.isBuiltin)
+                const PopupMenuItem(
+                  value: 'inspect',
+                  height: 44,
+                  child: _ProviderActionMenuItem(
+                    icon: Icons.settings_outlined,
+                    label: '查看后端配置',
+                    color: MoeTokens.titleText,
+                  ),
+                ),
+              if (!profile.isBuiltin)
+                const PopupMenuItem(
+                  value: 'edit',
+                  height: 44,
+                  child: _ProviderActionMenuItem(
+                    icon: Icons.edit_outlined,
+                    label: '编辑',
+                    color: MoeTokens.titleText,
+                  ),
+                ),
+              if (!profile.isBuiltin)
+                const PopupMenuItem(
+                  value: 'delete',
+                  height: 44,
+                  child: _ProviderActionMenuItem(
+                    icon: Icons.delete_outline_rounded,
+                    label: '删除',
+                    color: MoeTokens.danger,
+                  ),
                 ),
             ],
           ),
@@ -540,7 +474,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
         context: context,
         title: isEditing ? '编辑模型服务' : '添加模型服务',
         subtitle: '连接 AI 模型，让你的伙伴更聪明',
-        initialChildSize: 0.98,
+        initialChildSize: 0.78,
         minChildSize: 0.64,
         maxChildSize: 0.99,
         footer: StatefulBuilder(
@@ -958,74 +892,9 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   },
                 ),
                 const SizedBox(height: MoeTokens.spaceSm),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    MoeTokens.spaceMd,
-                    MoeTokens.spaceSm,
-                    MoeTokens.spaceSm,
-                    MoeTokens.spaceSm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AiBrandTokens.primary.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                    border: Border.all(
-                      color: AiBrandTokens.primary.withValues(alpha: 0.14),
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.cloud_sync_outlined,
-                        size: 19,
-                        color: canSyncApiKey
-                            ? AiBrandTokens.primary
-                            : MoeTokens.hintText,
-                      ),
-                      const SizedBox(width: MoeTokens.spaceSm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '在账号间同步 Key',
-                              style: AiTheme.body.copyWith(
-                                fontWeight: MoeTokens.fontWeightSubtitle,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              !canSyncApiKey
-                                  ? '登录后可开启，默认不会上传'
-                                  : cloudApiKeyProfileIds == null && isEditing
-                                      ? '账号同步暂时不可用，可先保存在本机'
-                                      : syncApiKeyToAccount
-                                          ? '已加密保存，换设备登录后可恢复'
-                                          : '仅保存在当前设备，不会上传',
-                              style: AiTheme.caption,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Switch.adaptive(
-                        value: syncApiKeyToAccount,
-                        activeThumbColor: AiBrandTokens.primary,
-                        onChanged: !canSyncApiKey ||
-                                apiKeyController.text.trim().isEmpty ||
-                                (cloudApiKeyProfileIds == null && isEditing)
-                            ? null
-                            : (value) => setLocalState(() {
-                                  syncApiKeyToAccount = value;
-                                  cloudApiKeySyncTouched = true;
-                                }),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: MoeTokens.spaceXs),
                 Text(
-                  '本机始终保留安全副本；关闭同步不会影响当前设备。',
-                  style: AiTheme.caption.copyWith(color: AiTheme.success),
+                  'Key 默认只留在这台设备。换设备恢复可在高级设置里打开同步。',
+                  style: AiTheme.caption,
                 ),
                 const SizedBox(height: MoeTokens.spaceLg),
 
@@ -1287,7 +1156,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                               ),
                               const SizedBox(height: MoeTokens.spaceXs),
                               Text(
-                                '调整输出方式与模型能力',
+                                '输出方式、模型能力，以及是否同步 Key',
                                 style: AiTheme.caption,
                               ),
                             ],
@@ -1307,6 +1176,76 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 ),
 
                 if (showAdvanced) ...[
+                  const SizedBox(height: MoeTokens.spaceMd),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(
+                      MoeTokens.spaceMd,
+                      MoeTokens.spaceSm,
+                      MoeTokens.spaceSm,
+                      MoeTokens.spaceSm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AiBrandTokens.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                      border: Border.all(
+                        color: AiBrandTokens.primary.withValues(alpha: 0.14),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.cloud_sync_outlined,
+                          size: 19,
+                          color: canSyncApiKey
+                              ? AiBrandTokens.primary
+                              : MoeTokens.hintText,
+                        ),
+                        const SizedBox(width: MoeTokens.spaceSm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '在账号间同步 Key',
+                                style: AiTheme.body.copyWith(
+                                  fontWeight: MoeTokens.fontWeightSubtitle,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                !canSyncApiKey
+                                    ? '登录后可开启，默认不会上传'
+                                    : cloudApiKeyProfileIds == null && isEditing
+                                        ? '账号同步暂时不可用，可先保存在本机'
+                                        : syncApiKeyToAccount
+                                            ? '已加密保存，换设备登录后可恢复'
+                                            : '仅保存在当前设备，不会上传',
+                                style: AiTheme.caption,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: syncApiKeyToAccount,
+                          activeThumbColor: AiBrandTokens.primary,
+                          onChanged: !canSyncApiKey ||
+                                  apiKeyController.text.trim().isEmpty ||
+                                  (cloudApiKeyProfileIds == null && isEditing)
+                              ? null
+                              : (value) => setLocalState(() {
+                                    syncApiKeyToAccount = value;
+                                    cloudApiKeySyncTouched = true;
+                                  }),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: MoeTokens.spaceXs),
+                  Text(
+                    '本机始终保留安全副本；关闭同步不会影响当前设备。',
+                    style: AiTheme.caption.copyWith(color: AiTheme.success),
+                  ),
                   const SizedBox(height: MoeTokens.spaceSm),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -1555,7 +1494,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                               Text('我的模型来源', style: AiTheme.title),
                               const SizedBox(height: MoeTokens.spaceXs),
                               Text(
-                                _loadError ?? '默认走 Moe 后端；第三方中转可另外添加',
+                                _loadError ?? '点一下切换聊天来源。编辑和删除在右侧菜单。',
                                 style: AiTheme.caption,
                               ),
                             ],
@@ -1625,55 +1564,6 @@ class _StatusPill extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({
-    required this.label,
-    this.icon,
-    this.muted = false,
-  });
-
-  final String label;
-  final IconData? icon;
-  final bool muted;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = muted ? MoeTokens.hintText : MoeTokens.caption;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: MoeTokens.spaceSm,
-        vertical: MoeTokens.spaceXs,
-      ),
-      decoration: BoxDecoration(
-        color: MoeTokens.softChipBg,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: MoeTokens.spaceXs),
-          ],
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 168),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: MoeTokens.textXs,
-                fontWeight: MoeTokens.fontWeightSubtitle,
-                color: color,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

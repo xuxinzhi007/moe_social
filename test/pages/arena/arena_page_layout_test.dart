@@ -218,6 +218,7 @@ class _OfflineArenaService extends ArenaService {
   Future<ArenaStateDto?> saveMeta({
     int? selectedTowerNode,
     bool clearBuffs = false,
+    int crystalDelta = 0,
   }) async =>
       null;
 

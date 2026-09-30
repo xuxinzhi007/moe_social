@@ -101,6 +101,7 @@ func handleSaveDeck(app *arenaapp.AppService, ctx khttp.Context) error {
 type metaBody struct {
 	SelectedTowerNode *int `json:"selected_tower_node"`
 	ClearBuffs        bool `json:"clear_buffs"`
+	CrystalDelta      int  `json:"crystal_delta"`
 }
 
 func handleSaveMeta(app *arenaapp.AppService, ctx khttp.Context) error {
@@ -112,7 +113,7 @@ func handleSaveMeta(app *arenaapp.AppService, ctx khttp.Context) error {
 	if err := json.NewDecoder(ctx.Request().Body).Decode(&body); err != nil {
 		return writeErr(ctx, http.StatusBadRequest, "bad json")
 	}
-	st, err := app.SaveMeta(ctx.Request().Context(), uid, body.SelectedTowerNode, body.ClearBuffs)
+	st, err := app.SaveMeta(ctx.Request().Context(), uid, body.SelectedTowerNode, body.ClearBuffs, body.CrystalDelta)
 	if err != nil {
 		return writeErr(ctx, http.StatusBadRequest, err.Error())
 	}

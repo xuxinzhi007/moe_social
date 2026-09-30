@@ -42,6 +42,7 @@ void main() {
   test('playing a card publishes a strike for the battle animation', () {
     final model = localModel();
 
+    model.startBattle();
     model.playCard(0);
 
     expect(model.strike, isNotNull);
@@ -176,6 +177,7 @@ void main() {
   test('selected enemy target receives card damage', () {
     final model = localModel();
 
+    model.selectTowerNode(0);
     model.startBattle();
     model.selectEnemy(1);
     model.playCard(1);
@@ -189,6 +191,7 @@ void main() {
   test('winning battle offers three roguelite card rewards', () async {
     final model = localModel(random: _FixedRandom(ints: [0, 1, 2]));
 
+    model.selectTowerNode(0);
     model.startBattle();
     _winBattle(model);
 
@@ -211,6 +214,41 @@ void main() {
       model.starCrystals,
       6280 + ArenaViewModel.towerClearReward,
     );
+  });
+
+  test('later floors and elite nodes raise enemy health', () async {
+    final model = localModel();
+
+    model.selectTowerNode(0);
+    model.startBattle();
+    expect(model.encounterMaxHp, ArenaViewModel.enemyMaxHp);
+
+    _winBattle(model);
+    await model.chooseRewardCard(0);
+    model.selectTowerNode(2);
+    model.startBattle();
+
+    expect(model.towerFloor, 2);
+    expect(model.encounterMaxHp, ArenaViewModel.enemyMaxHp + 12 + 40);
+  });
+
+  test('rest strengthens a deck card and shop adds one card per floor',
+      () async {
+    final model = localModel();
+    final before = model.cards.first.damage;
+
+    model.selectTowerNode(1);
+    model.runTowerNode();
+    expect(model.cards.first.damage, before + 8);
+    model.runTowerNode();
+    expect(model.routeMessage, contains('已经休整'));
+
+    model.selectTowerNode(3);
+    final crystals = model.starCrystals;
+    final deckSize = model.cards.length;
+    await model.runTowerNode();
+    expect(model.cards, hasLength(deckSize + 1));
+    expect(model.starCrystals, crystals - ArenaViewModel.shopCardCost);
   });
 
   test('tower node tap only changes selected node description', () {
@@ -279,14 +317,16 @@ void main() {
 
 void _winBattle(ArenaViewModel model) {
   var safety = 0;
-  while (!model.finished && safety < 20) {
-    model.playCard(1);
-    model.playCard(3);
-    if (!model.finished) {
+  while (!model.finished && safety < 40) {
+    if (model.hand.isEmpty || model.energy < model.hand.first.cost) {
       model.endTurn();
+    } else {
+      model.playCard(0);
     }
     safety++;
   }
+  expect(model.finished, isTrue,
+      reason: 'battle should resolve within the safety loop');
 }
 
 /// 强制走本地回退，避免测试依赖网络。
@@ -296,6 +336,14 @@ class _OfflineArenaService extends ArenaService {
 
   @override
   Future<ArenaStateDto?> setFormation(List<String> heroIds) async => null;
+
+  @override
+  Future<ArenaStateDto?> saveMeta({
+    int? selectedTowerNode,
+    bool clearBuffs = false,
+    int crystalDelta = 0,
+  }) async =>
+      null;
 
   @override
   Future<ArenaStateDto?> saveDeck(List<ArenaDeckCardDto> cards) async => null;
@@ -313,13 +361,6 @@ class _OfflineArenaService extends ArenaService {
   Future<ArenaStateDto?> saveSkin({
     required String heroId,
     required String skinId,
-  }) async =>
-      null;
-
-  @override
-  Future<ArenaStateDto?> saveMeta({
-    int? selectedTowerNode,
-    bool clearBuffs = false,
   }) async =>
       null;
 

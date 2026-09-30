@@ -807,7 +807,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: MoeTokens.spaceXs),
                   Text(
-                    _model.selectedTowerNode.description,
+                    _model.routeMessage,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, height: 1.45),
@@ -820,7 +820,9 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
             bottom: 14,
             right: 18,
             width: 112,
-            child: _goldButton('开始冒险', _model.startBattle),
+            child: _goldButton(_model.towerActionLabel, () {
+              unawaited(_model.runTowerNode());
+            }),
           ),
         ],
       ),
@@ -1410,6 +1412,8 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
         _battleBadge('战力', '${_model.teamPower}'),
         const Spacer(),
         _battleBadge('能量', '${_model.energy} / 10'),
+        const SizedBox(width: 8),
+        _battleBadge('星晶', '${_model.starCrystals}'),
         const Spacer(),
         _battleMeter(
           label: '敌方生命',
@@ -1555,14 +1559,14 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
                 _BattleStrikeLayer(strike: strike, t: t),
               if (!_model.hasPendingReward &&
                   _model.combo > 0 &&
-                  _model.lastPlayedCardIndex >= 0)
+                  _model.lastPlayedCard != null)
                 Positioned(
                   left: 150,
                   right: 150,
                   top: 0,
                   child: _BattleComboBurst(
                     combo: _model.combo,
-                    card: _model.cards[_model.lastPlayedCardIndex],
+                    card: _model.lastPlayedCard!,
                   ),
                 ),
             ],
@@ -1579,6 +1583,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
         children: [
           _BattleRewardPanel(
             choices: _model.rewardChoices,
+            crystalReward: _model.crystalRewardForNode(),
             onChoose: _model.chooseRewardCard,
           ),
           const SizedBox(height: 6),
@@ -1604,18 +1609,40 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _BattlePile(
+            label: '牌库',
+            count: _model.drawCount,
+          ),
+          const SizedBox(width: 6),
+          _BattlePile(
+            label: '弃牌',
+            count: _model.discardCount,
+          ),
+          const SizedBox(width: 8),
           Expanded(
-            child: AnimatedBuilder(
-              animation: _uiPulse,
-              builder: (context, _) => _BattleHandStack(
-                cards: _model.cards,
-                energy: _model.energy,
-                finished: _model.finished,
-                lastPlayedCardIndex: _model.lastPlayedCardIndex,
-                pulse: _uiPulse.value,
-                onPlay: _model.playCard,
-              ),
-            ),
+            child: _model.hand.isEmpty
+                ? const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '手牌已打出，结束回合会从牌库或弃牌堆再抽',
+                      style: TextStyle(
+                        color: _ArenaColors.violet,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  )
+                : AnimatedBuilder(
+                    animation: _uiPulse,
+                    builder: (context, _) => _BattleHandStack(
+                      cards: _model.hand,
+                      energy: _model.energy,
+                      finished: _model.finished,
+                      lastPlayedCardIndex: -1,
+                      pulse: _uiPulse.value,
+                      onPlay: _model.playCard,
+                    ),
+                  ),
           ),
           const SizedBox(width: 8),
           SizedBox(width: 112, child: _buildBattleActions()),
@@ -1673,6 +1700,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
               label: index < team.length ? team[index].name : '空位',
               active: index == 0 && !_model.finished,
               hp: _model.playerHp,
+              maxHp: _model.playerMaxHp,
               imageAsset: index < team.length
                   ? _model.portraitAssetOf(team[index])
                   : null,
@@ -1698,6 +1726,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
               active: index == _model.selectedEnemyIndex && !_model.finished,
               selected: index == _model.selectedEnemyIndex && !_model.finished,
               hp: _model.enemyHpAt(index),
+              maxHp: _model.encounterMaxHp,
               onTap: () => _model.selectEnemy(index),
             ),
           ),
@@ -4137,6 +4166,7 @@ class _BattleUnit extends StatelessWidget {
   const _BattleUnit({
     required this.label,
     required this.hp,
+    this.maxHp = ArenaViewModel.enemyMaxHp,
     this.hero,
     this.intentLabel,
     this.enemy = false,
@@ -4151,6 +4181,7 @@ class _BattleUnit extends StatelessWidget {
   final String label;
   final String? intentLabel;
   final int hp;
+  final int maxHp;
   final bool enemy;
   final bool active;
   final bool selected;
@@ -4285,7 +4316,7 @@ class _BattleUnit extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                     child: LinearProgressIndicator(
-                      value: (hp / ArenaViewModel.enemyMaxHp)
+                      value: (hp / (maxHp <= 0 ? 1 : maxHp))
                           .clamp(0, 1)
                           .toDouble(),
                       minHeight: 4,
@@ -4391,6 +4422,51 @@ class _EnemyIntentPill extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _BattlePile extends StatelessWidget {
+  const _BattlePile({
+    required this.label,
+    required this.count,
+  });
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 52,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _ArenaColors.ink.withValues(alpha: .72),
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: _ArenaColors.goldLight.withValues(alpha: .45)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '$count',
+            style: const TextStyle(
+              color: _ArenaColors.goldLight,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _BattleHandStack extends StatelessWidget {
@@ -4686,7 +4762,7 @@ class _BattleStrikeLayer extends StatelessWidget {
                     label,
                     style: TextStyle(
                       color: labelColor,
-                      fontSize: 22,
+                      fontSize: 28,
                       fontWeight: FontWeight.w900,
                       shadows: const [
                         Shadow(color: Color(0x66000000), blurRadius: 6),
@@ -4783,10 +4859,12 @@ class _BattleComboBurst extends StatelessWidget {
 class _BattleRewardPanel extends StatelessWidget {
   const _BattleRewardPanel({
     required this.choices,
+    required this.crystalReward,
     required this.onChoose,
   });
 
   final List<ArenaCard> choices;
+  final int crystalReward;
   final ValueChanged<int> onChoose;
 
   @override
@@ -4794,19 +4872,19 @@ class _BattleRewardPanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Row(
+            Row(
               children: [
                 Text(
-                  '胜利奖励 · 选择 1 张加入牌组',
-                  style: TextStyle(
+                  '胜利奖励 · 星晶 +$crystalReward',
+                  style: const TextStyle(
                     color: _ArenaColors.violet,
                     fontSize: MoeTokens.textSm,
                     fontWeight: MoeTokens.fontWeightTitle,
                   ),
                 ),
-                Spacer(),
-                Text(
-                  '肉鸽构筑',
+                const Spacer(),
+                const Text(
+                  '选 1 张放进牌组',
                   style: TextStyle(
                     color: _ArenaColors.muted,
                     fontSize: MoeTokens.textXs,

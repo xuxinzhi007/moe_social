@@ -155,6 +155,23 @@ class ArenaCard {
   final String? sourceHeroId;
   final String sourceHeroName;
   final ArenaCardTargeting targeting;
+
+  ArenaCard strengthened() {
+    final nextCost = cost > 1 ? cost - 1 : cost;
+    final nextDamage = damage >= 0 ? damage + 8 : damage - 8;
+    final nextName = name.endsWith('+') ? name : '$name+';
+    return ArenaCard(
+      name: nextName,
+      description: description,
+      cost: nextCost,
+      icon: icon,
+      color: color,
+      damage: nextDamage,
+      sourceHeroId: sourceHeroId,
+      sourceHeroName: sourceHeroName,
+      targeting: targeting,
+    );
+  }
 }
 
 class ArenaSummonResult {
@@ -204,6 +221,9 @@ class ArenaViewModel extends ChangeNotifier {
   static const int homeGiftBondGain = 5;
   static const int homeRestHpBonus = 5;
   static const int homeBondEnergyBonus = 1;
+  static const int handLimit = 4;
+  static const int comboBonusDamage = 8;
+  static const int shopCardCost = 180;
   static const List<String> starterHeroIds = ['lanxing', 'tutu', 'maoying'];
   static const String _localPrefsKey = 'arena_progress_v1';
 
@@ -229,6 +249,11 @@ class ArenaViewModel extends ChangeNotifier {
   bool _won = false;
   int _towerFloor = 1;
   int _selectedTowerNode = 2;
+  int _encounterMaxHp = enemyMaxHp;
+  int _restFloor = 0;
+  int _shopFloor = 0;
+  String _chainSchool = '';
+  String _routeMessage = '敌人更厚，通关星晶翻倍。牌组有同派连携时再来打。';
   int _starCrystals = 6280;
   String _battleMessage = '选择一张技能卡开始战斗';
   String _summonMessage = '十连召唤 9 折，并至少出现 1 名 SR 以上英雄。';
@@ -249,6 +274,10 @@ class ArenaViewModel extends ChangeNotifier {
   int _strikeSerial = 0;
   final List<int> _enemyHps = List<int>.filled(enemyCount, enemyMaxHp);
   final List<ArenaCard> _deck = <ArenaCard>[];
+  final List<ArenaCard> _hand = <ArenaCard>[];
+  final List<ArenaCard> _drawPile = <ArenaCard>[];
+  final List<ArenaCard> _discard = <ArenaCard>[];
+  ArenaCard? _lastPlayedCard;
   final List<ArenaCard> _rewardChoices = <ArenaCard>[];
   Timer? _formationSaveTimer;
   Timer? _metaSaveTimer;
@@ -501,27 +530,27 @@ class ArenaViewModel extends ChangeNotifier {
     ArenaTowerNode(
       label: '战斗',
       kind: '普通战',
-      description: '进入一场基础战斗，胜利后可选择 1 张技能牌。',
+      description: '标准战斗。胜利后选 1 张牌加入牌组，层数越高敌人越厚。',
     ),
     ArenaTowerNode(
       label: '休息',
       kind: '恢复点',
-      description: '后续会用于恢复生命或升级一张技能牌。',
+      description: '每层一次。强化牌组中的一张牌：费用降低，效果提高。',
     ),
     ArenaTowerNode(
       label: '精英',
       kind: '高风险战',
-      description: '更强敌人，奖励也更好。当前原型先进入普通战斗。',
+      description: '敌人更厚，通关星晶翻倍。牌组有同派连携时再来打。',
     ),
     ArenaTowerNode(
       label: '商店',
       kind: '补给',
-      description: '后续会用于购买技能牌、碎片或一次性道具。',
+      description: '每层一次。花费 180 星晶，把一张随机技能放进牌组。',
     ),
     ArenaTowerNode(
       label: '首领',
       kind: 'Boss',
-      description: '章节终点。需要稳定构筑后再挑战。',
+      description: '本章最硬的战斗，星晶奖励是普通战的三倍。',
     ),
   ];
 
@@ -533,7 +562,33 @@ class ArenaViewModel extends ChangeNotifier {
   int get playerMaxHp => _playerMaxHp;
   int get enemyHp {
     final total = _enemyHps.fold<int>(0, (sum, hp) => sum + hp);
-    return (total / (enemyCount * enemyMaxHp) * 100).round();
+    final maxTotal = enemyCount * _encounterMaxHp;
+    if (maxTotal <= 0) return 0;
+    return (total / maxTotal * 100).round();
+  }
+
+  int get encounterMaxHp => _encounterMaxHp;
+  String get routeMessage => _routeMessage;
+  String get towerActionLabel {
+    switch (selectedTowerNode.label) {
+      case '休息':
+        return '休整';
+      case '商店':
+        return '购入卡牌';
+      default:
+        return '开始冒险';
+    }
+  }
+
+  int crystalRewardForNode() {
+    switch (selectedTowerNode.label) {
+      case '精英':
+        return towerClearReward * 2;
+      case '首领':
+        return towerClearReward * 3;
+      default:
+        return towerClearReward;
+    }
   }
 
   int get selectedEnemyIndex => _selectedEnemyIndex;
@@ -549,7 +604,20 @@ class ArenaViewModel extends ChangeNotifier {
   String get battleMessage => _battleMessage;
   String get battleObjective =>
       allEnemiesDefeated ? '目标：清场完成' : '目标：敌影 ${_selectedEnemyIndex + 1}';
-  int get enemyTurnDamage => 8 + _turn * 2;
+  int get enemyTurnDamage =>
+      8 + _turn * 2 + (_towerFloor - 1) * 2 + _nodeThreat;
+
+  int get _nodeThreat {
+    switch (selectedTowerNode.label) {
+      case '精英':
+        return 4;
+      case '首领':
+        return 8;
+      default:
+        return 0;
+    }
+  }
+
   ArenaStrike? get strike => _strike;
   String get enemyIntent =>
       '敌意图：敌影 ${_selectedEnemyIndex + 1} 回合末 -$enemyTurnDamage';
@@ -558,6 +626,10 @@ class ArenaViewModel extends ChangeNotifier {
   bool get restBuffReady => _restBuffReady;
   bool get bondBuffReady => _bondBuffReady;
   List<ArenaCard> get cards => List.unmodifiable(_deck);
+  List<ArenaCard> get hand => List.unmodifiable(_hand);
+  int get drawCount => _drawPile.length;
+  int get discardCount => _discard.length;
+  ArenaCard? get lastPlayedCard => _lastPlayedCard;
   List<ArenaCard> get rewardChoices => List.unmodifiable(_rewardChoices);
   bool get hasPendingReward => _rewardChoices.isNotEmpty;
   List<ArenaSummonResult> get summonResults =>
@@ -735,6 +807,7 @@ class ArenaViewModel extends ChangeNotifier {
   void selectTowerNode(int index) {
     if (index < 0 || index >= towerNodes.length) return;
     _selectedTowerNode = index;
+    _routeMessage = towerNodes[index].description;
     notifyListeners();
     _scheduleMetaSave();
   }
@@ -827,7 +900,7 @@ class ArenaViewModel extends ChangeNotifier {
       _deck
         ..clear()
         ..addAll(state.deck.map(_cardFromDto));
-    } else {
+    } else if (_deck.isEmpty) {
       _rebuildFormationDeck();
     }
   }
@@ -1020,8 +1093,9 @@ class ArenaViewModel extends ChangeNotifier {
       buffNotes.add('羁绊整理 能量+$homeBondEnergyBonus');
     }
     _playerHp = _playerMaxHp;
+    _encounterMaxHp = _scaledEnemyHp();
     for (var index = 0; index < _enemyHps.length; index++) {
-      _enemyHps[index] = enemyMaxHp;
+      _enemyHps[index] = _encounterMaxHp;
     }
     _selectedEnemyIndex = 0;
     _turn = 1;
@@ -1030,9 +1104,11 @@ class ArenaViewModel extends ChangeNotifier {
     _finished = false;
     _won = false;
     _rewardChoices.clear();
+    _beginEncounter();
     final buffSuffix = buffNotes.isEmpty ? '' : ' · ${buffNotes.join(' / ')}';
+    _chainSchool = '';
     _battleMessage =
-        '第 $_towerFloor 层 · ${selectedTowerNode.kind}：规划能量与连携$buffSuffix';
+        '第 $_towerFloor 层 · ${selectedTowerNode.kind}：牌库 $drawCount · 手牌 ${hand.length}$buffSuffix';
     notifyListeners();
     unawaited(_persistConsumedBuffs());
   }
@@ -1080,38 +1156,52 @@ class ArenaViewModel extends ChangeNotifier {
   }
 
   void playCard(int index) {
-    if (_finished || index < 0 || index >= cards.length) return;
+    if (_finished || index < 0 || index >= _hand.length) return;
     _selectFirstAliveEnemyIfNeeded();
-    final card = cards[index];
+    final card = _hand[index];
     if (_energy < card.cost) {
-      _battleMessage = '能量不足，先结束回合恢复能量';
+      _battleMessage = '能量不足，先结束回合抽牌';
       notifyListeners();
       return;
     }
+    _hand.removeAt(index);
+    _discard.add(card);
+    _lastPlayedCard = card;
     _lastPlayedCardIndex = index;
     _combo++;
     _energy -= card.cost;
-    if (card.damage < 0) {
-      _playerHp = (_playerHp - card.damage).clamp(0, _playerMaxHp);
+    final bonus =
+        card.damage > 0 && _combo > 1 ? (_combo - 1) * comboBonusDamage : 0;
+    final amount = card.damage + bonus;
+    if (amount < 0) {
+      _playerHp = (_playerHp - amount).clamp(0, _playerMaxHp);
       _battleMessage =
-          '${card.sourceHeroName}发动${card.name}：全队恢复 ${-card.damage} 点生命';
+          '${card.sourceHeroName}发动${card.name}：全队恢复 ${-amount} 点生命';
     } else if (card.targeting == ArenaCardTargeting.allEnemies) {
       for (var enemyIndex = 0; enemyIndex < _enemyHps.length; enemyIndex++) {
         _enemyHps[enemyIndex] =
-            (_enemyHps[enemyIndex] - card.damage).clamp(0, enemyMaxHp);
+            (_enemyHps[enemyIndex] - amount).clamp(0, _encounterMaxHp);
       }
-      _battleMessage =
-          '${card.sourceHeroName}发动${card.name}：对全体敌人造成 ${card.damage} 点伤害';
+      _battleMessage = bonus > 0
+          ? '${card.sourceHeroName}发动${card.name}：连携 +$bonus，全体 $amount 点'
+          : '${card.sourceHeroName}发动${card.name}：对全体敌人造成 $amount 点伤害';
     } else {
       final target = _selectedEnemyIndex;
       _enemyHps[target] =
-          (_enemyHps[target] - card.damage).clamp(0, enemyMaxHp);
-      _battleMessage =
-          '${card.sourceHeroName}发动${card.name}：对敌影 ${target + 1} 造成 ${card.damage} 点伤害';
+          (_enemyHps[target] - amount).clamp(0, _encounterMaxHp);
+      _battleMessage = bonus > 0
+          ? '${card.sourceHeroName}发动${card.name}：连携 +$bonus，敌影 ${target + 1} 受到 $amount 点'
+          : '${card.sourceHeroName}发动${card.name}：对敌影 ${target + 1} 造成 $amount 点伤害';
     }
+    final school = _schoolOf(card);
+    if (_chainSchool == school) {
+      _energy = min(10, _energy + 1);
+      _battleMessage = '$_battleMessage · 同派回能';
+    }
+    _chainSchool = school;
     _strike = ArenaStrike(
       id: ++_strikeSerial,
-      damage: card.damage,
+      damage: amount,
       targeting: card.targeting,
       targetIndex: _selectedEnemyIndex,
       color: card.color,
@@ -1119,11 +1209,10 @@ class ArenaViewModel extends ChangeNotifier {
     if (allEnemiesDefeated) {
       _finished = true;
       _won = true;
-      // 星晶/层数/碎片结算走 clearTower（云端优先），避免与服务端双计。
       _rewardChoices
         ..clear()
         ..addAll(_rollRewardChoices());
-      _battleMessage = '胜利！选择 1 张技能加入本轮牌组';
+      _battleMessage = '胜利！星晶 +${crystalRewardForNode()}，从 3 张奖励里选 1 张放进牌组';
     }
     _selectFirstAliveEnemyIfNeeded();
     notifyListeners();
@@ -1143,13 +1232,17 @@ class ArenaViewModel extends ChangeNotifier {
     _energy = 6;
     _turn++;
     _combo = 0;
+    _chainSchool = '';
     _lastPlayedCardIndex = -1;
     if (_playerHp <= 0) {
       _finished = true;
       _won = false;
       _battleMessage = '队伍倒下了，调整阵容后再试一次';
     } else {
-      _battleMessage = '敌方行动结束，轮到你了';
+      final before = _hand.length;
+      _drawToHand();
+      final drawn = _hand.length - before;
+      _battleMessage = drawn > 0 ? '敌方行动结束，抽到 $drawn 张牌' : '敌方行动结束，牌库没有新牌';
     }
     notifyListeners();
   }
@@ -1160,14 +1253,15 @@ class ArenaViewModel extends ChangeNotifier {
     _deck.add(card);
     _rewardChoices.clear();
     await _settleTowerWin(
-      message: '获得「${card.name}」，下一层会用更强构筑继续挑战',
+      message:
+          '星晶 +${crystalRewardForNode()} · 「${card.name}」已放入牌组（${_deck.length} 张）',
     );
   }
 
   Future<void> skipReward() async {
     if (_rewardChoices.isEmpty) return;
     _rewardChoices.clear();
-    await _settleTowerWin(message: '跳过奖励，保持当前牌组进入下一层');
+    await _settleTowerWin(message: '跳过卡牌，仍获得星晶 +${crystalRewardForNode()}');
   }
 
   Future<void> _settleTowerWin({required String message}) async {
@@ -1176,15 +1270,21 @@ class ArenaViewModel extends ChangeNotifier {
       bonusHeroId: activeHero.id,
       deck: _deckDtos(),
     );
+    final reward = crystalRewardForNode();
     if (remote != null) {
       applyState(remote.state);
+      final extra = reward - towerClearReward;
+      if (extra > 0) {
+        _starCrystals += extra;
+        unawaited(_service.saveMeta(crystalDelta: extra));
+      }
       _cloudSynced = true;
       _battleMessage = message;
       notifyListeners();
       await _persistLocal();
       return;
     }
-    _starCrystals += towerClearReward;
+    _starCrystals += reward;
     _heroShards[activeHero.id] = shardsOf(activeHero) + towerWinShardBonus;
     _towerFloor++;
     _cloudSynced = false;
@@ -1287,10 +1387,112 @@ class ArenaViewModel extends ChangeNotifier {
     return pool.take(3).toList();
   }
 
+  Future<void> runTowerNode() async {
+    switch (selectedTowerNode.label) {
+      case '休息':
+        _restOnTower();
+      case '商店':
+        await _buyCard();
+      default:
+        startBattle();
+    }
+  }
+
+  void _restOnTower() {
+    if (_restFloor == _towerFloor) {
+      _routeMessage = '这一层已经休整过了，去打一场或换一条路。';
+      notifyListeners();
+      return;
+    }
+    if (_deck.isEmpty) return;
+    final rewardIndex = _deck.indexWhere((card) => card.sourceHeroName == '肉鸽');
+    final index = rewardIndex >= 0 ? rewardIndex : 0;
+    final before = _deck[index];
+    _deck[index] = before.strengthened();
+    _restFloor = _towerFloor;
+    _routeMessage =
+        '休整：${before.name} → ${_deck[index].name}，费用 ${_deck[index].cost}';
+    notifyListeners();
+    unawaited(syncDeck());
+  }
+
+  Future<void> _buyCard() async {
+    if (_shopFloor == _towerFloor) {
+      _routeMessage = '这一层的商店已经买过了。';
+      notifyListeners();
+      return;
+    }
+    if (_starCrystals < shopCardCost) {
+      _routeMessage = '星晶不足，购入卡牌需要 $shopCardCost。';
+      notifyListeners();
+      return;
+    }
+    final card = _rewardPool[_random.nextInt(_rewardPool.length)];
+    _deck.add(card);
+    _shopFloor = _towerFloor;
+    final remote = await _service.saveMeta(crystalDelta: -shopCardCost);
+    await syncDeck();
+    if (remote == null) {
+      _starCrystals -= shopCardCost;
+    }
+    _routeMessage = '花费 $shopCardCost 星晶，购入「${card.name}」。牌组 ${_deck.length} 张';
+    notifyListeners();
+    await _persistLocal();
+  }
+
+  int _scaledEnemyHp() {
+    final grown = enemyMaxHp + (_towerFloor - 1) * 12;
+    switch (selectedTowerNode.label) {
+      case '精英':
+        return grown + 40;
+      case '首领':
+        return grown + 80;
+      default:
+        return grown;
+    }
+  }
+
+  String _schoolOf(ArenaCard card) {
+    if (card.damage < 0 || card.targeting == ArenaCardTargeting.allyTeam) {
+      return '庇护';
+    }
+    if (card.targeting == ArenaCardTargeting.allEnemies) return '爆发';
+    return '单体';
+  }
+
+  void _beginEncounter() {
+    _hand.clear();
+    _discard.clear();
+    _drawPile.clear();
+    _lastPlayedCard = null;
+    final opening = min(handLimit, _deck.length);
+    _hand.addAll(_deck.take(opening));
+    if (_deck.length > opening) {
+      _drawPile.addAll(_deck.skip(opening));
+      _drawPile.shuffle(_random);
+    }
+  }
+
+  void _drawToHand() {
+    while (_hand.length < handLimit) {
+      if (_drawPile.isEmpty) {
+        if (_discard.isEmpty) return;
+        _drawPile.addAll(_discard);
+        _discard.clear();
+        _drawPile.shuffle(_random);
+      }
+      _hand.add(_drawPile.removeAt(0));
+    }
+  }
+
   void _rebuildFormationDeck() {
+    final rewards = _deck
+        .where((card) => card.sourceHeroName == '肉鸽')
+        .toList(growable: false);
     _deck
       ..clear()
-      ..addAll(_cardsForFormation());
+      ..addAll(_cardsForFormation())
+      ..addAll(rewards);
   }
 
   List<ArenaCard> _cardsForFormation() {
