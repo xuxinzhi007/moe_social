@@ -110,6 +110,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         icon = Icons.auto_awesome_rounded;
         color = MoeTokens.primary;
         break;
+      case NotificationModel.commentMention:
+        icon = Icons.alternate_email_rounded;
+        color = MoeTokens.primary;
+        break;
       default:
         icon = Icons.notifications_rounded;
         color = Colors.grey;
@@ -126,9 +130,48 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   }
 
   bool _isActionable(NotificationModel notification) {
+    final postId = notification.postId ?? '';
+    final opensPost = postId.isNotEmpty &&
+        (notification.type == NotificationModel.comment ||
+            notification.type == NotificationModel.commentMention);
     return notification.announcementId?.isNotEmpty == true ||
         notification.type == NotificationModel.system ||
-        notification.type == NotificationModel.companionProactive;
+        notification.type == NotificationModel.companionProactive ||
+        opensPost;
+  }
+
+  void _openNotification(NotificationModel notification) {
+    if (!notification.isRead) {
+      _markAsRead(notification.id);
+    }
+    final annId = notification.announcementId;
+    if (annId != null && annId.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => AnnouncementDetailPage(announcementId: annId),
+        ),
+      );
+      return;
+    }
+    final postId = notification.postId ?? '';
+    if (postId.isNotEmpty &&
+        (notification.type == NotificationModel.comment ||
+            notification.type == NotificationModel.commentMention)) {
+      unawaited(
+        Navigator.pushNamed<Object?>(
+          context,
+          '/post-detail',
+          arguments: <String, Object?>{'postId': postId},
+        ),
+      );
+      return;
+    }
+    if (notification.type == NotificationModel.system) {
+      Navigator.pushNamed(context, '/announcements');
+    } else if (notification.type == NotificationModel.companionProactive) {
+      unawaited(CompanionChatLauncher.openChat(context));
+    }
   }
 
   @override
@@ -220,32 +263,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                                 borderRadius: BorderRadius.circular(
                                   MoeTokens.radiusXl,
                                 ),
-                                onTap: () {
-                                  if (!notification.isRead) {
-                                    _markAsRead(notification.id);
-                                  }
-                                  final annId = notification.announcementId;
-                                  if (annId != null && annId.isNotEmpty) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => AnnouncementDetailPage(
-                                            announcementId: annId),
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  if (notification.type ==
-                                      NotificationModel.system) {
-                                    Navigator.pushNamed(
-                                        context, '/announcements');
-                                  } else if (notification.type ==
-                                      NotificationModel.companionProactive) {
-                                    unawaited(
-                                      CompanionChatLauncher.openChat(context),
-                                    );
-                                  }
-                                },
+                                onTap: () => _openNotification(notification),
                                 child: Container(
                                   margin: EdgeInsets.only(
                                       bottom: MoeTokens.spaceMd),

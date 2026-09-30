@@ -17,6 +17,7 @@ class BehaviorScreens {
       '/conversations': 'conversations',
       '/direct-chat': 'chat',
       '/community': 'community',
+      '/community-search': 'community_search',
       '/community-post-detail': 'post_detail',
       '/interest-group-detail': 'interest_group',
       '/create-post': 'create_post',

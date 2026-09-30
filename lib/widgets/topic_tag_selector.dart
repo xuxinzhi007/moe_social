@@ -444,44 +444,37 @@ class TopicTagDisplay extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 16,
-            vertical: compact ? 6 : 8,
+            horizontal: compact ? MoeTokens.spaceMd : MoeTokens.spaceLg,
+            vertical: compact ? MoeTokens.spaceXs : MoeTokens.spaceSm,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(compact ? 16 : 20),
+            color: tag.color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
             border: Border.all(
-              color: Colors.red,
-              width: 1.5,
+              color: tag.color.withValues(alpha: 0.38),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.red.withValues(alpha: 0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '+ ',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: fontSize + 1,
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: MoeTokens.spaceSm,
+                height: MoeTokens.spaceSm,
+                decoration: BoxDecoration(
+                  color: tag.color,
+                  shape: BoxShape.circle,
                 ),
               ),
+              const SizedBox(width: MoeTokens.spaceXs),
               Text(
                 tag.name,
                 style: TextStyle(
-                  color: Colors.black87,
+                  color: MoeTokens.titleText,
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: MoeTokens.fontWeightSubtitle,
                 ),
               ),
             ],

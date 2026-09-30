@@ -318,77 +318,42 @@ class _PostCardState extends State<PostCard> {
                     ),
                   ),
 
-                if (widget.post.images.isNotEmpty) ...[
-                  _buildImageGrid(context, widget.post.images, widget.post.id),
-                  const SizedBox(height: MoeTokens.spaceMd),
-                ],
-
-                if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
-                  _HandDrawThumbnail(
-                    post: widget.post,
-                    aspectRatio: _mediaPreviewAspectRatio(isDetail: isDetail),
-                    minHeight: _mediaPreviewMinHeight(isDetail: isDetail),
-                    maxHeight: _mediaPreviewMaxHeight(isDetail: isDetail),
-                    onOpenReplay: () =>
-                        _openHandDrawViewer(context, widget.post),
-                  ),
-                  const SizedBox(height: MoeTokens.spaceMd),
-                ] else if (widget.post.hasHandDraw ||
-                    widget.post.handDrawCard != null) ...[
-                  _buildHandDrawPreview(context, isDetail: isDetail),
-                  Align(
-                    alignment: Alignment.center,
-                    child: TextButton.icon(
-                      onPressed: () =>
-                          _openHandDrawViewer(context, widget.post),
-                      icon: const Icon(Icons.play_circle_outline_rounded,
-                          size: 20),
-                      label: const Text('回放绘画过程'),
-                    ),
-                  ),
-                ],
-
                 if (widget.post.displayCaption.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(
-                      top: MoeTokens.spaceXs,
-                      bottom: MoeTokens.spaceSm,
-                    ),
+                    padding: const EdgeInsets.only(bottom: MoeTokens.spaceSm),
                     child: _renderContentWithEmojis(
                         context, widget.post.displayCaption),
                   ),
 
-                if (widget.post.topicTags.isNotEmpty) ...[
-                  const SizedBox(height: MoeTokens.spaceSm),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: widget.post.topicTags
-                          .map(
-                            (tag) => Padding(
-                              padding: const EdgeInsets.only(
-                                right: MoeTokens.spaceSm,
-                              ),
-                              child: TopicTagDisplay(
-                                tag: tag,
-                                fontSize: MoeTokens.textXs,
-                                compact: true,
-                                showUsageCount: false,
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/topic-posts',
-                                    arguments: tag,
-                                  );
-                                },
-                              ),
-                            ),
-                          )
-                          .toList(),
+                if (widget.post.topicTags.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: MoeTokens.spaceXs,
+                      bottom: MoeTokens.spaceMd,
+                    ),
+                    child: Wrap(
+                      spacing: MoeTokens.spaceSm,
+                      runSpacing: MoeTokens.spaceSm,
+                      children: [
+                        for (final tag in widget.post.topicTags)
+                          TopicTagDisplay(
+                            tag: tag,
+                            fontSize: MoeTokens.textXs,
+                            compact: true,
+                            showUsageCount: false,
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/topic-posts',
+                                arguments: tag,
+                              );
+                            },
+                          ),
+                      ],
                     ),
                   ),
-                ],
+
+                _buildPostMedia(context, isDetail: isDetail),
 
                 const SizedBox(height: MoeTokens.spaceLg),
                 Divider(
@@ -619,6 +584,123 @@ $link''';
           ],
         ),
       ),
+    );
+  }
+
+  bool get _hasHandDraw =>
+      widget.post.handDrawThumbUrl.isNotEmpty ||
+      widget.post.hasHandDraw ||
+      widget.post.handDrawCard != null;
+
+  Widget _buildPostMedia(BuildContext context, {required bool isDetail}) {
+    final images = widget.post.images;
+    final hasHand = _hasHandDraw;
+    if (images.isEmpty && !hasHand) return const SizedBox.shrink();
+
+    final Widget media;
+    if (images.isNotEmpty && hasHand) {
+      media = _buildMixedMedia(context, images, isDetail: isDetail);
+    } else if (images.isNotEmpty) {
+      media = _buildImageGrid(context, images, widget.post.id);
+    } else if (widget.post.handDrawThumbUrl.isNotEmpty) {
+      media = _HandDrawThumbnail(
+        post: widget.post,
+        aspectRatio: _mediaPreviewAspectRatio(isDetail: isDetail),
+        minHeight: _mediaPreviewMinHeight(isDetail: isDetail),
+        maxHeight: _mediaPreviewMaxHeight(isDetail: isDetail),
+        onOpenReplay: () => _openHandDrawViewer(context, widget.post),
+      );
+    } else {
+      media = Column(
+        children: [
+          _buildHandDrawPreview(context, isDetail: isDetail),
+          Align(
+            alignment: Alignment.center,
+            child: TextButton.icon(
+              onPressed: () => _openHandDrawViewer(context, widget.post),
+              icon: const Icon(Icons.play_circle_outline_rounded, size: 20),
+              label: const Text('回放绘画过程'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MoeTokens.spaceMd),
+      child: media,
+    );
+  }
+
+  Widget _buildMixedMedia(
+    BuildContext context,
+    List<String> images, {
+    required bool isDetail,
+  }) {
+    final count = images.length + 1;
+    final crossAxisCount = count == 2 || count == 4 ? 2 : 3;
+    final spacing = MoeTokens.spaceXs;
+    final postId = widget.post.id;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final totalSpacing = spacing * (crossAxisCount - 1);
+        final itemSize = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+        final rowCount = (count / crossAxisCount).ceil();
+        final maxHeight = isDetail
+            ? MoeTokens.postMediaDetailGridMaxHeight
+            : MoeTokens.postMediaFeedGridMaxHeight;
+        final rowHeight = ((maxHeight - spacing * (rowCount - 1)) / rowCount)
+            .clamp(1.0, itemSize)
+            .toDouble();
+        final gridHeight = rowHeight * rowCount + spacing * (rowCount - 1);
+
+        return SizedBox(
+          key: ValueKey('post_media_${postId}_mixed'),
+          width: double.infinity,
+          height: gridHeight,
+          child: Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (var index = 0; index < images.length; index++)
+                SizedBox(
+                  width: itemSize,
+                  height: rowHeight,
+                  child: GestureDetector(
+                    onTap: () {
+                      PostImageViewer.show(
+                        context,
+                        imageUrls: images,
+                        postId: postId,
+                        heroTagPrefix: widget.heroTagPrefix,
+                        initialIndex: index,
+                      );
+                    },
+                    child: Hero(
+                      tag: '${widget.heroTagPrefix}post_img_${postId}_$index',
+                      child: NetworkImageWidget(
+                        imageUrl: images[index],
+                        width: itemSize,
+                        height: rowHeight,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              SizedBox(
+                width: itemSize,
+                height: rowHeight,
+                child: _HandDrawTile(
+                  post: widget.post,
+                  onOpenReplay: () => _openHandDrawViewer(context, widget.post),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -896,6 +978,60 @@ $link''';
     return RichText(
       text: TextSpan(
         children: spans,
+      ),
+    );
+  }
+}
+
+/// 和图片拼在同一格里的手绘块，点按进入回放。
+class _HandDrawTile extends StatelessWidget {
+  const _HandDrawTile({
+    required this.post,
+    required this.onOpenReplay,
+  });
+
+  final Post post;
+  final VoidCallback onOpenReplay;
+
+  @override
+  Widget build(BuildContext context) {
+    final card = post.handDrawCard;
+    final thumb = post.handDrawThumbUrl;
+    return GestureDetector(
+      onTap: onOpenReplay,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (thumb.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: resolveMediaUrl(thumb),
+              fit: BoxFit.cover,
+              placeholder: (_, __) =>
+                  const ColoredBox(color: MoeTokens.softChipBg),
+              errorWidget: (_, __, ___) =>
+                  const ColoredBox(color: MoeTokens.softChipBg),
+            )
+          else if (card != null)
+            CustomPaint(
+              painter: HandDrawCardPainter(data: card, progress: 1),
+              child: const SizedBox.expand(),
+            )
+          else
+            const ColoredBox(color: MoeTokens.softChipBg),
+          Center(
+            child: Icon(
+              Icons.play_circle_fill_rounded,
+              size: 28,
+              color: Colors.white.withValues(alpha: 0.94),
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

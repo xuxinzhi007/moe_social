@@ -5,7 +5,9 @@ import '../../models/achievement_unlock.dart';
 import '../../models/comment.dart';
 import '../../services/companion_service.dart';
 import '../../services/post_service.dart';
+import '../../models/user.dart';
 import '../../services/user_service.dart';
+import '../../utils/comment_mentions.dart';
 import '../../utils/moe_error_copy.dart';
 
 /// 评论页状态：列表加载、乐观发表评论、回复上下文。
@@ -27,6 +29,9 @@ class CommentsViewModel extends ChangeNotifier {
   String? authorUserId;
   String? replyParentId;
   String? replyToUserName;
+  List<User> _mentionFriends = const [];
+  bool mentionActive = false;
+  String mentionQuery = '';
   bool _disposed = false;
   final Set<String> _pendingCommentLikes = <String>{};
 
@@ -39,8 +44,42 @@ class CommentsViewModel extends ChangeNotifier {
   bool isCommentLikePending(String commentId) =>
       _pendingCommentLikes.contains(commentId);
 
+  List<User> get mentionSuggestions {
+    if (!mentionActive) return const [];
+    final query = mentionQuery.toLowerCase();
+    final matched = _mentionFriends.where((user) {
+      if (query.isEmpty) return true;
+      return user.username.toLowerCase().contains(query);
+    });
+    return matched.take(maxCommentMentionSuggestions).toList(growable: false);
+  }
+
   Future<void> bootstrap() async {
     await Future.wait([loadUserInfo(), fetchComments()]);
+    await loadMentionFriends();
+  }
+
+  Future<void> loadMentionFriends() async {
+    final userId = authorUserId ?? AuthService.currentUser;
+    if (userId == null || userId.isEmpty) return;
+    try {
+      final friends = await UserService.getFriends(userId);
+      if (_disposed) return;
+      _mentionFriends = friends;
+      _notify();
+    } catch (e) {
+      debugPrint('加载可提及好友失败: $e');
+    }
+  }
+
+  void updateMention(String text, int cursor) {
+    final query = activeCommentMentionQuery(text, cursor);
+    final active = query != null;
+    final nextQuery = query ?? '';
+    if (active == mentionActive && nextQuery == mentionQuery) return;
+    mentionActive = active;
+    mentionQuery = nextQuery;
+    _notify();
   }
 
   Future<void> loadUserInfo() async {

@@ -49,6 +49,41 @@ func (s *store) GetUsersByIDs(ctx context.Context, userIDs []uint) ([]model.User
 	return users, err
 }
 
+func (s *store) ListAcceptedFriendsByUsernames(ctx context.Context, actorID uint, usernames []string) ([]model.User, error) {
+	if actorID == 0 || len(usernames) == 0 {
+		return nil, nil
+	}
+	var rels []model.FriendRequest
+	err := s.db.WithContext(ctx).
+		Where("status = ? AND (from_user_id = ? OR to_user_id = ?)", "accepted", actorID, actorID).
+		Find(&rels).Error
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]uint, 0, len(rels))
+	seen := make(map[uint]struct{}, len(rels))
+	for _, rel := range rels {
+		other := rel.FromUserID
+		if other == actorID {
+			other = rel.ToUserID
+		}
+		if other == 0 || other == actorID {
+			continue
+		}
+		if _, ok := seen[other]; ok {
+			continue
+		}
+		seen[other] = struct{}{}
+		ids = append(ids, other)
+	}
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var users []model.User
+	err = s.db.WithContext(ctx).Where("id IN ? AND username IN ?", ids, usernames).Find(&users).Error
+	return users, err
+}
+
 func (s *store) GetComment(ctx context.Context, commentID uint) (model.Comment, error) {
 	var comment model.Comment
 	err := s.db.WithContext(ctx).First(&comment, commentID).Error

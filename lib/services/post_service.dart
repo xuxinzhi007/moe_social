@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import '../models/achievement_unlock.dart';
 import '../models/post.dart';
+import '../models/post_search_hit.dart';
 import '../models/comment.dart';
 import 'api_client.dart';
 import 'api_service.dart';
@@ -45,6 +46,22 @@ class PostService {
     manager.trimPostCaches(maxEntries: 600);
 
     return result;
+  }
+
+  /// 检索公开动态。空关键词直接返回空列表，不打网络。
+  static Future<List<PostSearchHit>> searchPosts({
+    required String query,
+    int limit = 20,
+  }) async {
+    final keyword = query.trim();
+    if (keyword.isEmpty) return const [];
+    final viewer =
+        AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+    return ApiService.searchPosts(
+      query: keyword,
+      limit: limit,
+      viewerUserId: viewer.isEmpty ? null : viewer,
+    );
   }
 
   // 获取单个帖子
@@ -156,6 +173,7 @@ class PostService {
 
   static Future<Post> updatePost(
     String postId, {
+    required String userId,
     String? content,
     List<String>? images,
     List<Map<String, dynamic>>? topicTags,
@@ -164,6 +182,7 @@ class PostService {
   }) async {
     return ApiService.updatePost(
       postId,
+      userId: userId,
       content: content,
       images: images,
       topicTags: topicTags,

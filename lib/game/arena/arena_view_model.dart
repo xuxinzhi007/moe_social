@@ -117,6 +117,22 @@ class ArenaHero {
   }
 }
 
+class ArenaStrike {
+  const ArenaStrike({
+    required this.id,
+    required this.damage,
+    required this.targeting,
+    required this.targetIndex,
+    required this.color,
+  });
+
+  final int id;
+  final int damage;
+  final ArenaCardTargeting targeting;
+  final int targetIndex;
+  final int color;
+}
+
 class ArenaCard {
   const ArenaCard({
     required this.name,
@@ -173,7 +189,7 @@ class ArenaViewModel extends ChangeNotifier {
   })  : _random = random ?? Random(),
         _service = service ?? ArenaService(),
         _view = initialView {
-    _ownedHeroIds.addAll(heroes.take(3).map((hero) => hero.id));
+    _ownedHeroIds.addAll(starterHeroIds);
     _deck.addAll(_cardsForFormation());
   }
 
@@ -188,6 +204,7 @@ class ArenaViewModel extends ChangeNotifier {
   static const int homeGiftBondGain = 5;
   static const int homeRestHpBonus = 5;
   static const int homeBondEnergyBonus = 1;
+  static const List<String> starterHeroIds = ['lanxing', 'tutu', 'maoying'];
   static const String _localPrefsKey = 'arena_progress_v1';
 
   final Random _random;
@@ -227,11 +244,9 @@ class ArenaViewModel extends ChangeNotifier {
   final Map<String, int> _heroFavorites = <String, int>{};
   final Map<String, String> _heroSkinIds = <String, String>{};
   final List<ArenaSummonResult> _summonResults = <ArenaSummonResult>[];
-  final List<String> _formationHeroIds = <String>[
-    'lanxing',
-    'tutu',
-    'maoying',
-  ];
+  final List<String> _formationHeroIds = List<String>.of(starterHeroIds);
+  ArenaStrike? _strike;
+  int _strikeSerial = 0;
   final List<int> _enemyHps = List<int>.filled(enemyCount, enemyMaxHp);
   final List<ArenaCard> _deck = <ArenaCard>[];
   final List<ArenaCard> _rewardChoices = <ArenaCard>[];
@@ -534,8 +549,10 @@ class ArenaViewModel extends ChangeNotifier {
   String get battleMessage => _battleMessage;
   String get battleObjective =>
       allEnemiesDefeated ? '目标：清场完成' : '目标：敌影 ${_selectedEnemyIndex + 1}';
+  int get enemyTurnDamage => 8 + _turn * 2;
+  ArenaStrike? get strike => _strike;
   String get enemyIntent =>
-      '敌意图：敌影 ${_selectedEnemyIndex + 1} 回合末 -${8 + _turn * 2}';
+      '敌意图：敌影 ${_selectedEnemyIndex + 1} 回合末 -$enemyTurnDamage';
   String get summonMessage => _summonMessage;
   String get homeMessage => _homeMessage;
   bool get restBuffReady => _restBuffReady;
@@ -805,6 +822,7 @@ class ArenaViewModel extends ChangeNotifier {
         ..clear()
         ..addAll(state.formationHeroIds);
     }
+    _ensurePlayableRoster();
     if (state.deck.isNotEmpty) {
       _deck
         ..clear()
@@ -812,6 +830,28 @@ class ArenaViewModel extends ChangeNotifier {
     } else {
       _rebuildFormationDeck();
     }
+  }
+
+  /// 空拥有列表补回初始三人，编队里有未拥有英雄时改成可上场的三人。
+  void _ensurePlayableRoster() {
+    if (_ownedHeroIds.isEmpty) {
+      _ownedHeroIds.addAll(starterHeroIds);
+    }
+    final playable = _formationHeroIds.length == formationSize &&
+        _formationHeroIds.every(_ownedHeroIds.contains);
+    if (playable) return;
+    final next = <String>[];
+    for (final id in starterHeroIds) {
+      if (_ownedHeroIds.contains(id)) next.add(id);
+    }
+    for (final id in _ownedHeroIds) {
+      if (next.length >= formationSize) break;
+      if (!next.contains(id)) next.add(id);
+    }
+    if (next.length < formationSize) return;
+    _formationHeroIds
+      ..clear()
+      ..addAll(next.take(formationSize));
   }
 
   Future<bool> syncFormation() async {
@@ -1069,6 +1109,13 @@ class ArenaViewModel extends ChangeNotifier {
       _battleMessage =
           '${card.sourceHeroName}发动${card.name}：对敌影 ${target + 1} 造成 ${card.damage} 点伤害';
     }
+    _strike = ArenaStrike(
+      id: ++_strikeSerial,
+      damage: card.damage,
+      targeting: card.targeting,
+      targetIndex: _selectedEnemyIndex,
+      color: card.color,
+    );
     if (allEnemiesDefeated) {
       _finished = true;
       _won = true;
@@ -1084,7 +1131,15 @@ class ArenaViewModel extends ChangeNotifier {
 
   void endTurn() {
     if (_finished) return;
-    _playerHp = (_playerHp - (8 + _turn * 2)).clamp(0, _playerMaxHp);
+    final hit = enemyTurnDamage;
+    _playerHp = (_playerHp - hit).clamp(0, _playerMaxHp);
+    _strike = ArenaStrike(
+      id: ++_strikeSerial,
+      damage: hit,
+      targeting: ArenaCardTargeting.allyTeam,
+      targetIndex: 0,
+      color: 0xFFD47E9B,
+    );
     _energy = 6;
     _turn++;
     _combo = 0;

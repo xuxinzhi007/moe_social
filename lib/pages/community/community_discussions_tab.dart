@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/topic_tag.dart';
 import 'community_posts_feed.dart';
 
-/// 讨论 Tab：话题 Chip + 形态筛选 + 广场帖子流（整页一体滚动，配合外层 NestedScrollView）。
+/// 讨论 Tab：话题 Chip，其下是形态筛选，再接广场帖子流。
 class CommunityDiscussionsTab extends StatefulWidget {
   const CommunityDiscussionsTab({super.key});
 
@@ -23,7 +23,6 @@ class _CommunityDiscussionsTabState extends State<CommunityDiscussionsTab> {
       child: CommunityPostsFeed(
         key: ValueKey<String?>(_selectedTopic?.id),
         topicTagId: _selectedTopic?.id,
-        showTextSearch: true,
         showVisualKindRow: true,
         emptyTitle: '广场还没有内容',
         emptySubtitle: '选一个话题标签，或发第一条动态',

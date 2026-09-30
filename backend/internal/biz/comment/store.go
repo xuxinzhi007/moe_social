@@ -16,6 +16,8 @@ type CommentStore interface {
 	GetPost(ctx context.Context, postID uint) (model.Post, error)
 	GetUser(ctx context.Context, userID uint) (model.User, error)
 	GetUsersByIDs(ctx context.Context, userIDs []uint) ([]model.User, error)
+	// ListAcceptedFriendsByUsernames 只返回与 actor 已是好友、且用户名命中的用户。
+	ListAcceptedFriendsByUsernames(ctx context.Context, actorID uint, usernames []string) ([]model.User, error)
 
 	GetComment(ctx context.Context, commentID uint) (model.Comment, error)
 	GetCommentWithUser(ctx context.Context, commentID uint) (model.Comment, error)

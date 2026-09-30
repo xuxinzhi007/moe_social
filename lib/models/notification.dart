@@ -10,6 +10,7 @@ class NotificationModel {
   static const int announcement = 7;
   static const int giftReceived = 8;
   static const int companionProactive = 9;
+  static const int commentMention = 10;
 
   final String id;
   final int type; // 1:like, 2:comment, 3:follow, 4:system
@@ -101,6 +102,8 @@ class NotificationModel {
         return senderName != null ? '$senderName 送给你礼物' : '收到一份礼物';
       case companionProactive:
         return 'AI 伙伴想和你聊聊';
+      case commentMention:
+        return senderName != null ? '$senderName 在评论里提到了你' : '有人在评论里提到了你';
       default:
         return '新通知';
     }

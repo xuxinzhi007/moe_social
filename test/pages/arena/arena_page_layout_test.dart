@@ -130,14 +130,14 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('战斗').last);
     await tester.pump();
-    expect(find.text('我方战力  51400'), findsOneWidget);
-    expect(find.text('敌方战力  16,240'), findsOneWidget);
+    expect(find.text('战力  51400'), findsOneWidget);
+    expect(find.text('16,240'), findsNothing);
     expect(find.textContaining('目标：敌影 1'), findsOneWidget);
     expect(find.textContaining('敌意图'), findsOneWidget);
     expect(find.text('意图 -10'), findsOneWidget);
     expect(find.text('我方生命'), findsOneWidget);
     expect(find.text('敌方生命'), findsOneWidget);
-    expect(find.text('本局手牌'), findsOneWidget);
+    expect(find.text('结束回合'), findsOneWidget);
     expect(find.text('星潮回响'), findsOneWidget);
     expect(find.text('澜星技'), findsOneWidget);
     expect(find.text('兔突技'), findsOneWidget);

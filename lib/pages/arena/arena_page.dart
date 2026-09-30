@@ -11,6 +11,18 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import 'arena_camp_preview_page.dart';
 
+const _friendlySlots = <Alignment>[
+  Alignment(-.78, .22),
+  Alignment(-.52, -.02),
+  Alignment(-.26, .22),
+];
+
+const _enemySlots = <Alignment>[
+  Alignment(.26, .22),
+  Alignment(.52, -.02),
+  Alignment(.78, .22),
+];
+
 class ArenaPage extends StatefulWidget {
   const ArenaPage({
     super.key,
@@ -29,8 +41,7 @@ class ArenaPage extends StatefulWidget {
   State<ArenaPage> createState() => _ArenaPageState();
 }
 
-class _ArenaPageState extends State<ArenaPage>
-    with SingleTickerProviderStateMixin {
+class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
   static const double _designWidth = 800;
   static const double _designHeight = 450;
   static const double _navHeight = 56;
@@ -39,7 +50,9 @@ class _ArenaPageState extends State<ArenaPage>
   late final ArenaViewModel _model;
   late final ArenaBattleGame _game;
   late final AnimationController _uiPulse;
+  late final AnimationController _strikeCtrl;
   late final bool _ownsModel;
+  int _seenStrikeId = 0;
   bool _formationSaved = false;
   bool _showSummonPool = false;
 
@@ -54,6 +67,11 @@ class _ArenaPageState extends State<ArenaPage>
       vsync: this,
       duration: const Duration(seconds: 8),
     )..repeat();
+    _strikeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    _model.addListener(_onArenaStrike);
     unawaited(SystemChrome.setPreferredOrientations(const [
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -80,8 +98,17 @@ class _ArenaPageState extends State<ArenaPage>
     );
   }
 
+  void _onArenaStrike() {
+    final strike = _model.strike;
+    if (strike == null || strike.id == _seenStrikeId) return;
+    _seenStrikeId = strike.id;
+    _strikeCtrl.forward(from: 0);
+  }
+
   @override
   void dispose() {
+    _model.removeListener(_onArenaStrike);
+    _strikeCtrl.dispose();
     _uiPulse.dispose();
     if (_ownsModel) {
       _model.dispose();
@@ -1350,84 +1377,234 @@ class _ArenaPageState extends State<ArenaPage>
 
   Widget _buildBattle() {
     return Stack(
+      fit: StackFit.expand,
       children: [
         GameWidget(game: _game),
-        ..._buildBattleUnits(),
-        if (_model.combo > 0 && _model.lastPlayedCardIndex >= 0)
-          Positioned(
-            left: 260,
-            right: 260,
-            top: 214,
-            child: _BattleComboBurst(
-              combo: _model.combo,
-              card: _model.cards[_model.lastPlayedCardIndex],
-            ),
-          ),
-        Positioned(
-          top: 12,
-          left: 18,
-          right: 18,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+          child: Column(
             children: [
-              _battleBadge('我方战力', '${_model.teamPower}'),
-              const SizedBox(width: 10),
-              _battleBadge('能量', '${_model.energy} / 10'),
-              const SizedBox(width: 10),
-              _battleBadge('敌方战力', '16,240'),
+              _buildBattleHud(),
+              const SizedBox(height: 6),
+              _buildBattleStatusLine(),
+              const SizedBox(height: 4),
+              Expanded(child: _buildBattleField()),
+              const SizedBox(height: 6),
+              _buildBattleDock(),
             ],
           ),
         ),
-        Positioned(
-          left: 18,
-          top: 56,
-          width: 184,
-          child: _HealthPanel(
-            label: '我方生命',
-            value: _model.playerHp,
-            color: const Color(0xFF79B9B0),
+      ],
+    );
+  }
+
+  Widget _buildBattleHud() {
+    return Row(
+      children: [
+        _battleMeter(
+          label: '我方生命',
+          value: _model.playerHp,
+          color: const Color(0xFF79B9B0),
+        ),
+        const SizedBox(width: 8),
+        _battleBadge('战力', '${_model.teamPower}'),
+        const Spacer(),
+        _battleBadge('能量', '${_model.energy} / 10'),
+        const Spacer(),
+        _battleMeter(
+          label: '敌方生命',
+          value: _model.enemyHp,
+          color: const Color(0xFFD47E9B),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 52,
+          height: 28,
+          child: _compactGhostButton(
+            '返回',
+            () => _model.navigate(ArenaView.lobby),
           ),
         ),
-        Positioned(
-          right: 18,
-          top: 56,
-          width: 184,
-          child: _HealthPanel(
-            label: '敌方生命',
-            value: _model.enemyHp,
-            color: const Color(0xFFD47E9B),
+      ],
+    );
+  }
+
+  Widget _battleMeter({
+    required String label,
+    required int value,
+    required Color color,
+  }) {
+    final ratio = (value / 100).clamp(0, 1).toDouble();
+    return SizedBox(
+      width: 132,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _ArenaColors.violet,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '$value%',
+                style: const TextStyle(
+                  color: _ArenaColors.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
-        ),
-        Positioned(
-          top: 104,
-          left: 220,
-          right: 220,
-          child: _BattleLogRibbon(
-            hero: _model.activeHero,
-            turn: _model.turn,
-            combo: _model.combo,
-            objective: _model.battleObjective,
-            enemyIntent: _model.enemyIntent,
-            message: _model.battleMessage,
-            finished: _model.finished,
-            won: _model.won,
-          ),
-        ),
-        if (_model.hasPendingReward)
-          Positioned(
-            left: 190,
-            right: 190,
-            bottom: 14,
-            child: _BattleRewardPanel(
-              choices: _model.rewardChoices,
-              onChoose: _model.chooseRewardCard,
+          const SizedBox(height: 3),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+            child: LinearProgressIndicator(
+              value: ratio,
+              minHeight: 6,
+              color: color,
+              backgroundColor: const Color(0xFFE9DCC3),
             ),
-          )
-        else
-          Positioned(
-            left: 92,
-            right: 182,
-            bottom: 8,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBattleStatusLine() {
+    final phase = _model.finished
+        ? (_model.won ? '胜利' : '失败')
+        : 'T${_model.turn} · 连携 ${_model.combo}';
+    return Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: _ArenaColors.cream.withValues(alpha: .88),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        border: Border.all(color: _ArenaColors.gold.withValues(alpha: .72)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            phase,
+            style: const TextStyle(
+              color: _ArenaColors.violet,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _model.battleMessage,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _ArenaColors.violet,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '${_model.battleObjective} ｜ ${_model.enemyIntent}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: _ArenaColors.muted,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBattleField() {
+    return AnimatedBuilder(
+      animation: _strikeCtrl,
+      builder: (context, _) {
+        final strike = _model.strike;
+        final t = _strikeCtrl.value;
+        final shaking = strike != null &&
+            strike.damage > 0 &&
+            _strikeCtrl.isAnimating &&
+            t < 1;
+        final dx = shaking ? math.sin(t * math.pi * 8) * 4 * (1 - t) : 0.0;
+        return Transform.translate(
+          offset: Offset(dx, 0),
+          child: Stack(
+            children: [
+              ..._buildBattleUnits(),
+              if (strike != null && _strikeCtrl.isAnimating)
+                _BattleStrikeLayer(strike: strike, t: t),
+              if (!_model.hasPendingReward &&
+                  _model.combo > 0 &&
+                  _model.lastPlayedCardIndex >= 0)
+                Positioned(
+                  left: 150,
+                  right: 150,
+                  top: 0,
+                  child: _BattleComboBurst(
+                    combo: _model.combo,
+                    card: _model.cards[_model.lastPlayedCardIndex],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBattleDock() {
+    if (_model.hasPendingReward) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _BattleRewardPanel(
+            choices: _model.rewardChoices,
+            onChoose: _model.chooseRewardCard,
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: 112,
+              child: _ghostButton('跳过奖励', _model.skipReward, minHeight: 40),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      height: 124,
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
+      decoration: BoxDecoration(
+        color: _ArenaColors.cream.withValues(alpha: .46),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _ArenaColors.gold.withValues(alpha: .45)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
             child: AnimatedBuilder(
               animation: _uiPulse,
               builder: (context, _) => _BattleHandStack(
@@ -1440,68 +1617,57 @@ class _ArenaPageState extends State<ArenaPage>
               ),
             ),
           ),
-        Positioned(
-          right: 28,
-          bottom: 26,
-          width: 136,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_model.hasPendingReward)
-                _ghostButton('跳过奖励', _model.skipReward)
-              else if (_model.finished) ...[
-                _goldButton(
-                  _model.won ? '下一层' : '重新挑战',
-                  _model.startBattle,
-                ),
-              ] else
-                _darkButton('结束回合', _model.endTurn),
-              if (_model.finished &&
-                  !_model.hasPendingReward &&
-                  !_model.won) ...[
-                const SizedBox(height: 8),
-                _goldButton(
-                  '调整编队',
-                  () => _model.navigate(ArenaView.formation),
-                ),
-              ],
-              if (_model.finished &&
-                  !_model.hasPendingReward &&
-                  _model.won) ...[
-                const SizedBox(height: 8),
-                _ghostButton(
-                  '回到爬塔',
-                  () => _model.navigate(ArenaView.tower),
-                ),
-              ],
-            ],
+          const SizedBox(width: 8),
+          SizedBox(width: 112, child: _buildBattleActions()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBattleActions() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (_model.finished)
+          _goldButton(
+            _model.won ? '下一层' : '重新挑战',
+            _model.startBattle,
+            minHeight: 40,
+          )
+        else
+          _darkButton('结束回合', _model.endTurn, minHeight: 44),
+        if (_model.finished && !_model.won) ...[
+          const SizedBox(height: 6),
+          _goldButton(
+            '调整编队',
+            () => _model.navigate(ArenaView.formation),
+            minHeight: 36,
           ),
-        ),
-        _closeButton(),
+        ],
+        if (_model.finished && _model.won) ...[
+          const SizedBox(height: 6),
+          _ghostButton(
+            '回到爬塔',
+            () => _model.navigate(ArenaView.tower),
+            minHeight: 36,
+          ),
+        ],
       ],
     );
   }
 
   List<Widget> _buildBattleUnits() {
     final team = _model.formationHeroes;
-    const friendlyPositions = [
-      Alignment(-.68, .05),
-      Alignment(-.50, -.10),
-      Alignment(-.34, .05),
-    ];
-    const enemyPositions = [
-      Alignment(.34, .05),
-      Alignment(.50, -.10),
-      Alignment(.68, .05),
-    ];
+    const friendlyPositions = _friendlySlots;
+    const enemyPositions = _enemySlots;
 
     return [
       for (var index = 0; index < friendlyPositions.length; index++)
         Align(
           alignment: friendlyPositions[index],
           child: SizedBox(
-            width: 82,
-            height: 128,
+            width: 76,
+            height: 112,
             child: _BattleUnit(
               hero: index < team.length ? team[index] : null,
               label: index < team.length ? team[index].name : '空位',
@@ -1520,13 +1686,13 @@ class _ArenaPageState extends State<ArenaPage>
         Align(
           alignment: enemyPositions[index],
           child: SizedBox(
-            width: 82,
-            height: 128,
+            width: 76,
+            height: 112,
             child: _BattleUnit(
               label: '敌影 ${index + 1}',
               intentLabel:
                   index == _model.selectedEnemyIndex && !_model.finished
-                      ? '意图 -10'
+                      ? '意图 -${_model.enemyTurnDamage}'
                       : null,
               enemy: true,
               active: index == _model.selectedEnemyIndex && !_model.finished,
@@ -1615,11 +1781,7 @@ class _ArenaPageState extends State<ArenaPage>
                 ),
               ),
               const Spacer(),
-              _resource('◇', '1,280'),
-              const SizedBox(width: 8),
               _resource('✧', '${_model.starCrystals}'),
-              const SizedBox(width: 8),
-              _resource('☼', '12 / 20'),
               const SizedBox(width: 10),
               SizedBox(
                 width: 74,
@@ -1779,10 +1941,16 @@ class _ArenaPageState extends State<ArenaPage>
         ),
       );
 
-  Widget _goldButton(String label, VoidCallback onPressed) => _ArenaTextButton(
+  Widget _goldButton(
+    String label,
+    VoidCallback onPressed, {
+    double minHeight = 34,
+  }) =>
+      _ArenaTextButton(
         label: label,
         onPressed: onPressed,
         textColor: _ArenaColors.ink,
+        minHeight: minHeight,
         decoration: BoxDecoration(
           color: _ArenaColors.gold,
           borderRadius: BorderRadius.circular(10),
@@ -1796,10 +1964,16 @@ class _ArenaPageState extends State<ArenaPage>
         ),
       );
 
-  Widget _darkButton(String label, VoidCallback onPressed) => _ArenaTextButton(
+  Widget _darkButton(
+    String label,
+    VoidCallback onPressed, {
+    double minHeight = 34,
+  }) =>
+      _ArenaTextButton(
         label: label,
         onPressed: onPressed,
         textColor: Colors.white,
+        minHeight: minHeight,
         decoration: BoxDecoration(
           color: _ArenaColors.violet,
           borderRadius: BorderRadius.circular(10),
@@ -1813,10 +1987,16 @@ class _ArenaPageState extends State<ArenaPage>
         ),
       );
 
-  Widget _ghostButton(String label, VoidCallback onPressed) => _ArenaTextButton(
+  Widget _ghostButton(
+    String label,
+    VoidCallback onPressed, {
+    double minHeight = 34,
+  }) =>
+      _ArenaTextButton(
         label: label,
         onPressed: onPressed,
         textColor: _ArenaColors.violet,
+        minHeight: minHeight,
         decoration: BoxDecoration(
           color: _ArenaColors.cream.withValues(alpha: .9),
           border: Border.all(color: _ArenaColors.gold),
@@ -3980,6 +4160,12 @@ class _BattleUnit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!enemy && hero == null) {
+      return const Align(
+        alignment: Alignment.bottomCenter,
+        child: _EmptyFormationSlot(),
+      );
+    }
     final unitColor =
         enemy ? _ArenaColors.ink : Color(hero?.color ?? 0xFFB88BCE);
     final portraitAsset = imageAsset ?? hero?.imageAsset;
@@ -4041,8 +4227,8 @@ class _BattleUnit extends StatelessWidget {
           Positioned(
             bottom: 12,
             child: Container(
-              width: 76,
-              height: 100,
+              width: 70,
+              height: 86,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -4125,6 +4311,32 @@ class _BattleUnit extends StatelessWidget {
   }
 }
 
+class _EmptyFormationSlot extends StatelessWidget {
+  const _EmptyFormationSlot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 68,
+      height: 86,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _ArenaColors.cream.withValues(alpha: .22),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _ArenaColors.gold.withValues(alpha: .7)),
+      ),
+      child: const Text(
+        '空位',
+        style: TextStyle(
+          color: _ArenaColors.violet,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
 class _UnitPlaceholder extends StatelessWidget {
   const _UnitPlaceholder({required this.color, required this.enemy});
 
@@ -4200,75 +4412,47 @@ class _BattleHandStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 146,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (cards.isEmpty) return const SizedBox.shrink();
-          const cardWidth = 82.0;
-          const maxStep = 70.0;
-          final available = constraints.maxWidth;
-          final step = cards.length <= 1
-              ? 0.0
-              : math.min(maxStep, (available - cardWidth) / (cards.length - 1));
-          final safeStep = math.max(46.0, step);
-          final handWidth = cardWidth + safeStep * (cards.length - 1);
-          final start = math.max(0.0, (available - handWidth) / 2);
-          final middle = (cards.length - 1) / 2;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (cards.isEmpty) return const SizedBox.shrink();
+        const cardWidth = 72.0;
+        const cardHeight = 100.0;
+        const maxStep = 64.0;
+        final available = constraints.maxWidth;
+        final step = cards.length <= 1
+            ? 0.0
+            : math.min(maxStep, (available - cardWidth) / (cards.length - 1));
+        final handWidth = cardWidth + step * (cards.length - 1);
+        final start = math.max(0.0, (available - handWidth) / 2);
+        final middle = (cards.length - 1) / 2;
+        final cardTop = math.max(0.0, constraints.maxHeight - cardHeight);
 
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
+        return Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            for (var index = 0; index < cards.length; index++)
               Positioned(
-                left: start,
-                top: 0,
-                child: const _BattleHandLabel(),
-              ),
-              for (var index = 0; index < cards.length; index++)
-                Positioned(
-                  left: start + safeStep * index,
-                  top: 18 + (index - middle).abs() * 5,
-                  child: Transform.rotate(
-                    angle: (index - middle) * .055,
-                    alignment: Alignment.bottomCenter,
-                    child: _SkillCard(
-                      card: cards[index],
-                      enabled: !finished && energy >= cards[index].cost,
-                      highlighted: index == lastPlayedCardIndex,
-                      pulse: pulse,
-                      onTap: () => onPlay(index),
-                    ),
+                left: start + step * index,
+                top: cardTop,
+                child: Transform.rotate(
+                  angle: (index - middle) * .04,
+                  alignment: Alignment.bottomCenter,
+                  child: _SkillCard(
+                    card: cards[index],
+                    enabled: !finished && energy >= cards[index].cost,
+                    highlighted: index == lastPlayedCardIndex,
+                    pulse: pulse,
+                    width: cardWidth,
+                    height: cardHeight,
+                    onTap: () => onPlay(index),
                   ),
                 ),
-            ],
-          );
-        },
-      ),
+              ),
+          ],
+        );
+      },
     );
   }
-}
-
-class _BattleHandLabel extends StatelessWidget {
-  const _BattleHandLabel();
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: _ArenaColors.ink.withValues(alpha: .78),
-          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-          border:
-              Border.all(color: _ArenaColors.goldLight.withValues(alpha: .4)),
-        ),
-        child: const Text(
-          '本局手牌',
-          style: TextStyle(
-            color: _ArenaColors.goldLight,
-            fontSize: MoeTokens.textXs,
-            fontWeight: MoeTokens.fontWeightTitle,
-          ),
-        ),
-      );
 }
 
 class _SkillCard extends StatelessWidget {
@@ -4278,6 +4462,8 @@ class _SkillCard extends StatelessWidget {
     required this.highlighted,
     required this.onTap,
     this.pulse = 0,
+    this.width = 78,
+    this.height = 124,
   });
 
   final ArenaCard card;
@@ -4285,6 +4471,8 @@ class _SkillCard extends StatelessWidget {
   final bool highlighted;
   final VoidCallback onTap;
   final double pulse;
+  final double width;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -4297,9 +4485,9 @@ class _SkillCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 170),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(0, highlighted ? -8 : 0, 0),
-          width: 78,
-          height: 124,
+          transform: Matrix4.translationValues(0, highlighted ? -6 : 0, 0),
+          width: width,
+          height: height,
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -4398,6 +4586,118 @@ class _SkillCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BattleStrikeLayer extends StatelessWidget {
+  const _BattleStrikeLayer({
+    required this.strike,
+    required this.t,
+  });
+
+  final ArenaStrike strike;
+  final double t;
+
+  List<Alignment> get _anchors {
+    switch (strike.targeting) {
+      case ArenaCardTargeting.allEnemies:
+        return _enemySlots;
+      case ArenaCardTargeting.allyTeam:
+        return _friendlySlots;
+      case ArenaCardTargeting.singleEnemy:
+        final index = strike.targetIndex.clamp(0, _enemySlots.length - 1);
+        return [_enemySlots[index]];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final travel = (t / .42).clamp(0.0, 1.0);
+    final impact = t < .42 ? 0.0 : ((t - .42) / .58).clamp(0.0, 1.0);
+    final color = Color(strike.color);
+    final label =
+        strike.damage < 0 ? '+${-strike.damage}' : '-${strike.damage}';
+    final labelColor =
+        strike.damage < 0 ? const Color(0xFF2F8F78) : const Color(0xFFD4476A);
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          if (strike.damage > 0 &&
+              strike.targeting != ArenaCardTargeting.allyTeam)
+            for (final target in _anchors)
+              Align(
+                alignment: Alignment.lerp(
+                  const Alignment(-.42, .28),
+                  target,
+                  travel,
+                )!,
+                child: Opacity(
+                  opacity: travel < 1 ? .95 : 0,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: .85),
+                          blurRadius: 14,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          for (final target in _anchors) ...[
+            Align(
+              alignment: target,
+              child: Opacity(
+                opacity: impact <= 0 ? 0 : (1 - impact).clamp(0.0, 1.0),
+                child: Transform.rotate(
+                  angle: -.7,
+                  child: Container(
+                    width: 62 * (0.4 + impact),
+                    height: 8,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          color,
+                          Colors.white,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Align(
+              alignment: target,
+              child: Transform.translate(
+                offset: Offset(0, -18 - 42 * impact),
+                child: Opacity(
+                  opacity: impact <= 0 ? 0 : (1 - impact * .35).clamp(0.0, 1.0),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: labelColor,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      shadows: const [
+                        Shadow(color: Color(0x66000000), blurRadius: 6),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -4799,168 +5099,6 @@ class _StatBox extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      );
-}
-
-class _HealthPanel extends StatelessWidget {
-  const _HealthPanel({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final int value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => _SurfaceCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: _ArenaColors.violet,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 10,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '$value%',
-                  style: const TextStyle(
-                    color: _ArenaColors.muted,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: value / 100,
-                minHeight: 7,
-                color: color,
-                backgroundColor: const Color(0xFFE9DCC3),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _BattleLogRibbon extends StatelessWidget {
-  const _BattleLogRibbon({
-    required this.hero,
-    required this.turn,
-    required this.combo,
-    required this.objective,
-    required this.enemyIntent,
-    required this.message,
-    required this.finished,
-    required this.won,
-  });
-
-  final ArenaHero hero;
-  final int turn;
-  final int combo;
-  final String objective;
-  final String enemyIntent;
-  final String message;
-  final bool finished;
-  final bool won;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: _ArenaColors.cream.withValues(alpha: .88),
-          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-          border: Border.all(color: _ArenaColors.gold.withValues(alpha: .72)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x3330263C),
-              blurRadius: 14,
-              offset: Offset(0, 7),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            _AvatarCircle(hero: hero),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _BattleLogPill('T$turn'),
-                      const SizedBox(width: 6),
-                      _BattleLogPill(
-                        finished ? (won ? '胜利' : '失败') : '连携 $combo',
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          message,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _ArenaColors.violet,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: MoeTokens.spaceXs),
-                  Text(
-                    '$objective ｜ $enemyIntent',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _ArenaColors.muted,
-                      fontSize: MoeTokens.textXs,
-                      fontWeight: MoeTokens.fontWeightSubtitle,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _BattleLogPill extends StatelessWidget {
-  const _BattleLogPill(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: _ArenaColors.violet.withValues(alpha: .10),
-          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: _ArenaColors.violet,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
           ),
         ),
       );

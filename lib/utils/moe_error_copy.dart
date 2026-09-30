@@ -85,7 +85,6 @@ abstract final class MoeErrorCopy {
     if (error is ApiException) {
       final code = error.code;
       if (code == 401) return MoeErrorKind.auth;
-      if (code == 403) return MoeErrorKind.auth;
       if (code == 404) return MoeErrorKind.notFound;
       if (code == 500 || code == 502 || code == 503) {
         return _messageLooksLikeNetwork(error.message)
