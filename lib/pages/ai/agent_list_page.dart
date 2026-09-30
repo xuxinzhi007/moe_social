@@ -170,7 +170,12 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   Future<void> _loadProviderProfiles({bool reloadSquareModels = true}) async {
-    final profiles = await AiProviderService().listProfiles();
+    late final List<AiProviderProfile> profiles;
+    try {
+      profiles = await AiProviderService().listProfiles();
+    } catch (_) {
+      return;
+    }
     final lastSelected = await AiProviderService().readLastSelectedProfileId();
     if (!mounted) return;
     setState(() {

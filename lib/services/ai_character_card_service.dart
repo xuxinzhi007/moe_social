@@ -11,7 +11,6 @@ import '../models/ai_lorebook.dart';
 import '../models/ai_lorebook_entry.dart';
 import '../models/ai_provider_profile.dart';
 import 'ai_agent_cloud_service.dart';
-import 'ai_db_service.dart';
 import 'ai_provider_service.dart';
 
 class AiCharacterCardImportResult {
@@ -63,9 +62,16 @@ class AiCharacterCardService {
     List<AiLorebookEntry> lorebookEntries = const [];
     final lorebookId = agent.lorebookId?.trim() ?? '';
     if (lorebookId.isNotEmpty) {
-      lorebook = await AiDbService().getLorebook(lorebookId);
+      final books = await AiAgentCloudService().getLorebooks();
+      for (final item in books) {
+        if (item.id == lorebookId) {
+          lorebook = item;
+          break;
+        }
+      }
       if (lorebook != null) {
-        lorebookEntries = await AiDbService().getLorebookEntries(lorebook.id);
+        lorebookEntries =
+            await AiAgentCloudService().getLorebookEntries(lorebook.id);
       }
     }
 
@@ -338,7 +344,7 @@ class AiCharacterCardService {
     required DateTime now,
   }) async {
     final entriesRaw = raw['entries'];
-    final existingLorebooks = await AiDbService().getLorebooks();
+    final existingLorebooks = await AiAgentCloudService().getLorebooks();
     final lorebook = AiLorebook(
       id: 'lorebook_import_${DateTime.now().microsecondsSinceEpoch}',
       name: _buildUniqueName(

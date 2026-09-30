@@ -91,6 +91,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   List<AiProviderProfile> _profiles = [];
   bool _initialLoading = true;
   bool _syncingCloud = false;
+  String? _loadError;
   String? _activeProfileId;
   final Map<String, ProviderConnectivityState?> _connectivity = {};
   final Map<String, bool> _apiKeyConfigured = {};
@@ -109,7 +110,18 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
       setState(() => _syncingCloud = true);
     }
     final providerService = AiProviderService();
-    final profiles = await providerService.listProfiles();
+    late final List<AiProviderProfile> profiles;
+    try {
+      profiles = await providerService.listProfiles();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = '模型来源加载失败';
+        _initialLoading = false;
+        _syncingCloud = false;
+      });
+      return;
+    }
     final activeSelection =
         await providerService.resolveActiveProvider(profiles: profiles);
     final conn = <String, ProviderConnectivityState?>{};
@@ -127,6 +139,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     }
     if (!mounted) return;
     setState(() {
+      _loadError = null;
       _profiles = profiles;
       _activeProfileId = activeSelection.profile.id;
       _connectivity
@@ -1536,7 +1549,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                               Text('我的模型来源', style: AiTheme.title),
                               const SizedBox(height: MoeTokens.spaceXs),
                               Text(
-                                '默认走 Moe 后端；第三方中转可另外添加',
+                                _loadError ?? '默认走 Moe 后端；第三方中转可另外添加',
                                 style: AiTheme.caption,
                               ),
                             ],
