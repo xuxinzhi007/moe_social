@@ -18,6 +18,13 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
+    env:
+      FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID || vars.FEISHU_APP_ID }}
+      FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET || vars.FEISHU_APP_SECRET }}
+      FEISHU_NOTIFY_EMAIL: ${{ secrets.FEISHU_NOTIFY_EMAIL || vars.FEISHU_NOTIFY_EMAIL }}
+      FEISHU_REPO: ${{ github.repository }}
+      FEISHU_SERVER_URL: ${{ github.server_url }}
+      FEISHU_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
       # 1. 拉取代码
@@ -63,16 +70,26 @@ jobs:
           echo "VERSION_CODE=${BUILD_NUMBER}"
           echo "RELEASE_TAG=${RELEASE_TAG}"
 
-      # 5. 拉取依赖
+      # 5. 飞书：打包一开始就通知，不等 Gradle
+      - name: Notify Feishu building
+        continue-on-error: true
+        env:
+          VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          RUN_URL: ${{ env.FEISHU_RUN_URL }}
+        run: bash .github/scripts/feishu_release_notify.sh building
+
+      # 6. 拉取依赖
       - name: Get Dependencies
         run: flutter pub get
 
-      # 6. 解码签名密钥
+      # 7. 解码签名密钥
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
 
-      # 7. 发布前断言：安装包必须指向线上 API
+      # 8. 发布前断言：安装包必须指向线上 API
       #    isProduction 仍是唯一真源（手动切换，见 .cursor/skills/moe-flutter/SKILL.md §1.9），
       #    这里只检查、不覆盖 —— 目的是让「忘记切就发版」变成 CI 失败，而不是静默
       #    发出一个连开发机局域网地址的安装包。
@@ -97,17 +114,35 @@ jobs:
           echo "✅ isProduction=true，本次发布使用的基址："
           grep -E 'static const String (productionUrl|developmentUrl)' "$CFG"
 
-      # 8. 构建 APK (Release 模式)
+      # 9. 构建 APK (Release 模式)
+      # gradle.properties 的 2G 堆是给本机 Windows 用的。GitHub runner 打双 ABI
+      # 时 packageRelease 会在 Daemon client 上 Java heap space。这里只抬 CI。
       - name: Build APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8"
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/gradle.properties")
+          text = path.read_text()
+          old = [line for line in text.splitlines() if line.startswith("org.gradle.jvmargs=")]
+          new = (
+              "org.gradle.jvmargs=-Xmx4G -Xss512k -XX:MaxMetaspaceSize=1G "
+              "-XX:ReservedCodeCacheSize=512m -XX:HeapBaseMinAddress=4g "
+              "-XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+          )
+          if not old:
+              raise SystemExit("android/gradle.properties 缺少 org.gradle.jvmargs")
+          path.write_text(text.replace(old[0], new, 1))
+          print("CI Gradle heap:", new)
+          PY
           flutter build apk --release --no-tree-shake-icons \
             --build-name "${{ steps.meta.outputs.version_name }}" \
             --build-number "${{ steps.meta.outputs.version_code }}"
 
-      # 9. 发布到 GitHub Releases
+      # 10. 发布到 GitHub Releases
       - name: Create Release and Upload APK
         uses: ncipollo/release-action@v1
         with:
@@ -126,7 +161,7 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
 
-      # 10. 回写后端 app_releases（方案 A；失败不阻断发版）
+      # 11. 回写后端 app_releases（方案 A；失败不阻断发版）
       - name: Sync App Release to Backend
         continue-on-error: true
         env:
@@ -223,3 +258,27 @@ jobs:
             enabled: (.data.release.enabled // .data.enabled // .release.enabled),
             force_update: (.data.release.force_update // .data.force_update // .release.force_update)
           }' || echo "$RESP"
+
+      # 12. 飞书：APK 已上传才算打包成功（回写后端失败不挡这条）
+      - name: Notify Feishu success
+        if: success()
+        continue-on-error: true
+        env:
+          VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          RUN_URL: ${{ env.FEISHU_RUN_URL }}
+          APK_URL: ${{ env.FEISHU_SERVER_URL }}/${{ env.FEISHU_REPO }}/releases/download/${{ steps.meta.outputs.release_tag }}/app-release.apk
+          RELEASE_URL: ${{ env.FEISHU_SERVER_URL }}/${{ env.FEISHU_REPO }}/releases/tag/${{ steps.meta.outputs.release_tag }}
+        run: bash .github/scripts/feishu_release_notify.sh success
+
+      # 13. 飞书：前面任一步失败（含内存不足、断言、上传）
+      - name: Notify Feishu failed
+        if: failure()
+        continue-on-error: true
+        env:
+          VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          RUN_URL: ${{ env.FEISHU_RUN_URL }}
+        run: bash .github/scripts/feishu_release_notify.sh failed

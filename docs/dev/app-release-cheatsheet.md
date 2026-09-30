@@ -8,13 +8,14 @@
 ## 1. 一句话流程
 
 ```text
-改 isProduction = true 并提交 → 推 tag v* → CI 断言 isProduction（不是 true 直接红）
-         → GitHub Actions 打 APK → 上传 Releases
+改 isProduction = true 并提交 → 推 tag v* → 飞书「打包中」
+         → CI 断言 isProduction（不是 true 直接红）→ GitHub Actions 打 APK
+         → 上传 Releases → 飞书「打包成功」（失败则飞书「打包失败」）
          →（可选）CI 回写后端 app_releases
          → App 读 GET /api/public/app-release/latest → 提示更新
 ```
 
-- **发版前置**：`lib/utils/config.dart` 的 `ApiEnvConfig.isProduction` 必须是 `true`，否则 CI 第 7 步就失败（见 §2）  
+- **发版前置**：`lib/utils/config.dart` 的 `ApiEnvConfig.isProduction` 必须是 `true`，否则 CI 的 `Assert release points at online API` 就失败（见 §2）  
 - **APK 文件**：在 GitHub Releases  
 - **「有没有新版本」**：看后端库表，不看 GitHub Tag  
 - 后端不在线：打包仍成功；回写失败不挡发版（可稍后管理台补登）
@@ -32,7 +33,7 @@ git push origin v1.0.3
 
 然后打开：仓库 → **Actions** → **Build and Release APK**，看是否绿/黄。
 
-CI 第 7 步 `Assert release points at online API` 会 grep 这个常量：不是 `true` 就以 `::error::` 注解**红掉并停在这里**，不会打出包。它只检查、不替你改——基址的唯一真源始终是 `config.dart`。
+CI 步骤 `Assert release points at online API` 会 grep 这个常量：不是 `true` 就以 `::error::` 注解**红掉并停在这里**，不会打出包。它只检查、不替你改——基址的唯一真源始终是 `config.dart`。这时飞书会先收到「打包中」，接着收到「打包失败」。
 
 该断言是**失败即拦**（fail-closed）：读不出字面量 `true`/`false` 时（比如把声明写成 `= kReleaseMode`）会报 `isProduction=<未找到声明>` 并拦下，不会放行。
 
@@ -68,6 +69,9 @@ CI 第 7 步 `Assert release points at online API` 会 grep 这个常量：不�
 | `MOE_ADMIN_API_BASE` | CI 要请求的后端根地址 | 包能发，**不会**自动写版本 |
 | `MOE_ADMIN_USERNAME` | 管理台账号 | 同上 |
 | `MOE_ADMIN_PASSWORD` | 管理台密码 | 同上 |
+| `FEISHU_APP_ID` | 飞书自建应用 App ID，与后端 `feishu.app_id` 相同 | 包能发，**不会**发飞书通知 |
+| `FEISHU_APP_SECRET` | 飞书自建应用 App Secret | 同上 |
+| `FEISHU_NOTIFY_EMAIL` | 收件企业飞书邮箱，例如 `xinzhi.xu@feishu.cn` | 同上 |
 
 - Secret **创建后不能再看明文**，只能改/删重加。  
 - `MOE_ADMIN_API_BASE` **不是**前端自动读的配置，要和线上一致地**手填**。  
@@ -78,6 +82,8 @@ CI 第 7 步 `Assert release points at online API` 会 grep 这个常量：不�
 - GitHub Runner 在公网，填 `127.0.0.1` / 内网 IP **无效**。  
 - 未配 `MOE_ADMIN_*`：日志会有 `Skip sync`，属正常。  
 - 已配但后端关机：Sync 步骤可能黄，整次发版仍算成功。
+- 飞书三条都发给 `FEISHU_NOTIFY_EMAIL`：版本号解析后发**打包中**（蓝），任一步失败发**打包失败**（红，带 Actions 日志），APK 上传成功发**打包成功**（绿，带 APK 和 Release 链接）。回写后端失败不挡成功通知。缺飞书配置则跳过，打包不会因此变红。
+- 名字放在 **Secrets** 或 **Variables** 都行，同名时用 Secrets。`FEISHU_APP_SECRET` 请放 Secrets，日志里才会打码。
 
 ---
 
@@ -132,7 +138,7 @@ curl -sS "http://47.106.175.49:8888/api/public/app-release/latest?platform=andro
 
 | 现象 | 先查 |
 |------|------|
-| CI 红在第 7 步 `Assert release points at online API` | `config.dart` 的 `isProduction` 还是 `false`；改 `true` 提交后重新打 tag |
+| CI 红在 `Assert release points at online API` | `config.dart` 的 `isProduction` 还是 `false`；改 `true` 提交后重新打 tag |
 | 装上了但一直转圈 / 全部请求失败 | 正式包连的是内网地址：`isProduction` 没切，或切了但 `productionUrl` 仍是 `192.168.*` / `127.0.0.1`（后者由 `test/utils/config_test.dart` 拦） |
 | 「未发现任何发布版本」 | 后端未启用 / 未配置 / CI 没回写成功 |
 | 「已是最新」 | 远端 versionCode ≤ 手机本地 |
