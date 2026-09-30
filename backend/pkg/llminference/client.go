@@ -3,6 +3,8 @@ package llminference
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -25,10 +27,32 @@ type Config struct {
 	APIKey       string
 }
 
-// Message is a chat message.
+// Message is a chat message. Tool fields are used when the model calls functions.
 type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role       string     `json:"role"`
+	Content    string     `json:"content,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+}
+
+// ToolCall is one model-requested function call.
+type ToolCall struct {
+	ID       string           `json:"id,omitempty"`
+	Type     string           `json:"type,omitempty"`
+	Function ToolCallFunction `json:"function"`
+}
+
+// ToolCallFunction is the function name and JSON arguments.
+type ToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
+}
+
+// Tool is an OpenAI-compatible function definition.
+type Tool struct {
+	Name        string
+	Description string
+	Parameters  map[string]any
 }
 
 // ChatOptions contains sampling parameters.
@@ -37,6 +61,7 @@ type ChatOptions struct {
 	TopP          float64
 	MaxTokens     int
 	RepeatPenalty float64
+	Tools         []Tool
 }
 
 // ConfigFrom normalizes application configuration.
@@ -174,7 +199,109 @@ func newOpenAIChatRequest(model string, messages []Message, opts ChatOptions, st
 	if opts.RepeatPenalty > 0 {
 		body["repeat_penalty"] = opts.RepeatPenalty
 	}
+	if specs := openAITools(opts.Tools); len(specs) > 0 {
+		body["tools"] = specs
+		body["tool_choice"] = "auto"
+	}
 	return body
+}
+
+func openAITools(tools []Tool) []map[string]any {
+	if len(tools) == 0 {
+		return nil
+	}
+	out := make([]map[string]any, 0, len(tools))
+	for _, tool := range tools {
+		name := strings.TrimSpace(tool.Name)
+		if name == "" {
+			continue
+		}
+		params := tool.Parameters
+		if params == nil {
+			params = map[string]any{"type": "object", "properties": map[string]any{}}
+		}
+		out = append(out, map[string]any{
+			"type": "function",
+			"function": map[string]any{
+				"name":        name,
+				"description": tool.Description,
+				"parameters":  params,
+			},
+		})
+	}
+	return out
+}
+
+// Complete runs one non-streaming chat completion and keeps tool calls.
+func Complete(ctx context.Context, cfg Config, model string, messages []Message, opts ChatOptions) (Message, error) {
+	model = firstNonEmpty(model, cfg.DefaultModel, "qwen2")
+	if usesResponsesAPI(model) {
+		return Message{}, upstreamError("inference tools unsupported", 0, false)
+	}
+	if cfg.APIStyle == APIOllama {
+		return completeOllama(ctx, cfg, model, messages, opts)
+	}
+	var parsed struct {
+		Choices []struct {
+			Message struct {
+				Role      string `json:"role"`
+				Content   string `json:"content"`
+				ToolCalls []struct {
+					ID       string `json:"id"`
+					Type     string `json:"type"`
+					Function struct {
+						Name      string          `json:"name"`
+						Arguments json.RawMessage `json:"arguments"`
+					} `json:"function"`
+				} `json:"tool_calls"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	body := newOpenAIChatRequest(model, messages, opts, false)
+	if err := requestJSON(ctx, cfg, http.MethodPost, "", "/chat/completions", body, &parsed, false); err != nil {
+		return Message{}, err
+	}
+	if len(parsed.Choices) == 0 {
+		return Message{}, upstreamError("inference chat empty choices", 200, false)
+	}
+	msg := parsed.Choices[0].Message
+	out := Message{Role: firstNonEmpty(msg.Role, "assistant"), Content: strings.TrimSpace(msg.Content)}
+	for i, call := range msg.ToolCalls {
+		name := strings.TrimSpace(call.Function.Name)
+		if name == "" {
+			continue
+		}
+		id := strings.TrimSpace(call.ID)
+		if id == "" {
+			id = fmt.Sprintf("call_%d", i+1)
+		}
+		out.ToolCalls = append(out.ToolCalls, ToolCall{
+			ID:   id,
+			Type: firstNonEmpty(call.Type, "function"),
+			Function: ToolCallFunction{
+				Name:      name,
+				Arguments: toolArgumentsString(call.Function.Arguments),
+			},
+		})
+	}
+	if out.Content == "" && len(out.ToolCalls) == 0 {
+		return Message{}, upstreamError("inference chat empty", 200, false)
+	}
+	return out, nil
+}
+
+func toolArgumentsString(raw json.RawMessage) string {
+	text := strings.TrimSpace(string(raw))
+	if text == "" || text == "null" {
+		return "{}"
+	}
+	if strings.HasPrefix(text, "\"") {
+		var decoded string
+		if err := json.Unmarshal(raw, &decoded); err == nil {
+			return decoded
+		}
+	}
+	return text
 }
 
 type ollamaOptions struct {
@@ -185,16 +312,122 @@ type ollamaOptions struct {
 }
 
 type ollamaChatRequest struct {
-	Model    string        `json:"model"`
-	Messages []Message     `json:"messages"`
-	Stream   bool          `json:"stream"`
-	Think    bool          `json:"think"`
-	Options  ollamaOptions `json:"options"`
+	Model    string           `json:"model"`
+	Messages []ollamaMessage  `json:"messages"`
+	Tools    []map[string]any `json:"tools,omitempty"`
+	Stream   bool             `json:"stream"`
+	Think    bool             `json:"think"`
+	Options  ollamaOptions    `json:"options"`
+}
+
+// ollamaMessage 把工具参数按对象发给 Ollama。OpenAI 那条链路仍用字符串参数。
+type ollamaMessage struct {
+	Role      string               `json:"role"`
+	Content   string               `json:"content,omitempty"`
+	ToolName  string               `json:"tool_name,omitempty"`
+	ToolCalls []ollamaToolCallBody `json:"tool_calls,omitempty"`
+}
+
+type ollamaToolCallBody struct {
+	ID       string `json:"id,omitempty"`
+	Type     string `json:"type,omitempty"`
+	Function struct {
+		Name      string          `json:"name"`
+		Arguments json.RawMessage `json:"arguments"`
+	} `json:"function"`
 }
 
 func newOllamaChatRequest(model string, messages []Message, opts ChatOptions, stream bool) ollamaChatRequest {
-	return ollamaChatRequest{Model: model, Messages: messages, Stream: stream, Think: false,
-		Options: ollamaOptions{Temperature: opts.Temperature, TopP: opts.TopP, NumPredict: opts.MaxTokens, RepeatPenalty: opts.RepeatPenalty}}
+	return ollamaChatRequest{
+		Model:    model,
+		Messages: ollamaMessages(messages),
+		Tools:    openAITools(opts.Tools),
+		Stream:   stream,
+		Think:    false,
+		Options:  ollamaOptions{Temperature: opts.Temperature, TopP: opts.TopP, NumPredict: opts.MaxTokens, RepeatPenalty: opts.RepeatPenalty},
+	}
+}
+
+func ollamaMessages(messages []Message) []ollamaMessage {
+	names := map[string]string{}
+	out := make([]ollamaMessage, 0, len(messages))
+	for _, msg := range messages {
+		item := ollamaMessage{Role: msg.Role, Content: msg.Content}
+		for _, call := range msg.ToolCalls {
+			names[call.ID] = call.Function.Name
+			body := ollamaToolCallBody{ID: call.ID, Type: firstNonEmpty(call.Type, "function")}
+			body.Function.Name = call.Function.Name
+			body.Function.Arguments = ollamaArguments(call.Function.Arguments)
+			item.ToolCalls = append(item.ToolCalls, body)
+		}
+		if msg.Role == "tool" {
+			item.ToolName = names[msg.ToolCallID]
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func ollamaArguments(raw string) json.RawMessage {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		return json.RawMessage("{}")
+	}
+	if json.Valid([]byte(text)) && (strings.HasPrefix(text, "{") || strings.HasPrefix(text, "[")) {
+		return json.RawMessage(text)
+	}
+	encoded, err := json.Marshal(text)
+	if err != nil {
+		return json.RawMessage("{}")
+	}
+	return encoded
+}
+
+func completeOllama(ctx context.Context, cfg Config, model string, messages []Message, opts ChatOptions) (Message, error) {
+	var parsed struct {
+		Message struct {
+			Role      string `json:"role"`
+			Content   string `json:"content"`
+			ToolCalls []struct {
+				ID       string `json:"id"`
+				Type     string `json:"type"`
+				Function struct {
+					Name      string          `json:"name"`
+					Arguments json.RawMessage `json:"arguments"`
+				} `json:"function"`
+			} `json:"tool_calls"`
+		} `json:"message"`
+		Done bool `json:"done"`
+	}
+	if err := requestJSON(ctx, cfg, http.MethodPost, "/api/chat", "", newOllamaChatRequest(model, messages, opts, false), &parsed, false); err != nil {
+		return Message{}, err
+	}
+	if !parsed.Done {
+		return Message{}, upstreamError("incomplete inference response", 200, false)
+	}
+	out := Message{Role: firstNonEmpty(parsed.Message.Role, "assistant"), Content: strings.TrimSpace(parsed.Message.Content)}
+	for i, call := range parsed.Message.ToolCalls {
+		name := strings.TrimSpace(call.Function.Name)
+		if name == "" {
+			continue
+		}
+		id := strings.TrimSpace(call.ID)
+		if id == "" {
+			id = fmt.Sprintf("call_%d", i+1)
+		}
+		out.ToolCalls = append(out.ToolCalls, ToolCall{
+			ID:   id,
+			Type: firstNonEmpty(call.Type, "function"),
+			Function: ToolCallFunction{
+				Name:      name,
+				Arguments: toolArgumentsString(call.Function.Arguments),
+			},
+		})
+	}
+	if out.Content == "" && len(out.ToolCalls) == 0 {
+		return Message{}, upstreamError("inference chat empty", 200, false)
+	}
+	return out, nil
 }
 
 type ollamaChatResponse struct {

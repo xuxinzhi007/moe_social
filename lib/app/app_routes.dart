@@ -30,6 +30,7 @@ import '../pages/commerce/vip_purchase_page.dart' deferred as vip_purchase;
 import '../pages/commerce/wallet_page.dart' deferred as wallet;
 import '../pages/community/community_home_page.dart' deferred as community_home;
 import '../pages/community/community_post_search_page.dart';
+import '../pages/community/interest_group_search_page.dart';
 import '../pages/community/community_post_detail_page.dart';
 import '../pages/community/interest_group_detail_page.dart';
 import '../pages/feed/comments_page.dart';
@@ -256,6 +257,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     },
     '/friend-search': (context) => const FriendSearchPage(),
     '/community-search': (context) => const CommunityPostSearchPage(),
+    '/community-group-search': (context) => const InterestGroupSearchPage(),
     '/community': (context) => _deferred(
           community_home.loadLibrary,
           () => community_home.CommunityHomePage(),

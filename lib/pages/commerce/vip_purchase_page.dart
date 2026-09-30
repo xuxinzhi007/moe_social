@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/commerce_service.dart';
 import '../../models/vip_plan.dart';
+import 'vip_benefit_catalog.dart';
 import 'vip_order_confirm_page.dart';
+import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/motion/moe_motion.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -24,7 +28,6 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
   String? _selectedPlanId;
   String? _loadErrorMessage;
   double _balance = 0.0;
-  final List<String> _vipHighlights = const ['尊贵身份标识', '专享高级功能', '会员专属权益'];
 
   @override
   void initState() {
@@ -156,272 +159,138 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _moe.pageBackground,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Stack(
-        children: [
-          // 顶部背景
-          Container(
-            height: 320,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_moe.primary, MoeTokens.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  )
-                : RefreshIndicator(
-                    color: _moe.primary,
-                    onRefresh: _handleRefresh,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      children: [
-                        // Header
-                        Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '开通 VIP 会员',
-                                style: TextStyle(
-                                  fontSize: MoeTokens.text3xl,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const SizedBox(height: 4),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _vipHighlights
-                                    .map(
-                                      (label) => Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(
-                                              Icons.check_circle_rounded,
-                                              color: Color(0xFFFFD66B),
-                                              size: 14,
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              label,
-                                              style: TextStyle(
-                                                color: Colors.white
-                                                    .withValues(alpha: 0.95),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // 套餐列表 (横向滚动)
-                        if (_plans.isEmpty && _loadErrorMessage != null)
-                          _buildLoadFailedState()
-                        else if (_plans.isEmpty)
-                          _buildEmptyPlanState()
-                        else
-                          SizedBox(
-                            height: 230,
-                            child: ListView.builder(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _plans.length,
-                              itemBuilder: (context, index) {
-                                final plan = _plans[index];
-                                return MoeStaggerReveal(
-                                  index: index,
-                                  maxAnimated: 8,
-                                  staggerStep: const Duration(milliseconds: 30),
-                                  child: _buildPlanCard(plan),
-                                );
-                              },
-                            ),
-                          ),
-
-                        const SizedBox(height: 24),
-
-                        // 权益说明区
-                        Container(
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            color: MoeTokens.cardBackground,
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(30),
-                              topRight: Radius.circular(30),
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 4,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      color: _moe.primary,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    '会员权益',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: MoeTokens.titleText,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              ..._buildBenefitWidgets(),
-                              // 底部留白，防止被浮动按钮遮挡
-                              const SizedBox(height: 80),
-                            ],
-                          ),
-                        ),
-                      ],
+    final reduceMotion = moeReduceMotion(context);
+    return AdaptivePageScaffold(
+      template: PageTemplate.form,
+      title: '购买 / 续费',
+      padding: EdgeInsets.zero,
+      safeAreaBottom: false,
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: _moe.primary))
+          : RefreshIndicator(
+              color: _moe.primary,
+              onRefresh: _handleRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  MoeTokens.spaceLg,
+                  MoeTokens.spaceLg,
+                  MoeTokens.spaceLg,
+                  MoeTokens.space2xl,
+                ),
+                children: [
+                  const Text(
+                    '选择时长',
+                    style: TextStyle(
+                      fontSize: MoeTokens.textXl,
+                      fontWeight: MoeTokens.fontWeightTitle,
+                      color: MoeTokens.titleText,
                     ),
                   ),
-          ),
-        ],
-      ),
-      // 底部购买栏
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: MoeTokens.cardBackground,
-          boxShadow: [
-            BoxShadow(
-              color: _moe.primary.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF4E5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '总计 ¥${_getSelectedPlanPrice()}',
-                            style: const TextStyle(
-                              fontSize: MoeTokens.textMd,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFFFF8F00),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          '钱包余额 ¥${_balance.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: _moe.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: MoeTokens.spaceXs),
+                  Text(
+                    '用钱包余额支付。确认前不会扣款，也不会开通。',
+                    style: TextStyle(
+                      color: MoeTokens.hintText,
+                      fontSize: MoeTokens.textSm,
+                      height: 1.4,
                     ),
-                    const SizedBox(height: 10),
+                  ),
+                  const SizedBox(height: MoeTokens.spaceLg),
+                  if (_plans.isEmpty && _loadErrorMessage != null)
+                    _buildLoadFailedState()
+                  else if (_plans.isEmpty)
+                    _buildEmptyPlanState()
+                  else
                     SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed:
-                            (_isLoading || _plans.isEmpty || _isOpeningConfirm)
-                                ? null
-                                : _goOrderConfirm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _moe.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(26),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          '去确认订单',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      height: 156,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _plans.length,
+                        itemBuilder: (context, index) {
+                          return MoeStaggerReveal(
+                            index: index,
+                            maxAnimated: 8,
+                            staggerStep: const Duration(milliseconds: 30),
+                            child: _buildPlanCard(
+                              _plans[index],
+                              reduceMotion: reduceMotion,
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '确认页将展示钱包扣款明细，未支付前不会开通会员',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: MoeTokens.bodyText,
-                        height: 1.35,
-                      ),
-                    ),
+                  const SizedBox(height: MoeTokens.spaceXl),
+                  const VipBenefitPanel(),
+                  if (_planNotes().isNotEmpty) ...[
+                    const SizedBox(height: MoeTokens.spaceLg),
+                    ..._planNotes().map(_buildPlanNote),
                   ],
+                ],
+              ),
+            ),
+      bottomAction: _buildCheckoutBar(),
+    );
+  }
+
+  Widget _buildCheckoutBar() {
+    final canOpen = !_isLoading && _plans.isNotEmpty && !_isOpeningConfirm;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '¥${_getSelectedPlanPrice()}',
+              style: TextStyle(
+                fontSize: MoeTokens.textXl,
+                fontWeight: MoeTokens.fontWeightTitle,
+                color: _moe.primary,
+              ),
+            ),
+            const SizedBox(width: MoeTokens.spaceMd),
+            Expanded(
+              child: Text(
+                '余额 ¥${_balance.toStringAsFixed(2)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: MoeTokens.textSm,
+                  color: MoeTokens.inkMuted,
+                  fontWeight: MoeTokens.fontWeightSubtitle,
                 ),
               ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: MoeTokens.spaceSm),
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: ElevatedButton(
+            onPressed: canOpen ? _goOrderConfirm : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _moe.primary,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: MoeTokens.lineSoft,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+              ),
+            ),
+            child: Text(
+              _isOpeningConfirm ? '正在打开确认页' : '去确认订单',
+              style: const TextStyle(
+                fontSize: MoeTokens.textBase,
+                fontWeight: MoeTokens.fontWeightTitle,
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -440,125 +309,77 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     );
   }
 
-  Widget _buildPlanCard(VipPlan plan) {
+  Widget _buildPlanCard(VipPlan plan, {required bool reduceMotion}) {
     final isSelected = _selectedPlanId == plan.id;
-
-    return GestureDetector(
+    final motion = reduceMotion ? Duration.zero : MoeTokens.motionFast;
+    return MoePressable(
       onTap: () {
         setState(() {
           _selectedPlanId = plan.id;
         });
       },
+      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 160,
-        margin: const EdgeInsets.only(right: 16, bottom: 16, top: 8), // 留出阴影空间
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+        duration: motion,
+        curve: Curves.easeInOut,
+        width: 132,
+        height: 148,
+        margin: const EdgeInsets.only(right: MoeTokens.spaceSm),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
         decoration: BoxDecoration(
-          color:
-              isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(24),
+          color: MoeTokens.cardBackground,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
-            width: 2,
+            color: isSelected ? _moe.primary : MoeTokens.surfaceBorder,
+            width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: [
-            if (isSelected)
-              BoxShadow(
-                color: const Color(0xFFFFD700).withValues(alpha: 0.4),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
-              )
-            else
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-          ],
+          boxShadow: isSelected ? MoeTokens.shadowSm() : null,
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: isSelected ? 1 : 0,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD66B),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    '已选中',
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    plan.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF6B4B00),
+                      fontSize: MoeTokens.textBase,
+                      fontWeight: MoeTokens.fontWeightTitle,
+                      color:
+                          isSelected ? MoeTokens.titleText : MoeTokens.inkMuted,
                     ),
                   ),
                 ),
-              ),
-            ),
-            const Spacer(),
-            Text(
-              plan.name,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? MoeTokens.titleText : Colors.grey[700],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                      text: '¥',
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: isSelected
-                              ? const Color(0xFFFF8F00)
-                              : Colors.black87,
-                          fontWeight: FontWeight.bold)),
-                  TextSpan(
-                      text: plan.price.toStringAsFixed(0),
-                      style: TextStyle(
-                          fontSize: 32,
-                          color: isSelected
-                              ? const Color(0xFFFF8F00)
-                              : Colors.black87,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFFD700) : Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${plan.durationDays} 天',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.black87 : Colors.grey[600],
+                AnimatedOpacity(
+                  duration: motion,
+                  opacity: isSelected ? 1 : 0,
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    size: 16,
+                    color: _moe.primary,
+                  ),
                 ),
-              ),
+              ],
             ),
             const Spacer(),
             Text(
-              '点击选择套餐',
+              '¥${plan.price.toStringAsFixed(plan.price.truncateToDouble() == plan.price ? 0 : 2)}',
               style: TextStyle(
-                fontSize: 11,
-                color: isSelected ? _moe.primary : Colors.grey[500],
-                fontWeight: FontWeight.w500,
+                fontSize: MoeTokens.textXl,
+                fontWeight: MoeTokens.fontWeightTitle,
+                color: isSelected ? _moe.primary : MoeTokens.titleText,
+              ),
+            ),
+            const SizedBox(height: MoeTokens.spaceXs),
+            Text(
+              '${plan.durationDays} 天',
+              style: const TextStyle(
+                fontSize: MoeTokens.textSm,
+                color: MoeTokens.hintText,
+                fontWeight: MoeTokens.fontWeightSubtitle,
               ),
             ),
           ],
@@ -567,39 +388,85 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     );
   }
 
-  Widget _buildBenefitItem(
-      IconData icon, String title, String subtitle, Color iconColor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Row(
+  Widget _buildLoadFailedState() {
+    return Container(
+      padding: const EdgeInsets.all(MoeTokens.spaceLg),
+      decoration: BoxDecoration(
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+      ),
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+          Icon(Icons.cloud_off_rounded, color: _moe.primary, size: 28),
+          const SizedBox(height: MoeTokens.spaceSm),
+          Text(
+            _loadErrorMessage ?? '加载失败，请稍后重试',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: MoeTokens.titleText,
+              fontWeight: MoeTokens.fontWeightSubtitle,
+              fontSize: MoeTokens.textBase,
             ),
-            child: Icon(icon, color: iconColor, size: 24),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(height: MoeTokens.spaceMd),
+          TextButton(
+            onPressed: _loadInitialData,
+            child: const Text('重试'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyPlanState() {
+    return Container(
+      height: 120,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+      ),
+      child: const Text(
+        '暂时没有可购买的套餐',
+        style:
+            TextStyle(color: MoeTokens.hintText, fontSize: MoeTokens.textBase),
+      ),
+    );
+  }
+
+  List<String> _planNotes() {
+    return _extractBenefitsFromDescription(
+        _getSelectedPlan()?.description ?? '');
+  }
+
+  Widget _buildPlanNote(String line) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MoeTokens.spaceSm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _moe.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(width: MoeTokens.spaceSm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: MoeTokens.textLg,
-                      color: MoeTokens.titleText),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                      color: MoeTokens.bodyText, fontSize: MoeTokens.textBase),
-                ),
-              ],
+            child: Text(
+              line,
+              style: const TextStyle(
+                color: MoeTokens.inkMuted,
+                fontSize: MoeTokens.textSm,
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -607,140 +474,15 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     );
   }
 
-  Widget _buildLoadFailedState() {
-    return SizedBox(
-      height: 220,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: MoeTokens.cardBackground,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.cloud_off_rounded, color: _moe.primary, size: 42),
-              const SizedBox(height: 10),
-              Text(
-                _loadErrorMessage ?? '加载失败，请稍后重试',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: MoeTokens.titleText,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _loadInitialData,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('重试'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _moe.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyPlanState() {
-    return SizedBox(
-      height: 200,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined,
-                size: 64, color: Colors.white.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            Text(
-              '暂无VIP套餐',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildBenefitWidgets() {
-    final selectedPlan = _getSelectedPlan();
-    final benefitsFromPlan =
-        _extractBenefitsFromDescription(selectedPlan?.description ?? '');
-    final fallbackBenefits = <Map<String, dynamic>>[
-      {
-        'icon': Icons.color_lens_rounded,
-        'title': '专属主题色',
-        'subtitle': '解锁更多个性化主题颜色',
-        'color': Colors.purpleAccent,
-      },
-      {
-        'icon': Icons.hd_rounded,
-        'title': '高清画质',
-        'subtitle': '上传/查看原图特权',
-        'color': Colors.blueAccent,
-      },
-      {
-        'icon': Icons.speed_rounded,
-        'title': '极速体验',
-        'subtitle': '专属线路加速',
-        'color': Colors.greenAccent,
-      },
-      {
-        'icon': Icons.star_rounded,
-        'title': '身份铭牌',
-        'subtitle': '尊贵 VIP 专属标识',
-        'color': Colors.orangeAccent,
-      },
-    ];
-
-    if (benefitsFromPlan.isEmpty) {
-      return fallbackBenefits
-          .map(
-            (benefit) => _buildBenefitItem(
-              benefit['icon'] as IconData,
-              benefit['title'] as String,
-              benefit['subtitle'] as String,
-              benefit['color'] as Color,
-            ),
-          )
-          .toList();
-    }
-
-    final colors = <Color>[
-      Colors.purpleAccent,
-      Colors.blueAccent,
-      Colors.greenAccent,
-      Colors.orangeAccent,
-    ];
-    return List.generate(benefitsFromPlan.length, (index) {
-      return _buildBenefitItem(
-        Icons.check_circle_rounded,
-        benefitsFromPlan[index],
-        '当前套餐专属权益说明',
-        colors[index % colors.length],
-      );
-    });
-  }
-
   List<String> _extractBenefitsFromDescription(String description) {
     if (description.trim().isEmpty) {
       return [];
     }
-    final lines = description
+    return description
         .split(RegExp(r'[\n;；|]'))
         .map((line) => line.replaceAll(RegExp(r'^[\-\d\.\s、]+'), '').trim())
         .where((line) => line.isNotEmpty)
+        .take(4)
         .toList();
-    return lines.take(6).toList();
   }
 }

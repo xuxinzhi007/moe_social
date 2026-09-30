@@ -7,12 +7,7 @@ import (
 )
 
 func TestOllamaChatRequestDisablesThink(t *testing.T) {
-	raw, err := json.Marshal(ollamaChatRequest{
-		Model:    "qwen3:4b",
-		Messages: []Message{{Role: "user", Content: "hi"}},
-		Stream:   true,
-		Think:    false,
-	})
+	raw, err := json.Marshal(newOllamaChatRequest("qwen3:4b", []Message{{Role: "user", Content: "hi"}}, ChatOptions{}, true))
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}

@@ -1194,7 +1194,7 @@ func (e *Engine) ChatStreamWithInputMode(
 		return "", fmt.Errorf("companion: persist user chat message: %w", err)
 	}
 
-	// 5. 构建 messages 并流式调用 LLM
+	// 5. 构建 messages
 	msgs := buildMessagesWithContext(
 		profile,
 		state,

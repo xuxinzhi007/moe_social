@@ -11,7 +11,6 @@ import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
-import '../../widgets/moe_search_bar.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
@@ -30,19 +29,11 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
   bool _loading = true;
   bool _loadingMyGroups = false;
   Object? _loadError;
-  String _keyword = '';
-  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _load();
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
   }
 
   String _formatError(Object e) {
@@ -101,21 +92,13 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
     }
   }
 
-  void _scheduleSearch(String q) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 450), () {
-      _keyword = q.trim();
-      _load(keyword: _keyword.isEmpty ? null : _keyword);
-    });
-  }
-
   void _openGroupDetail(CommunityGroup group) {
     Navigator.pushNamed(
       context,
       '/community/group',
       arguments: {'groupId': group.id, 'group': group},
     ).then((_) {
-      if (mounted) _load(keyword: _keyword.isEmpty ? null : _keyword);
+      if (mounted) _load();
     });
   }
 
@@ -133,7 +116,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
         await CommunityService.joinCommunityGroup(groupId: g.id, userId: uid);
         if (mounted) MoeToast.success(context, '已加入群组');
       }
-      await _load(keyword: _keyword.isEmpty ? null : _keyword);
+      await _load();
     } catch (e) {
       if (mounted) MoeToast.error(context, _formatError(e));
     }
@@ -154,7 +137,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
     );
     if (ok == true && mounted) {
       MoeToast.success(context, '创建成功');
-      await _load(keyword: _keyword.isEmpty ? null : _keyword);
+      await _load();
     }
   }
 
@@ -183,7 +166,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
       color: moe.pageBackground,
       child: RefreshIndicator(
         color: moe.primary,
-        onRefresh: () => _load(keyword: _keyword.isEmpty ? null : _keyword),
+        onRefresh: () => _load(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
@@ -191,19 +174,6 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
           slivers: [
             if (_myGroups.isNotEmpty || _loadingMyGroups)
               SliverToBoxAdapter(child: _buildMyGroupsRow(scheme)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: MoeSearchBar(
-                  hintText: '搜索群组名称或简介',
-                  onSearch: _scheduleSearch,
-                  onClear: () {
-                    _keyword = '';
-                    _load();
-                  },
-                ),
-              ),
-            ),
             if (showListProgress)
               SliverToBoxAdapter(
                 child: LinearProgressIndicator(

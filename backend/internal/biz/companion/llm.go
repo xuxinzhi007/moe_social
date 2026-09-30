@@ -140,6 +140,9 @@ func buildSystemPromptWithContext(
 	b.WriteString("\n- 不要自我介绍，你和用户已经认识了")
 	b.WriteString("\n- 回复控制在 1-3 句话内")
 	b.WriteString("\n- 可以表达情绪和想法，但不要过度")
+	b.WriteString("\n- 用户的称呼只以「你记得的事」为准。记得就直接叫出来；没有就说还不知道，请对方告诉你。不要编造名字")
+	b.WriteString("\n- 问现在几点，用场景里给出的时间回答")
+	b.WriteString("\n- 不知道的事直接说不知道，不要装成已经会、已经做完")
 
 	// [5] 用户自定义覆盖
 	if override := strings.TrimSpace(profile.SystemPromptOverride); override != "" {
@@ -212,7 +215,7 @@ func sceneGuidance(now time.Time, state *State, forcedScene ...string) string {
 		}
 	}
 
-	guidance := "当前场景：" + scene + "。"
+	guidance := fmt.Sprintf("现在是%d月%d日 %02d:%02d。当前场景：%s。", now.Month(), now.Day(), now.Hour(), now.Minute(), scene)
 	switch scene {
 	case "情绪安抚":
 		guidance += "先承接用户的感受，少给空泛建议；只问一个温和的问题，给用户选择倾诉或安静陪伴的空间。"

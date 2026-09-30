@@ -831,6 +831,9 @@ class ArenaViewModel extends ChangeNotifier {
     final remote = await _service.fetchState();
     if (remote != null) {
       applyState(remote);
+      if (remote.vipDailyGranted > 0) {
+        _homeMessage = '会员今日星辉 +${remote.vipDailyGranted}';
+      }
       _cloudSynced = true;
       await _persistLocal();
     } else {

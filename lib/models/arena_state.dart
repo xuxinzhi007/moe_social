@@ -108,6 +108,7 @@ class ArenaStateDto {
     this.bondBuffReady = false,
     this.selectedTowerNode = 2,
     this.updatedAt,
+    this.vipDailyGranted = 0,
   });
 
   final String userId;
@@ -120,6 +121,7 @@ class ArenaStateDto {
   final bool bondBuffReady;
   final int selectedTowerNode;
   final String? updatedAt;
+  final int vipDailyGranted;
 
   factory ArenaStateDto.fromJson(Map<String, dynamic> json) {
     final formation = <String>[];
@@ -165,6 +167,7 @@ class ArenaStateDto {
       bondBuffReady: json['bond_buff_ready'] == true,
       selectedTowerNode: (json['selected_tower_node'] as num?)?.toInt() ?? 2,
       updatedAt: json['updated_at']?.toString(),
+      vipDailyGranted: (json['vip_daily_granted'] as num?)?.toInt() ?? 0,
     );
   }
 

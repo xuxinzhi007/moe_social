@@ -9,6 +9,7 @@ import '../../theme/moe_tokens.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
+import 'community_search_chrome.dart';
 
 /// 兴趣社区搜索：独立页，按正文、昵称或话题检索公开动态。
 class CommunityPostSearchPage extends StatefulWidget {
@@ -102,25 +103,9 @@ class _CommunityPostSearchPageState extends State<CommunityPostSearchPage> {
         foregroundColor: MoeTokens.titleText,
         surfaceTintColor: Colors.transparent,
         titleSpacing: 0,
-        title: TextField(
+        title: CommunitySearchField(
           controller: _query,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          style: const TextStyle(
-            color: MoeTokens.titleText,
-            fontSize: MoeTokens.textBase,
-            fontWeight: FontWeight.w600,
-          ),
-          decoration: const InputDecoration(
-            hintText: '搜索正文、昵称或话题',
-            hintStyle: TextStyle(
-              color: MoeTokens.hintText,
-              fontSize: MoeTokens.textBase,
-              fontWeight: FontWeight.w600,
-            ),
-            border: InputBorder.none,
-            isCollapsed: true,
-          ),
+          hintText: '搜索正文、昵称或话题',
           onSubmitted: (value) {
             _debounceTimer?.cancel();
             final keyword = value.trim();
@@ -144,7 +129,7 @@ class _CommunityPostSearchPageState extends State<CommunityPostSearchPage> {
   Widget _buildBody() {
     final keyword = _query.text.trim();
     if (keyword.isEmpty) {
-      return const _SearchHint(
+      return const CommunitySearchHint(
         icon: Icons.travel_explore_rounded,
         title: '搜索广场动态',
         subtitle: '输入正文、昵称或话题',
@@ -163,7 +148,7 @@ class _CommunityPostSearchPageState extends State<CommunityPostSearchPage> {
       );
     }
     if (_hits.isEmpty) {
-      return const _SearchHint(
+      return const CommunitySearchHint(
         icon: Icons.search_off_rounded,
         title: '没有匹配的动态',
         subtitle: '换个关键词试试',
@@ -177,52 +162,6 @@ class _CommunityPostSearchPageState extends State<CommunityPostSearchPage> {
         final hit = _hits[index];
         return _SearchResultRow(hit: hit, onTap: () => _openHit(hit));
       },
-    );
-  }
-}
-
-class _SearchHint extends StatelessWidget {
-  const _SearchHint({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 36, color: MoeTokens.hintText),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: MoeTokens.titleText,
-                fontSize: MoeTokens.textLg,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: MoeTokens.hintText,
-                fontSize: MoeTokens.textSm,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

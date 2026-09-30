@@ -306,73 +306,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               padding: const EdgeInsets.only(left: MoeTokens.spaceXs),
               child: _StatusPill(status: _statusFor(profile)),
             ),
-          PopupMenuButton<String>(
-            tooltip: '更多操作',
-            padding: EdgeInsets.zero,
-            icon: const Icon(
-              Icons.more_horiz_rounded,
-              color: MoeTokens.inkMuted,
-            ),
-            iconSize: 22,
-            offset: const Offset(0, 8),
-            position: PopupMenuPosition.under,
-            color: MoeTokens.surface3,
-            elevation: 6,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-            ),
-            onSelected: (value) {
-              if (value == 'edit' && !profile.isBuiltin) {
-                _showEditor(initial: profile);
-              }
-              if (value == 'delete' && !profile.isBuiltin) {
-                _delete(profile);
-              }
-              if (value == 'select') _selectForChat(profile);
-              if (value == 'inspect') _openLlmConfig();
-            },
-            itemBuilder: (_) => [
-              if (!isActive)
-                const PopupMenuItem(
-                  value: 'select',
-                  height: 44,
-                  child: _ProviderActionMenuItem(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    label: '设为聊天服务',
-                    color: MoeTokens.primary,
-                  ),
-                ),
-              if (profile.isBuiltin)
-                const PopupMenuItem(
-                  value: 'inspect',
-                  height: 44,
-                  child: _ProviderActionMenuItem(
-                    icon: Icons.settings_outlined,
-                    label: '查看后端配置',
-                    color: MoeTokens.titleText,
-                  ),
-                ),
-              if (!profile.isBuiltin)
-                const PopupMenuItem(
-                  value: 'edit',
-                  height: 44,
-                  child: _ProviderActionMenuItem(
-                    icon: Icons.edit_outlined,
-                    label: '编辑',
-                    color: MoeTokens.titleText,
-                  ),
-                ),
-              if (!profile.isBuiltin)
-                const PopupMenuItem(
-                  value: 'delete',
-                  height: 44,
-                  child: _ProviderActionMenuItem(
-                    icon: Icons.delete_outline_rounded,
-                    label: '删除',
-                    color: MoeTokens.danger,
-                  ),
-                ),
-            ],
+          _ProviderMenu(
+            isActive: isActive,
+            isBuiltin: profile.isBuiltin,
+            onSelect: () => _selectForChat(profile),
+            onInspect: _openLlmConfig,
+            onEdit: () => _showEditor(initial: profile),
+            onDelete: () => _delete(profile),
           ),
         ],
       ),
@@ -1569,33 +1509,130 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _ProviderActionMenuItem extends StatelessWidget {
-  const _ProviderActionMenuItem({
-    required this.icon,
-    required this.label,
-    required this.color,
+class _ProviderMenu extends StatelessWidget {
+  const _ProviderMenu({
+    required this.isActive,
+    required this.isBuiltin,
+    required this.onSelect,
+    required this.onInspect,
+    required this.onEdit,
+    required this.onDelete,
   });
 
-  final IconData icon;
-  final String label;
-  final Color color;
+  static const double _menuWidth = 168;
+  static const double _itemHeight = 36;
+
+  final bool isActive;
+  final bool isBuiltin;
+  final VoidCallback onSelect;
+  final VoidCallback onInspect;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 19, color: color),
-        const SizedBox(width: MoeTokens.spaceSm),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: MoeTokens.textBase,
-            fontWeight: MoeTokens.fontWeightSubtitle,
-            color: color,
+    return MenuAnchor(
+      alignmentOffset: const Offset(-_menuWidth + 28, MoeTokens.spaceXs),
+      style: MenuStyle(
+        backgroundColor: const WidgetStatePropertyAll(MoeTokens.surface1),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        elevation: const WidgetStatePropertyAll(2),
+        shadowColor: WidgetStatePropertyAll(
+          MoeTokens.inkDark.withValues(alpha: 0.08),
+        ),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: MoeTokens.spaceXs),
+        ),
+        minimumSize: const WidgetStatePropertyAll(Size(_menuWidth, 0)),
+        maximumSize: const WidgetStatePropertyAll(Size(_menuWidth, 220)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+            side: const BorderSide(color: MoeTokens.surfaceBorder),
           ),
         ),
+      ),
+      menuChildren: [
+        if (!isActive)
+          _item(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: '设为聊天服务',
+            color: MoeTokens.primary,
+            onPressed: onSelect,
+          ),
+        if (isBuiltin)
+          _item(
+            icon: Icons.settings_outlined,
+            label: '查看后端配置',
+            color: MoeTokens.titleText,
+            onPressed: onInspect,
+          ),
+        if (!isBuiltin)
+          _item(
+            icon: Icons.edit_outlined,
+            label: '编辑',
+            color: MoeTokens.titleText,
+            onPressed: onEdit,
+          ),
+        if (!isBuiltin)
+          _item(
+            icon: Icons.delete_outline_rounded,
+            label: '删除',
+            color: MoeTokens.danger,
+            onPressed: onDelete,
+          ),
       ],
+      builder: (context, controller, _) {
+        return IconButton(
+          tooltip: '更多操作',
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          onPressed: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+          icon: const Icon(
+            Icons.more_horiz_rounded,
+            size: 20,
+            color: MoeTokens.inkMuted,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _item({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return MenuItemButton(
+      style: ButtonStyle(
+        minimumSize:
+            const WidgetStatePropertyAll(Size(_menuWidth, _itemHeight)),
+        maximumSize:
+            const WidgetStatePropertyAll(Size(_menuWidth, _itemHeight)),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: MoeTokens.spaceMd),
+        ),
+        visualDensity: VisualDensity.compact,
+        overlayColor: WidgetStatePropertyAll(color.withValues(alpha: 0.08)),
+      ),
+      onPressed: onPressed,
+      leadingIcon: Icon(icon, size: 16, color: color),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: MoeTokens.textSm,
+          fontWeight: MoeTokens.fontWeightSubtitle,
+          color: color,
+        ),
+      ),
     );
   }
 }
