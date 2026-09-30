@@ -289,8 +289,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
               previewRaw = '[IMG]';
             }
             final preview = formatDmPreviewForUi(previewRaw);
-            final pushBadge = pushUnread[peerId] ?? 0;
-            final badge = pushBadge > c.unreadCount ? pushBadge : c.unreadCount;
+            final badge = c.unreadCount;
             // 解析最后活跃时间
             DateTime? lastActive;
             try {

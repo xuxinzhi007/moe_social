@@ -91,4 +91,4 @@ Moe Social 已完成 Kratos HTTP 服务迁移，生产请求由 `backend/cmd/moe
 
 - 普通 AI 聊天历史的归属、删除后列表为空、跨账号隔离，由 `TestChatHistoryBelongsToActorAndDeletesCascade` 覆盖。换设备看到同一份历史，依赖这份服务端数据，不依赖本机库。
 - 伙伴记忆提取失败时，用户还不能区分「聊天已保存」和「这段还没被记住」。
-- 私信未读在会话列表上曾用本机推送计数盖过服务端 `unread_count`。社交主路径要以后端未读为准。
+- 已有服务端会话时，会话列表角标用 `unread_count`。好友行和「服务端列表还没回来」的回退列表仍读本机通知/推送计数。
