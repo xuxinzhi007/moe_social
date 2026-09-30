@@ -414,6 +414,19 @@ func (s *AppService) RecordSocialEvent(
 	return engine.RecordSocialEvent(ctx, userID, eventType, sourceID, payload)
 }
 
+// ChatContext 返回下一轮会送进模型的上下文占用估算。
+func (s *AppService) ChatContext(ctx context.Context, userID uint) (companionbiz.ContextUsage, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return companionbiz.ContextUsage{}, err
+	}
+	usage, err := engine.ChatContextUsage(ctx, userID)
+	if err != nil {
+		return companionbiz.ContextUsage{}, err
+	}
+	return usage, nil
+}
+
 // ChatStream streams one authenticated user's companion response.
 func (s *AppService) ChatStream(
 	ctx context.Context,

@@ -25,6 +25,112 @@ class CompanionChatEvent {
   });
 }
 
+/// 伙伴聊天下一轮的上下文占用估算。
+class CompanionContextUsage {
+  static const defaultHistoryLimit = 10;
+  static const defaultOutputReserve = 480;
+  static const defaultContextLimit = 8192;
+
+  final int promptTokens;
+  final int personaTokens;
+  final int historyTokens;
+  final int historyMessages;
+  final int historyLimit;
+  final int contextLimit;
+  final int outputReserve;
+  final bool overflow;
+
+  const CompanionContextUsage({
+    this.promptTokens = 0,
+    this.personaTokens = 0,
+    this.historyTokens = 0,
+    this.historyMessages = 0,
+    this.historyLimit = 0,
+    this.contextLimit = 0,
+    this.outputReserve = 0,
+    this.overflow = false,
+  });
+
+  /// 用当前页面上的人设和最近对话估算。服务端数字回来之前也够画出占用条。
+  factory CompanionContextUsage.estimate({
+    required String persona,
+    required List<String> recentContents,
+    int historyLimit = defaultHistoryLimit,
+    int contextLimit = defaultContextLimit,
+    int outputReserve = defaultOutputReserve,
+  }) {
+    final recent = recentContents.length > historyLimit
+        ? recentContents.sublist(recentContents.length - historyLimit)
+        : recentContents;
+    final personaTokens = _estimateTextTokens(persona) + 4;
+    var historyTokens = 0;
+    for (final content in recent) {
+      historyTokens += _estimateTextTokens(content) + 4;
+    }
+    final promptTokens = personaTokens + historyTokens;
+    return CompanionContextUsage(
+      promptTokens: promptTokens,
+      personaTokens: personaTokens,
+      historyTokens: historyTokens,
+      historyMessages: recent.length,
+      historyLimit: historyLimit,
+      contextLimit: contextLimit,
+      outputReserve: outputReserve,
+      overflow: contextLimit > 0 && promptTokens + outputReserve > contextLimit,
+    );
+  }
+
+  bool get hasWindow => contextLimit > 0;
+
+  double get usedFraction {
+    if (!hasWindow) return 0;
+    final used = promptTokens + outputReserve;
+    return (used / contextLimit).clamp(0.0, 1.0);
+  }
+
+  factory CompanionContextUsage.fromMap(Map<String, dynamic> map) {
+    final nested = map['data'];
+    if (map['context_limit'] == null && nested is Map) {
+      return CompanionContextUsage.fromMap(Map<String, dynamic>.from(nested));
+    }
+
+    int read(String key) {
+      final value = map[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      return int.tryParse(value?.toString() ?? '') ?? 0;
+    }
+
+    final contextLimit = read('context_limit');
+    final outputReserve = read('output_reserve');
+    final historyLimit = read('history_limit');
+    return CompanionContextUsage(
+      promptTokens: read('prompt_tokens'),
+      personaTokens: read('persona_tokens'),
+      historyTokens: read('history_tokens'),
+      historyMessages: read('history_messages'),
+      historyLimit: historyLimit > 0 ? historyLimit : defaultHistoryLimit,
+      contextLimit: contextLimit > 0 ? contextLimit : defaultContextLimit,
+      outputReserve: outputReserve > 0 ? outputReserve : defaultOutputReserve,
+      overflow: map['overflow'] == true,
+    );
+  }
+}
+
+int _estimateTextTokens(String text) {
+  var ascii = 0;
+  var tokens = 0;
+  for (final rune in text.runes) {
+    if (rune <= 127) {
+      ascii++;
+    } else {
+      tokens++;
+    }
+  }
+  tokens += (ascii + 3) ~/ 4;
+  return tokens;
+}
+
 /// 伙伴 Profile（从后端获取）。
 ///
 /// 双层身份：name/emoji/avatarUrl/persona = 关系层（用户自定义）；
@@ -890,6 +996,13 @@ class CompanionService {
     return CompanionMemoryData.fromMap(
       ApiResponse.object(result, keys: const ['memory']),
     );
+  }
+
+  /// 下一轮会送进模型的上下文占用。数字是估算，不含提示词正文。
+  Future<CompanionContextUsage> getChatContext() async {
+    _requireUserId();
+    final result = await ApiService.get('/api/companion/chat/context');
+    return CompanionContextUsage.fromMap(ApiResponse.object(result));
   }
 
   Future<List<CompanionChatLogData>> listChatHistory({int limit = 12}) async {

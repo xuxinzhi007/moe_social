@@ -400,11 +400,10 @@ extension TavernProvidersTabPart on _AgentListPageState {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _providerProfiles.any(
-                        (item) => item.id == _selectedSquareProviderId,
-                      )
-                          ? _selectedSquareProviderId
-                          : AiProviderProfile.builtinBackendId,
+                      value: AiProviderProfile.selectableId(
+                        AiProviderProfile.uniqueWithBuiltin(_providerProfiles),
+                        _selectedSquareProviderId,
+                      ),
                       decoration: InputDecoration(
                         labelText: '当前模型来源',
                         border: OutlineInputBorder(
@@ -415,17 +414,18 @@ extension TavernProvidersTabPart on _AgentListPageState {
                         fillColor: MoeTokens.pageBackground,
                       ),
                       isExpanded: true,
-                      items: _providerProfiles
-                          .map(
-                            (item) => DropdownMenuItem<String>(
-                              value: item.id,
-                              child: Text(
-                                item.name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          )
-                          .toList(),
+                      items:
+                          AiProviderProfile.uniqueWithBuiltin(_providerProfiles)
+                              .map(
+                                (item) => DropdownMenuItem<String>(
+                                  value: item.id,
+                                  child: Text(
+                                    item.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
                       onChanged: (value) async {
                         if (value == null) return;
                         _updateTavernState(

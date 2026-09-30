@@ -3,14 +3,12 @@ import 'package:flutter/services.dart';
 
 import '../../models/ai_agent.dart';
 import '../../services/ai_agent_cloud_service.dart';
-import '../../services/ai_character_card_service.dart';
 import '../../services/ai_starter_templates.dart';
+import '../../services/llm_api_service.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
-import '../../widgets/ai/ai_model_binding_sheet.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import 'agent_editor_page.dart';
-import 'chat_page.dart';
 
 /// 角色卡广场：内置推荐模板 + 我的角色，社区区预留。
 class CharacterCardPlazaPage extends StatefulWidget {
@@ -85,49 +83,88 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
     }
   }
 
-  Future<void> _openChat(AiAgent agent) async {
-    await Navigator.push(
+  Future<void> _editAgent(AiAgent agent) async {
+    final saved = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => ChatPage(agent: agent)),
+      MaterialPageRoute(builder: (_) => AgentEditorPage(agent: agent)),
     );
+    if (saved == true) {
+      await _refreshAll();
+    }
   }
 
-  /// 广场角色卡：先选本机 API/模型，保存到账号后进入聊天。
-  Future<void> _usePublicAgent(AiAgent agent) async {
-    HapticFeedback.lightImpact();
-    final binding = await AiModelBindingSheet.show(
-      context: context,
-      title: agent.name,
-      subtitle: agent.description.trim().isNotEmpty
-          ? agent.description
-          : '选择你自己的 API 与模型后开始对话',
-      suggestedModel: agent.modelName,
-    );
-    if (binding == null || !mounted) return;
+  String _cardPrompt(AiAgent agent) {
+    final prompt = agent.systemPrompt.trim();
+    if (prompt.isNotEmpty) return prompt;
+    return [
+      agent.persona,
+      agent.scenario,
+      agent.exampleDialogues,
+    ].map((part) => part.trim()).where((part) => part.isNotEmpty).join('\n');
+  }
 
-    final ready =
-        AiCharacterCardService().cloneAgentForLocalUse(agent).copyWith(
-              modelName: binding.modelName,
-              providerProfileId: binding.provider.isBuiltinBackend
-                  ? null
-                  : binding.provider.id,
-            );
-
-    try {
-      await AiAgentCloudService().saveAgent(ready);
-    } catch (e) {
-      if (mounted) {
-        MoeToast.error(context, '保存角色卡失败：$e');
-      }
+  Future<void> _applyCard(AiAgent agent) async {
+    final prompt = _cardPrompt(agent);
+    if (prompt.isEmpty) {
+      MoeToast.error(context, '这张卡没有可写入的人设');
       return;
     }
-
+    List<LlmManagedModel> models;
+    try {
+      models = await LlmApiService.listManagedModels();
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '读取模型失败：$e');
+      return;
+    }
+    final ready = models.where((model) => model.isReady).toList();
     if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ChatPage(agent: ready)),
+    if (ready.isEmpty) {
+      MoeToast.error(
+        context,
+        '还没有可套用的模型。每人最多新建 3 个，创建后再把角色卡写进已有模型。',
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<LlmManagedModel>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(
+                title: Text('套用到已有模型'),
+                subtitle: Text('只更新这个模型的 Modelfile，不会新建。上限 3 个。'),
+              ),
+              for (final model in ready)
+                ListTile(
+                  title: Text(model.modelName),
+                  subtitle: Text('基座 ${model.baseModel}'),
+                  onTap: () => Navigator.pop(sheetContext, model),
+                ),
+            ],
+          ),
+        );
+      },
     );
-    await _refreshAll();
+    if (picked == null || !mounted) return;
+    try {
+      final result = await LlmApiService.upsertAgentPrompt(
+        agentId: picked.agentId,
+        requestId: LlmApiService.newRequestId(),
+        baseModel: picked.baseModel,
+        systemPrompt: prompt,
+      );
+      if (!mounted) return;
+      if (!result.isReady) {
+        MoeToast.error(context, result.outcomeMessage);
+        return;
+      }
+      MoeToast.success(context, '已写入 ${picked.modelName}，没有新建模型');
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '写入失败：$e');
+    }
   }
 
   @override
@@ -160,7 +197,7 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             else
               ..._myAgents.map(_buildMyAgentCard),
             const SizedBox(height: 24),
-            _sectionTitle('角色卡广场', '已发布到广场、可供他人使用的角色'),
+            _sectionTitle('角色卡广场', '套用到你已有的模型，只改 Modelfile，不新建'),
             const SizedBox(height: 10),
             if (_loadingPublic)
               const Padding(
@@ -313,15 +350,19 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => _editAgent(agent),
+                child: const Text('编辑'),
+              ),
               FilledButton(
-                onPressed: () => _openChat(agent),
+                onPressed: () => _applyCard(agent),
                 style: FilledButton.styleFrom(
                   backgroundColor: AiBrandTokens.primary,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   minimumSize: const Size(0, 36),
                 ),
-                child: const Text('使用'),
+                child: const Text('套用'),
               ),
             ],
           ),
@@ -346,7 +387,7 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
           const Text('还没有角色卡', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Text(
-            '从上方推荐模板创建，或在 AI 酒馆主页导入角色卡。',
+            '从上方推荐模板创建。编辑自己的卡并打开发布后，别人就能在广场看到。',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
@@ -424,13 +465,13 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
               ),
               const SizedBox(width: 12),
               FilledButton(
-                onPressed: () => _usePublicAgent(agent),
+                onPressed: () => _applyCard(agent),
                 style: FilledButton.styleFrom(
                   backgroundColor: AiBrandTokens.secondary,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   minimumSize: const Size(0, 36),
                 ),
-                child: const Text('使用'),
+                child: const Text('套用'),
               ),
             ],
           ),

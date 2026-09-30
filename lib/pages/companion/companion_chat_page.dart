@@ -21,6 +21,15 @@ import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/moe_toast.dart';
 
+String _formatContextTokens(int tokens) {
+  if (tokens >= 1000) {
+    final value = tokens / 1000;
+    final digits = value >= 10 ? 0 : 1;
+    return '${value.toStringAsFixed(digits)}k';
+  }
+  return '$tokens';
+}
+
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
 class CompanionChatPage extends StatefulWidget {
   const CompanionChatPage({super.key, this.initialDraft});
@@ -50,6 +59,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   String _providerLabel = '检查模型服务中';
   AiProviderProfile? _activeProvider;
   ProviderTokenUsage? _providerUsage;
+  CompanionContextUsage? _contextUsage;
 
   // AIRI 向轻量语音：STT 本机；TTS 走 Edge 神经音色 + just_audio
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -167,6 +177,64 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     super.dispose();
   }
 
+  Future<void> _loadChatContext() async {
+    try {
+      final usage = await CompanionService().getChatContext();
+      if (!mounted) return;
+      setState(() => _contextUsage = usage);
+    } catch (_) {}
+  }
+
+  CompanionContextUsage _shownContextUsage() {
+    final server = _contextUsage;
+    final local = CompanionContextUsage.estimate(
+      persona:
+          '${_profile.name}\n${_profile.persona}\n${_profile.personalityTraits.join('、')}',
+      recentContents: [
+        for (final item in _items)
+          if (item.content.trim().isNotEmpty) item.content,
+      ],
+      contextLimit: (server?.contextLimit ?? 0) > 0
+          ? server!.contextLimit
+          : CompanionContextUsage.defaultContextLimit,
+      outputReserve: (server?.outputReserve ?? 0) > 0
+          ? server!.outputReserve
+          : CompanionContextUsage.defaultOutputReserve,
+    );
+    if (server == null || server.historyMessages != local.historyMessages) {
+      return local;
+    }
+    return server;
+  }
+
+  void _showContextUsage() {
+    final usage = _shownContextUsage();
+    if (!mounted) return;
+    final historyLimit = usage.historyLimit;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('这一轮会带上多少'),
+        content: Text(
+          '人设、记忆和最近对话会每次重新拼进请求。窗口变小，不会从这边把人设删掉。\n\n'
+          '更早的聊天还在记录里，实际只带最近 $historyLimit 条。'
+          '现在人设大约 ${_formatContextTokens(usage.personaTokens)}，'
+          '最近对话大约 ${_formatContextTokens(usage.historyTokens)}，'
+          '合计 ${_formatContextTokens(usage.promptTokens)}，'
+          '上下文上限 ${_formatContextTokens(usage.contextLimit)}，'
+          '回复再预留 ${_formatContextTokens(usage.outputReserve)}。\n\n'
+          '合计加上预留如果超过窗口，模型可能会从开头裁掉，人设就可能没了。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _refreshPresenceState() async {
     try {
       final snapshot = await CompanionService().getSnapshot();
@@ -182,6 +250,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       try {
         history = await CompanionService().listChatHistory(limit: 40);
       } catch (_) {}
+      unawaited(_loadChatContext());
       if (!mounted) return;
       final initialItems = history
           .map(
@@ -326,6 +395,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             unawaited(
                 CompanionPresenceProvider.instance.markCompanionChatSeen());
             unawaited(_refreshPresenceState());
+            unawaited(_loadChatContext());
             CompanionInteractionCoordinator.instance.publishChatCompleted(
               scene: null,
             );
@@ -1023,6 +1093,51 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     );
   }
 
+  Widget _buildContextMeter() {
+    final usage = _shownContextUsage();
+    final color = usage.overflow ? MoeTokens.danger : MoeTokens.primary;
+    final label = usage.overflow ? '上下文快满了' : '上下文';
+    return GestureDetector(
+      onTap: _showContextUsage,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Icon(Icons.donut_small_rounded, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            '$label ${_formatContextTokens(usage.promptTokens)}/${_formatContextTokens(usage.contextLimit)}',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                minHeight: 4,
+                value: usage.usedFraction,
+                backgroundColor: color.withValues(alpha: 0.12),
+                color: color,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '最近 ${usage.historyMessages}/${usage.historyLimit}',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: MoeTokens.hintText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildComposer() {
     final hasError = _loadError != null;
     const btnSize = 40.0;
@@ -1041,6 +1156,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildContextMeter(),
+              const SizedBox(height: 8),
               if (_listening || _isSending) ...[
                 _ComposerStatus(
                   label: _listening ? '正在听你说…' : 'TA 正在组织回应…',

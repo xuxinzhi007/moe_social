@@ -28,6 +28,33 @@ class AiProviderProfile {
     legacyBuiltinLocalLlamaCppId,
   };
 
+  /// 来源下拉：同一 id 只保留一次，并保证内置后端在列表中。
+  static List<AiProviderProfile> uniqueWithBuiltin(
+    List<AiProviderProfile> profiles,
+  ) {
+    final seen = <String>{};
+    final out = <AiProviderProfile>[];
+    for (final item in profiles) {
+      final id = item.id.trim();
+      if (id.isEmpty || !seen.add(id)) continue;
+      out.add(item);
+    }
+    if (!seen.contains(builtinBackendId)) {
+      out.insert(0, AiProviderProfile.builtinBackend());
+    }
+    return out;
+  }
+
+  /// 选中值必须对应列表里恰好一项。
+  static String selectableId(
+      List<AiProviderProfile> profiles, String selected) {
+    if (profiles.any((item) => item.id == selected)) return selected;
+    if (profiles.any((item) => item.id == builtinBackendId)) {
+      return builtinBackendId;
+    }
+    return profiles.isEmpty ? builtinBackendId : profiles.first.id;
+  }
+
   final String id;
   final String name;
   final AiProviderType providerType;

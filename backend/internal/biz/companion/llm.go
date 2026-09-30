@@ -329,7 +329,7 @@ func streamChat(
 	reply, err := llminference.ChatStream(ctx, cfg, modelName, messages,
 		llminference.ChatOptions{
 			Temperature: 0.85,
-			MaxTokens:   480,
+			MaxTokens:   chatMaxOutputTokens,
 		}, onChunk)
 	if err == nil || strings.TrimSpace(reply) != "" {
 		return reply, err
@@ -362,7 +362,7 @@ func nonStreamChat(
 	return llminference.Chat(ctx, cfg, modelName, messages,
 		llminference.ChatOptions{
 			Temperature: 0.85,
-			MaxTokens:   480,
+			MaxTokens:   chatMaxOutputTokens,
 		})
 }
 

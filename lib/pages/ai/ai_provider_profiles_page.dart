@@ -21,6 +21,7 @@ import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_status_dot.dart';
 import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
+import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_pressable.dart';
 
@@ -1289,9 +1290,9 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
       context: context,
       title: 'Moe 后端',
       subtitle: '聊天先到 Moe Social 后端，再由服务端调用已配置的推理。不要在这里填 Ollama 地址。',
-      initialChildSize: 0.46,
-      minChildSize: 0.36,
-      maxChildSize: 0.7,
+      initialChildSize: 0.5,
+      minChildSize: 0.4,
+      maxChildSize: 0.72,
       child: Builder(
         builder: (sheetContext) {
           return Column(
@@ -1326,6 +1327,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 icon: const Icon(Icons.inventory_2_outlined),
                 label: const Text('本人模型管理'),
               ),
+              SizedBox(height: MediaQuery.paddingOf(sheetContext).bottom + 12),
             ],
           );
         },
@@ -1417,6 +1419,17 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   MoeTokens.spaceLg,
                 ),
                 children: [
+                  AiSurfaceCard(
+                    child: MoeActionRow(
+                      icon: Icons.storefront_rounded,
+                      title: '角色卡广场',
+                      subtitle: const Text('看别人公开的角色卡，套用到你自己的模型'),
+                      iconColor: AiBrandTokens.primary,
+                      padding: EdgeInsets.zero,
+                      onTap: () => Navigator.of(context)
+                          .pushNamed('/character-card-plaza'),
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                       MoeTokens.spaceXs,

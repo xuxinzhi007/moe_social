@@ -741,15 +741,16 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _providerProfiles.any(
-                            (item) => item.id == _providerProfileId,
-                          )
-                              ? _providerProfileId
-                              : AiProviderProfile.builtinBackendId,
+                          value: AiProviderProfile.selectableId(
+                            AiProviderProfile.uniqueWithBuiltin(
+                                _providerProfiles),
+                            _providerProfileId,
+                          ),
                           isExpanded: true,
                           decoration:
                               AiTheme.inputDecoration(labelText: 'API 来源'),
-                          items: _providerProfiles
+                          items: AiProviderProfile.uniqueWithBuiltin(
+                                  _providerProfiles)
                               .map(
                                 (item) => DropdownMenuItem(
                                   value: item.id,
