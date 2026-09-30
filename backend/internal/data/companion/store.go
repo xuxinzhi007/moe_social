@@ -543,6 +543,52 @@ func (s *store) RetryMemoryExtractionJob(
 	return nil
 }
 
+func (s *store) FailMemoryExtractionJob(
+	ctx context.Context,
+	jobID uint,
+	attemptCount int,
+	lastError string,
+) error {
+	now := time.Now()
+	result := s.db.WithContext(ctx).
+		Model(&model.CompanionMemoryExtractionJob{}).
+		Where(
+			"id = ? AND status = ? AND attempt_count = ?",
+			jobID,
+			model.CompanionMemoryExtractionRunning,
+			attemptCount,
+		).
+		Updates(map[string]interface{}{
+			"status":      model.CompanionMemoryExtractionFailed,
+			"lease_until": nil,
+			"last_error":  lastError,
+			"updated_at":  now,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("fail companion memory extraction job %d: %w", jobID, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (s *store) CountMemoryExtractionJobsByStatus(
+	ctx context.Context,
+	userID uint,
+	status string,
+) (int64, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Model(&model.CompanionMemoryExtractionJob{}).
+		Where("user_id = ? AND status = ?", userID, status).
+		Count(&count).Error
+	if err != nil {
+		return 0, fmt.Errorf("count companion memory extraction jobs: %w", err)
+	}
+	return count, nil
+}
+
 // CreateRelationshipEvent persists one meaningful relationship event.
 func (s *store) CreateRelationshipEvent(ctx context.Context, event *model.CompanionRelationshipEvent) error {
 	return s.db.WithContext(ctx).Create(event).Error

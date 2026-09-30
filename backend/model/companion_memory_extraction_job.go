@@ -11,6 +11,8 @@ const (
 	CompanionMemoryExtractionRetrying = "retrying"
 	// CompanionMemoryExtractionCompleted marks a task that finished successfully.
 	CompanionMemoryExtractionCompleted = "completed"
+	// CompanionMemoryExtractionFailed marks a task that will not be retried.
+	CompanionMemoryExtractionFailed = "failed"
 )
 
 // CompanionMemoryExtractionJob tracks durable extraction work by chat-log IDs.

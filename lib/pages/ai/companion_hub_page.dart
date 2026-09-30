@@ -523,6 +523,19 @@ class _HeroCard extends StatelessWidget {
                         color: Color(0xFF5D4E6E),
                       ),
                     ),
+                    if (state.memoryNotice.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        state.memoryNotice.trim(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.25,
+                          color: Color(0xFF8A4B3A),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

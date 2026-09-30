@@ -593,6 +593,7 @@ func toProtoState(s *companionbiz.State) *companionv1.CompanionStateMsg {
 		Energy:          s.Energy,
 		EntityAlive:     s.EntityAlive,
 		WorldBindStatus: s.WorldBindStatus,
+		MemoryNotice:    s.MemoryNotice,
 	}
 }
 

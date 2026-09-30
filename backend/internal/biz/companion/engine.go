@@ -22,6 +22,7 @@ const (
 	memoryExtractionPollInterval       = 5 * time.Second
 	memoryExtractionRetryBaseDelay     = 15 * time.Second
 	memoryExtractionRetryMaxDelay      = 30 * time.Minute
+	memoryExtractionMaxAttempts        = 5
 	memoryExtractionLeaseGracePeriod   = 30 * time.Second
 	memoryExtractionPersistTimeout     = 5 * time.Second
 	memoryExtractionErrorMaxRunes      = 512
@@ -409,6 +410,29 @@ func (e *Engine) processNextMemoryExtractionJob(ctx context.Context) (bool, erro
 		)
 		defer persistCancel()
 	}
+	if job.AttemptCount >= memoryExtractionMaxAttempts {
+		if failErr := e.store.FailMemoryExtractionJob(
+			persistCtx,
+			job.ID,
+			job.AttemptCount,
+			truncateMemoryExtractionError(err),
+		); failErr != nil {
+			return true, fmt.Errorf(
+				"process memory extraction job %d: %w; mark failed: %v",
+				job.ID,
+				err,
+				failErr,
+			)
+		}
+		log.Printf(
+			"[companion] memory extraction stopped job=%d user=%d attempt=%d error=%v",
+			job.ID,
+			job.UserID,
+			job.AttemptCount,
+			err,
+		)
+		return true, nil
+	}
 	if retryErr := e.store.RetryMemoryExtractionJob(
 		persistCtx,
 		job.ID,
@@ -649,6 +673,16 @@ func (e *Engine) GetState(ctx context.Context, userID uint) (*State, *Profile, e
 
 	state := computeState(profile, entity, events)
 	state.WorldBindStatus = profile.WorldBindStatus
+	if e.store != nil {
+		failed, countErr := e.store.CountMemoryExtractionJobsByStatus(
+			ctx,
+			userID,
+			model.CompanionMemoryExtractionFailed,
+		)
+		if countErr == nil && failed > 0 {
+			state.MemoryNotice = "对话已经保存，还有内容没有被记住。"
+		}
+	}
 	return state, profile, nil
 }
 

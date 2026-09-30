@@ -4200,6 +4200,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.LlmManagedModelResp'
+    /api/llm/model-prompt:
+        get:
+            tags:
+                - LlmChat
+            operationId: LlmChat_GetLlmModelPrompt
+            parameters:
+                - name: model
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/llm.v1.GetLlmModelPromptResp'
     /api/llm/models:
         get:
             tags:
@@ -9859,6 +9876,9 @@ components:
                 worldBindStatus:
                     type: string
                     description: 与 Profile.world_bind_status 对齐，便于 state 单接口刷新 UI。
+                memoryNotice:
+                    type: string
+                    description: 对话已保存，但记忆提取已停止重试时给用户看的一句说明。空表示没有这类失败。
         companion.v1.ConfirmMemoryReply:
             type: object
             properties:
@@ -10747,6 +10767,11 @@ components:
                 providerApiKeysJson:
                     type: string
                     description: 已明确开启账号同步的 Provider API Key；服务端只保存密文。
+        llm.v1.GetLlmModelPromptResp:
+            type: object
+            properties:
+                systemPrompt:
+                    type: string
         llm.v1.ListLlmModelsResp:
             type: object
             properties:
@@ -12189,6 +12214,8 @@ components:
                 repeatPenalty:
                     type: number
                     format: double
+                agentId:
+                    type: string
         platform.v1.LlmChatResp:
             type: object
             properties:

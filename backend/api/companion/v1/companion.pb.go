@@ -332,8 +332,10 @@ type CompanionStateMsg struct {
 	EntityAlive bool `protobuf:"varint,13,opt,name=entity_alive,json=entityAlive,proto3" json:"entity_alive,omitempty"`
 	// 与 Profile.world_bind_status 对齐，便于 state 单接口刷新 UI。
 	WorldBindStatus string `protobuf:"bytes,14,opt,name=world_bind_status,json=worldBindStatus,proto3" json:"world_bind_status,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// 对话已保存，但记忆提取已停止重试时给用户看的一句说明。空表示没有这类失败。
+	MemoryNotice  string `protobuf:"bytes,15,opt,name=memory_notice,json=memoryNotice,proto3" json:"memory_notice,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CompanionStateMsg) Reset() {
@@ -425,6 +427,13 @@ func (x *CompanionStateMsg) GetEntityAlive() bool {
 func (x *CompanionStateMsg) GetWorldBindStatus() string {
 	if x != nil {
 		return x.WorldBindStatus
+	}
+	return ""
+}
+
+func (x *CompanionStateMsg) GetMemoryNotice() string {
+	if x != nil {
+		return x.MemoryNotice
 	}
 	return ""
 }
@@ -2894,7 +2903,7 @@ const file_api_companion_v1_companion_proto_rawDesc = "" +
 	"userAvatar\x12\x19\n" +
 	"\bagent_id\x18\x04 \x01(\tR\aagentId\x12\"\n" +
 	"\rauthor_is_bot\x18\x05 \x01(\bR\vauthorIsBot\x12/\n" +
-	"\x14author_bot_agent_key\x18\x06 \x01(\tR\x11authorBotAgentKey\"\xc8\x02\n" +
+	"\x14author_bot_agent_key\x18\x06 \x01(\tR\x11authorBotAgentKey\"\xed\x02\n" +
 	"\x11CompanionStateMsg\x12!\n" +
 	"\fmood_thought\x18\x01 \x01(\tR\vmoodThought\x12%\n" +
 	"\x0eactivity_label\x18\x02 \x01(\tR\ractivityLabel\x12\x1a\n" +
@@ -2905,7 +2914,8 @@ const file_api_companion_v1_companion_proto_rawDesc = "" +
 	"\x06hunger\x18\v \x01(\x01R\x06hunger\x12\x16\n" +
 	"\x06energy\x18\f \x01(\x01R\x06energy\x12!\n" +
 	"\fentity_alive\x18\r \x01(\bR\ventityAlive\x12*\n" +
-	"\x11world_bind_status\x18\x0e \x01(\tR\x0fworldBindStatus\"[\n" +
+	"\x11world_bind_status\x18\x0e \x01(\tR\x0fworldBindStatus\x12#\n" +
+	"\rmemory_notice\x18\x0f \x01(\tR\fmemoryNotice\"[\n" +
 	"\x12CompanionMomentMsg\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x12\n" +
 	"\x04icon\x18\x02 \x01(\tR\x04icon\x12\x1d\n" +
