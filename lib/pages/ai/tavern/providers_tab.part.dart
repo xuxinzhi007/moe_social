@@ -431,8 +431,14 @@ extension TavernProvidersTabPart on _AgentListPageState {
                         _updateTavernState(
                           () => _selectedSquareProviderId = value,
                         );
-                        await AiProviderService()
-                            .saveLastSelectedProfileId(value);
+                        try {
+                          await AiProviderService()
+                              .saveLastSelectedProfileId(value);
+                        } catch (_) {
+                          if (mounted) {
+                            MoeToast.error(context, '模型来源选择没有保存到账号');
+                          }
+                        }
                         await _loadSquareModels();
                       },
                     ),

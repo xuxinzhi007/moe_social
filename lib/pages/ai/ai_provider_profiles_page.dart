@@ -1457,7 +1457,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   // ── 删除 ──
 
   Future<void> _selectForChat(AiProviderProfile profile) async {
-    await AiProviderService().saveLastSelectedProfileId(profile.id);
+    try {
+      await AiProviderService().saveLastSelectedProfileId(profile.id);
+    } catch (_) {
+      if (!mounted) return;
+      MoeToast.error(context, '模型来源选择没有保存到账号');
+      return;
+    }
     if (!mounted) return;
     setState(() => _activeProfileId = profile.id);
     MoeToast.success(

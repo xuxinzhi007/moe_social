@@ -37,7 +37,7 @@ alwaysApply: true
 
 ## 6. 技能（仓库内）
 
-Go 改动：`golang-style`、`effective-go`、`implementation-guardrails`、`golang-gin-database`。提交：`git-commit`。
+Go 改动：`golang-style`、`effective-go`、`implementation-guardrails`。提交：`git-commit`。
 
 ## 7. 收尾
 

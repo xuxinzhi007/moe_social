@@ -2,6 +2,7 @@ package llmapp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -78,30 +79,53 @@ func (s *AppService) Chat(ctx context.Context, in llmbiz.PlatformChatInput) (llm
 	if err != nil {
 		return llmbiz.PlatformChatOutcome{}, err
 	}
-	if needsActor {
-		if s.deps.AIStore == nil {
-			return llmbiz.PlatformChatOutcome{}, kerrors.ServiceUnavailable("LLM_AI_CONTEXT", "AI 角色上下文不可用")
-		}
+	inference := s.deps.Inference
+	externalProvider := false
+	if id != 0 && s.deps.AIStore != nil {
 		cfg, err := s.deps.AIStore.WithContext(ctx).LoadOrCreateConfig(ctx, id)
 		if err != nil {
 			return llmbiz.PlatformChatOutcome{}, kerrors.ServiceUnavailable("LLM_AI_CONTEXT", "读取 AI 角色上下文失败")
 		}
-		in, err = llmbiz.ApplyAgentChatContext(cfg, in)
-		if err != nil {
-			return llmbiz.PlatformChatOutcome{}, err
+		if needsActor {
+			in, err = llmbiz.ApplyAgentChatContext(cfg, in)
+			if err != nil {
+				return llmbiz.PlatformChatOutcome{}, err
+			}
 		}
+		profileID := llmbiz.AgentProviderProfileID(cfg.AgentsJSON, in.AgentID)
+		resolved, err := aibiz.ResolveProfileInference(cfg, profileID)
+		if err != nil {
+			if errors.Is(err, aibiz.ErrActiveProviderUnavailable) {
+				return llmbiz.PlatformChatOutcome{}, kerrors.BadRequest("LLM_PROVIDER", "模型来源缺少地址或模型")
+			}
+			return llmbiz.PlatformChatOutcome{}, kerrors.ServiceUnavailable("LLM_PROVIDER", "读取模型来源失败")
+		}
+		if resolved != nil {
+			inference = *resolved
+			externalProvider = true
+			if in.Model == "" {
+				in.Model = resolved.DefaultModel
+			}
+		}
+	} else if needsActor {
+		return llmbiz.PlatformChatOutcome{}, kerrors.ServiceUnavailable("LLM_AI_CONTEXT", "AI 角色上下文不可用")
 	}
 	in = llmbiz.ApplyServerSystemPrompt(in)
 	if in.Model == "" {
+		in.Model = inference.DefaultModel
+	}
+	if in.Model == "" {
 		in.Model = s.deps.Inference.DefaultModel
 	}
-	if err := s.models.Authorize(ctx, id, in.Model); err != nil {
-		return llmbiz.PlatformChatOutcome{}, err
+	if !externalProvider {
+		if err := s.models.Authorize(ctx, id, in.Model); err != nil {
+			return llmbiz.PlatformChatOutcome{}, err
+		}
 	}
 	if err := s.persistChatUserMessage(ctx, id, in); err != nil {
 		return llmbiz.PlatformChatOutcome{}, err
 	}
-	outcome, err := llmbiz.ExecutePlatformChat(ctx, llmbiz.PlatformChatDeps{Inference: s.deps.Inference, ChatComplete: s.deps.ChatComplete}, in)
+	outcome, err := llmbiz.ExecutePlatformChat(ctx, llmbiz.PlatformChatDeps{Inference: inference, ChatComplete: s.deps.ChatComplete}, in)
 	if err != nil {
 		return outcome, err
 	}
