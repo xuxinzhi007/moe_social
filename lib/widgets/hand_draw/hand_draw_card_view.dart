@@ -47,7 +47,8 @@ class HandDrawCardPainter extends CustomPainter {
         if (used < budget) {
           final o = HandDrawCardCodec.toPixel(pts[0], size);
           if (stroke.erase) {
-            canvas.drawCircle(o, sw / 2, strokePaint..style = PaintingStyle.fill);
+            canvas.drawCircle(
+                o, sw / 2, strokePaint..style = PaintingStyle.fill);
           } else {
             canvas.drawCircle(
               o,
@@ -109,6 +110,7 @@ class HandDrawCardReplay extends StatefulWidget {
   final double borderRadius;
   final bool autoPlay;
   final Duration duration;
+
   /// 预览弹窗等紧凑场景可关闭，避免「再看一遍」占高导致溢出。
   final bool showReplayButton;
 
@@ -162,10 +164,13 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
     super.dispose();
   }
 
+  static const _replayGap = 8.0;
+  static const _replayButtonHeight = 40.0;
+
   @override
   Widget build(BuildContext context) {
-    final gap = widget.showReplayButton ? 8.0 : 0.0;
-    final buttonH = widget.showReplayButton ? 40.0 : 0.0;
+    final gap = widget.showReplayButton ? _replayGap : 0.0;
+    final buttonH = widget.showReplayButton ? _replayButtonHeight : 0.0;
     final chromeH = gap + buttonH;
 
     return LayoutBuilder(
@@ -179,8 +184,7 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
         final hIfFullW = maxW / widget.aspectRatio;
         final maxCanvasH = maxH.isFinite
             ? (maxH - chromeH).clamp(80.0, double.infinity)
-            : (MediaQuery.sizeOf(context).height * 0.38)
-                .clamp(120.0, 320.0);
+            : (MediaQuery.sizeOf(context).height * 0.38).clamp(120.0, 320.0);
 
         if (hIfFullW <= maxCanvasH) {
           canvasW = maxW;
@@ -233,10 +237,21 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
               ),
               if (widget.showReplayButton) ...[
                 SizedBox(height: gap),
-                TextButton.icon(
-                  onPressed: _replay,
-                  icon: const Icon(Icons.replay_rounded, size: 18),
-                  label: const Text('再看一遍'),
+                SizedBox(
+                  height: _replayButtonHeight,
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, _replayButtonHeight),
+                      maximumSize:
+                          const Size(double.infinity, _replayButtonHeight),
+                    ),
+                    onPressed: _replay,
+                    icon: const Icon(Icons.replay_rounded, size: 18),
+                    label: const Text('再看一遍'),
+                  ),
                 ),
               ],
             ],

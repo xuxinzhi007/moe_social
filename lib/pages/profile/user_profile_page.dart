@@ -7,6 +7,7 @@ import '../../auth_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/post_service.dart';
 import '../../services/user_service.dart';
+import '../../utils/moe_error_copy.dart';
 import '../../services/achievement_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
@@ -88,20 +89,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
           try {
             isFollowing =
                 await UserService.checkFollow(currentUserId, widget.userId);
-          } catch (e) {
-            // 尝试通过followUser API的错误信息来判断关注状态
-            try {
-              // 尝试关注，如果返回重复错误则说明已经关注
-              final result =
-                  await UserService.followUser(currentUserId, widget.userId);
-              if (result['success']) {
-                isFollowing = true;
-              }
-            } catch (followError) {
-              if (followError.toString().contains('Duplicate entry')) {
-                isFollowing = true;
-              }
-            }
+          } catch (_) {
+            isFollowing = false;
           }
         }
       }
@@ -632,50 +621,32 @@ class _UserProfilePageState extends State<UserProfilePage> {
       return;
     }
 
-    // 禁止关注自己
-    if (currentUserId == widget.userId) {
-      MoeToast.error(context, '不能关注自己');
-      return;
-    }
-
     try {
-      final result = _isFollowing
-          ? await UserService.unfollowUser(currentUserId, widget.userId)
-          : await UserService.followUser(currentUserId, widget.userId);
+      final wantFollowing = !_isFollowing;
+      final result = wantFollowing
+          ? await UserService.followUser(currentUserId, widget.userId)
+          : await UserService.unfollowUser(currentUserId, widget.userId);
       if (!mounted) return;
 
-      if (result['success']) {
+      if (result['success'] == true) {
         setState(() {
-          _isFollowing = !_isFollowing;
+          _isFollowing = wantFollowing;
         });
-
-        // 刷新关注统计数据
         _loadFollowStats();
-
-        if (mounted) {
-          MoeToast.success(context, _isFollowing ? '已关注' : '已取消关注');
-        }
+        MoeToast.success(context, wantFollowing ? '已关注' : '已取消关注');
       } else {
-        if (mounted) MoeToast.error(context, result['message'] ?? '操作失败');
+        final message = result['message']?.toString().trim();
+        MoeToast.error(
+          context,
+          message != null && message.isNotEmpty ? message : '操作失败',
+        );
       }
     } catch (e) {
-      // 处理重复关注的情况
-      String errorMessage = _isFollowing ? '取消关注失败' : '关注失败';
       if (!mounted) return;
-      if (e.toString().contains('Duplicate entry') ||
-          e.toString().contains('already exists')) {
-        errorMessage = '您已经关注了该用户';
-        // 更新本地状态为已关注
-        setState(() {
-          _isFollowing = true;
-        });
-        // 刷新关注统计数据
-        _loadFollowStats();
-      } else if (e.toString().contains('foreign key constraint fails')) {
-        errorMessage = '关注的用户不存在';
-      }
-
-      if (mounted) MoeToast.error(context, errorMessage);
+      MoeToast.error(
+        context,
+        MoeErrorCopy.toast(e, scene: MoeErrorScene.following),
+      );
     }
   }
 

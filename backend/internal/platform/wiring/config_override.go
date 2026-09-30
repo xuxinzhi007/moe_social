@@ -86,6 +86,32 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 	if conf.IsSet("image.oss.proxy_via_api") {
 		c.Image.OSS.ProxyViaAPI = oss.ProxyViaAPI
 	}
+	// 密钥只取文件值：MOE_QINIU_* 由 biz/media/store_qiniu.go 兜底。
+	qn := img.Qiniu
+	if ak := strings.TrimSpace(qn.AccessKey); ak != "" {
+		c.Image.Qiniu.AccessKey = ak
+	}
+	if sk := strings.TrimSpace(qn.SecretKey); sk != "" {
+		c.Image.Qiniu.SecretKey = sk
+	}
+	if b := strings.TrimSpace(qn.Bucket); b != "" {
+		c.Image.Qiniu.Bucket = b
+	}
+	if d := strings.TrimSpace(qn.CDNDomain); d != "" {
+		c.Image.Qiniu.CDNDomain = d
+	}
+	if r := strings.TrimSpace(qn.Region); r != "" {
+		c.Image.Qiniu.Region = r
+	}
+	if p := strings.TrimSpace(qn.Prefix); p != "" {
+		c.Image.Qiniu.Prefix = p
+	}
+	if conf.IsSet("image.qiniu.private") {
+		c.Image.Qiniu.Private = qn.Private
+	}
+	if conf.IsSet("image.qiniu.proxy_via_api") {
+		c.Image.Qiniu.ProxyViaAPI = qn.ProxyViaAPI
+	}
 	if secret := conf.AuthAccessSecret(); secret != "" {
 		c.Auth.AccessSecret = secret
 	}

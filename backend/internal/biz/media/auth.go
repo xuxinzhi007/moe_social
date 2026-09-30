@@ -44,16 +44,22 @@ func FolderNameForUser(userID uint, username string) string {
 	return fmt.Sprintf("%d_%s", userID, name)
 }
 
-// SplitImageKey 解析图片 key（folder__filename）。
+// SplitImageKey 解析图片 key。
+// 旧格式 folder__filename；分类后为 folder__分类__filename。
 func SplitImageKey(key string) (folder string, filename string, ok bool) {
 	key = strings.TrimSpace(key)
-	parts := strings.SplitN(key, "__", 2)
-	if len(parts) != 2 {
+	parts := strings.Split(key, "__")
+	switch len(parts) {
+	case 2:
+		folder, filename = parts[0], parts[1]
+	case 3:
+		folder, filename = parts[0]+"/"+parts[1], parts[2]
+	default:
 		return "", "", false
 	}
-	folder = strings.TrimSpace(parts[0])
-	filename = strings.TrimSpace(parts[1])
-	if folder == "" || filename == "" {
+	folder = strings.TrimSpace(folder)
+	filename = strings.TrimSpace(filename)
+	if cleanFolder(folder) != folder || filename == "" || strings.Contains(filename, "/") {
 		return "", "", false
 	}
 	return folder, filename, true

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/topic_tag.dart';
+import '../theme/moe_tokens.dart';
 import 'moe_toast.dart';
 
 /// 话题标签选择器 - 支持搜索、创建和选择自定义标签
@@ -129,8 +130,8 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
     }
 
     // 检查是否已有同名标签
-    if (_selectedTags.any((t) =>
-        t.name.toLowerCase() == cleanName.toLowerCase())) {
+    if (_selectedTags
+        .any((t) => t.name.toLowerCase() == cleanName.toLowerCase())) {
       return;
     }
 
@@ -155,73 +156,62 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // 标题和已选标签
-          Row(
-            children: [
-              const Icon(
-                Icons.label_outline,
-                color: Colors.blue,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '添加话题标签 (${_selectedTags.length}/${widget.maxTags})',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          Text(
+            '已选 ${_selectedTags.length}/${widget.maxTags}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: MoeTokens.inkMuted,
+            ),
           ),
-
-          // 已选择的标签
           if (_selectedTags.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _selectedTags.map((tag) {
-                return _buildSelectedTagChip(tag);
-              }).toList(),
+              children: [
+                for (final tag in _selectedTags) _buildSelectedTagChip(tag),
+              ],
             ),
           ],
-
-          // 搜索输入框
           if (widget.showSearchBar) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             TextField(
               controller: _searchController,
               focusNode: _searchFocus,
               decoration: InputDecoration(
-                hintText: widget.placeholder ?? '搜索或创建新标签...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                hintText: widget.placeholder ?? '搜索或创建新话题',
+                hintStyle: const TextStyle(color: MoeTokens.hintText),
+                prefixIcon:
+                    const Icon(Icons.search_rounded, color: MoeTokens.primary),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        icon: const Icon(Icons.close_rounded,
+                            color: MoeTokens.inkMuted),
                         onPressed: () {
                           _searchController.clear();
                           _searchFocus.unfocus();
                         },
                       )
                     : null,
+                filled: true,
+                fillColor: MoeTokens.softChipBg,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  borderSide: const BorderSide(color: MoeTokens.primary),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -236,15 +226,15 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
               },
             ),
           ],
-
-          const SizedBox(height: 16),
-
-          // 搜索结果或推荐标签
-          if (_isSearching) ...[
-            _buildSearchResults(),
-          ] else ...[
-            _buildRecommendedTags(),
-          ],
+          const SizedBox(height: 12),
+          Expanded(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: _isSearching
+                  ? _buildSearchResults()
+                  : _buildRecommendedTags(),
+            ),
+          ),
         ],
       ),
     );
@@ -386,47 +376,45 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
     final isSelected = _selectedTags.any((t) => t.id == tag.id);
 
     return GestureDetector(
-      onTap: isSelected ? null : () => _addTag(tag),
-      child: Opacity(
-        opacity: isSelected ? 0.5 : 1.0,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: tag.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: tag.color.withValues(alpha: 0.5),
-            ),
+      onTap: () => isSelected ? _removeTag(tag) : _addTag(tag),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: tag.color.withValues(alpha: isSelected ? 0.2 : 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: tag.color.withValues(alpha: isSelected ? 0.85 : 0.45),
+            width: isSelected ? 1.5 : 1,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                tag.name,
-                style: TextStyle(
-                  color: tag.color,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              tag.name,
+              style: TextStyle(
+                color: tag.color,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
               ),
-              if (tag.isOfficial) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.verified,
-                  size: 12,
-                  color: tag.color,
-                ),
-              ],
+            ),
+            if (tag.isOfficial) ...[
               const SizedBox(width: 4),
-              Text(
-                '${tag.usageCount}',
-                style: TextStyle(
-                  color: tag.color.withValues(alpha: 0.7),
-                  fontSize: 12,
-                ),
+              Icon(
+                Icons.verified,
+                size: 12,
+                color: tag.color,
               ),
             ],
-          ),
+            const SizedBox(width: 4),
+            Text(
+              '${tag.usageCount}',
+              style: TextStyle(
+                color: tag.color.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ),
     );

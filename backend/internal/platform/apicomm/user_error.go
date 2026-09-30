@@ -37,6 +37,9 @@ func HandleUserGWError(err error, okMsg string) types.BaseResp {
 	if errors.Is(err, userbiz.ErrFriendSelf) {
 		return types.BaseResp{Success: false, Message: "不能向自己发起申请"}
 	}
+	if errors.Is(err, userbiz.ErrFollowSelf) {
+		return types.BaseResp{Success: false, Message: "不能关注自己"}
+	}
 	if errors.Is(err, userbiz.ErrFriendRequestNotFound) {
 		return types.BaseResp{Success: false, Message: "申请不存在"}
 	}

@@ -27,6 +27,16 @@ func ImageConfigFromAPI(img apiconfig.ImageConf) mediabiz.ImageConfig {
 			Region:          strings.TrimSpace(img.OSS.Region),
 			ProxyViaAPI:     img.OSS.ProxyViaAPI,
 		},
+		Qiniu: mediabiz.QiniuConfig{
+			AccessKey:   strings.TrimSpace(img.Qiniu.AccessKey),
+			SecretKey:   strings.TrimSpace(img.Qiniu.SecretKey),
+			Bucket:      strings.TrimSpace(img.Qiniu.Bucket),
+			CDNDomain:   conf.TrimURL(img.Qiniu.CDNDomain),
+			Region:      strings.TrimSpace(img.Qiniu.Region),
+			Prefix:      strings.TrimSpace(img.Qiniu.Prefix),
+			Private:     img.Qiniu.Private,
+			ProxyViaAPI: img.Qiniu.ProxyViaAPI,
+		},
 	}
 }
 

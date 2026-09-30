@@ -11,6 +11,7 @@ var (
 	ErrFriendRequestNotFound = errors.New("friend request not found")
 	ErrFriendRequestInvalid  = errors.New("friend request invalid")
 	ErrFriendSelf            = errors.New("cannot friend self")
+	ErrFollowSelf            = errors.New("cannot follow self")
 	ErrFriendTargetRequired  = errors.New("friend target required")
 	ErrWrongPassword         = errors.New("wrong password")
 	ErrInsufficientBalance   = errors.New("insufficient balance")

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_response.dart';
 import 'api_client.dart';
 import 'api_service.dart';
+import 'media_category.dart';
 import '../auth_service.dart';
 
 /// 伙伴聊天 SSE 事件。
@@ -656,7 +657,7 @@ class CompanionService {
 
   Future<String> uploadAvatarImage(File image) {
     _requireUserId();
-    return ApiClient.uploadImage(image);
+    return ApiClient.uploadImage(image, category: MediaCategory.avatar);
   }
 
   Future<String> uploadAvatarBytes(
@@ -664,7 +665,11 @@ class CompanionService {
     String filename = 'companion_avatar.png',
   }) {
     _requireUserId();
-    return ApiClient.uploadImageBytes(bytes, filename: filename);
+    return ApiClient.uploadImageBytes(
+      bytes,
+      filename: filename,
+      category: MediaCategory.avatar,
+    );
   }
 
   Future<CompanionProactiveSettingsData> getProactiveSettings() async {

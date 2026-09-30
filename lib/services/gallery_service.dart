@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'api_client.dart';
 import 'api_response.dart';
+import 'media_category.dart';
 
 /// 云相册域服务：配额 / 列表 / 删除 / 上传。
 class GalleryService {
@@ -20,5 +21,5 @@ class GalleryService {
       ApiClient.delete('/api/images/$filename');
 
   static Future<Map<String, dynamic>> uploadImageInfo(File image) =>
-      ApiClient.uploadImageInfo(image);
+      ApiClient.uploadImageInfo(image, category: MediaCategory.album);
 }

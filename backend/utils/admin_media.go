@@ -258,16 +258,21 @@ func adminMediaStorageParts(rel string) (key, folder, fileName string, ok bool) 
 		if len(parts) < 2 {
 			return "", "", "", false
 		}
-		// 与 UploadImage 一致：{userFolder}/{timestamp}_file.ext}；忽略更深层级（无法 /api/images 访问）
-		if len(parts) != 2 {
+		// 两段是旧数据 user/file；三段是 user/分类/file。
+		if len(parts) != 2 && len(parts) != 3 {
 			return "", "", "", false
 		}
-		folder = strings.TrimSpace(parts[0])
-		fileName = strings.TrimSpace(parts[1])
-		if folder == "" || fileName == "" || fileName == "." {
+		if len(parts) == 2 {
+			folder = strings.TrimSpace(parts[0])
+			fileName = strings.TrimSpace(parts[1])
+		} else {
+			folder = strings.TrimSpace(parts[0]) + "/" + strings.TrimSpace(parts[1])
+			fileName = strings.TrimSpace(parts[2])
+		}
+		if folder == "" || fileName == "" || fileName == "." || strings.Contains(fileName, "..") {
 			return "", "", "", false
 		}
-		return folder + "__" + fileName, folder, fileName, true
+		return strings.ReplaceAll(folder, "/", "__") + "__" + fileName, folder, fileName, true
 	}
 	if strings.Contains(rel, "__") {
 		folder, fileName, ok = splitAdminMediaStorageKey(rel)
@@ -284,12 +289,12 @@ func adminMediaFilePath(imgDir, key string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("invalid filename")
 	}
-	folder = filepath.Base(folder)
+	folder = strings.Trim(strings.ReplaceAll(folder, "\\", "/"), "/")
 	file = filepath.Base(file)
-	if folder == "" || file == "" {
+	if folder == "" || file == "" || file == "." || file == ".." || strings.Contains(folder, "..") {
 		return "", fmt.Errorf("invalid filename")
 	}
-	target := filepath.Join(imgDir, folder, file)
+	target := filepath.Join(append([]string{imgDir}, append(strings.Split(folder, "/"), file)...)...)
 	absDir, err := filepath.Abs(imgDir)
 	if err != nil {
 		return "", err
@@ -306,7 +311,10 @@ func adminMediaFilePath(imgDir, key string) (string, error) {
 
 func splitAdminMediaStorageKey(key string) (folder string, filename string, ok bool) {
 	key = strings.TrimSpace(key)
-	parts := strings.SplitN(key, "__", 2)
+	parts := strings.Split(key, "__")
+	if len(parts) == 3 {
+		return parts[0] + "/" + parts[1], parts[2], parts[0] != "" && parts[1] != "" && parts[2] != ""
+	}
 	if len(parts) != 2 {
 		return "", "", false
 	}

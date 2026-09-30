@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, kIsWeb, VoidCallback;
 import '../models/community_group.dart';
+import 'media_category.dart';
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../models/user.dart';
@@ -1862,8 +1863,11 @@ class ApiService {
   }
 
   // 上传图片（真实实现，调用后端API）
-  static Future<String> uploadImage(File image) async {
-    final info = await uploadImageInfo(image);
+  static Future<String> uploadImage(
+    File image, {
+    String category = MediaCategory.album,
+  }) async {
+    final info = await uploadImageInfo(image, category: category);
     return info['url'] as String;
   }
 
@@ -1871,14 +1875,20 @@ class ApiService {
   static Future<String> uploadImageBytes(
     Uint8List bytes, {
     String filename = 'upload.png',
+    String category = MediaCategory.album,
   }) async {
-    final info = await uploadImageBytesInfo(bytes, filename: filename);
+    final info = await uploadImageBytesInfo(
+      bytes,
+      filename: filename,
+      category: category,
+    );
     return info['url'] as String;
   }
 
   static Future<Map<String, dynamic>> uploadImageBytesInfo(
     Uint8List bytes, {
     String filename = 'upload.png',
+    String category = MediaCategory.album,
   }) async {
     final uri = Uri.parse('$baseUrl/api/upload');
 
@@ -1892,6 +1902,7 @@ class ApiService {
       if (token != null && token.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $token';
       }
+      request.fields['category'] = category;
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',
@@ -1934,8 +1945,22 @@ class ApiService {
     }
   }
 
+  static String _uploadFailureMessage(http.Response response) {
+    try {
+      final decoded = json.decode(response.body);
+      if (decoded is Map && decoded['message'] != null) {
+        final message = decoded['message'].toString().trim();
+        if (message.isNotEmpty) return message;
+      }
+    } catch (_) {}
+    return '上传失败，状态码：${response.statusCode}';
+  }
+
   /// 上传图片并返回后端的 ImageInfo（包含 filename/url/size/created_at）
-  static Future<Map<String, dynamic>> uploadImageInfo(File image) async {
+  static Future<Map<String, dynamic>> uploadImageInfo(
+    File image, {
+    String category = MediaCategory.album,
+  }) async {
     final uri = Uri.parse('$baseUrl/api/upload');
 
     Future<Map<String, dynamic>> doUpload(http.Client client) async {
@@ -1960,9 +1985,10 @@ class ApiService {
         image.path,
         filename: image.path.split('/').last,
       );
+      request.fields['category'] = category;
       request.files.add(multipartFile);
 
-      _log('📤 Upload image: size=$length bytes, uri=$uri');
+      _log('📤 Upload image: size=$length bytes, uri=$uri category=$category');
 
       // 发送请求（超时保护：cpolar/网络抖动时避免无限挂起）
       final streamedResponse =
@@ -1982,7 +2008,9 @@ class ApiService {
         throw ApiException('图片太大，上传被拒绝(413)，请降低拍照分辨率/压缩后再试', 413);
       }
       throw ApiException(
-          '上传失败，状态码：${response.statusCode}', response.statusCode);
+        _uploadFailureMessage(response),
+        response.statusCode,
+      );
     }
 
     // 尝试上传；遇到 Broken pipe/连接被重置，自动重试一次
@@ -1997,7 +2025,9 @@ class ApiService {
       final msg = e.toString();
       final shouldRetry = msg.contains('Broken pipe') ||
           msg.contains('Connection reset') ||
-          msg.contains('SocketException');
+          msg.contains('SocketException') ||
+          (e is ApiException &&
+              (e.code == 500 || e.code == 502 || e.code == 503));
       if (!shouldRetry) {
         _log('❌ 图片上传失败: $e');
         if (e is ApiException) rethrow;

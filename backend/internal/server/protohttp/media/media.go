@@ -103,9 +103,14 @@ func (s *Server) UploadImage(ctx context.Context, _ *mediav1.UploadImageRequest)
 	}
 	defer file.Close()
 
+	category, err := mediabiz.NormalizeCategory(req.FormValue("category"))
+	if err != nil {
+		return nil, errBadCategory
+	}
 	userFolder := mediabiz.FolderNameForUser(claims.UserID, claims.Username)
 	info, err := app.UploadImage(ctx, mediabiz.UploadInput{
 		UserFolder: userFolder,
+		Category:   category,
 		OrigName:   fileHeader.Filename,
 		Reader:     file,
 	})

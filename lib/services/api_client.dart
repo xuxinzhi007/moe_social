@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'api_service.dart';
+import 'media_category.dart';
 
 export 'api_service.dart' show ApiException, LifeActionCooldownException;
 
@@ -28,15 +29,26 @@ class ApiClient {
   static Future<Map<String, dynamic>> delete(String path) =>
       ApiService.delete(path);
 
-  static Future<String> uploadImage(File image) =>
-      ApiService.uploadImage(image);
+  static Future<String> uploadImage(
+    File image, {
+    String category = MediaCategory.album,
+  }) =>
+      ApiService.uploadImage(image, category: category);
 
   static Future<String> uploadImageBytes(
     Uint8List bytes, {
     String filename = 'upload.png',
+    String category = MediaCategory.album,
   }) =>
-      ApiService.uploadImageBytes(bytes, filename: filename);
+      ApiService.uploadImageBytes(
+        bytes,
+        filename: filename,
+        category: category,
+      );
 
-  static Future<Map<String, dynamic>> uploadImageInfo(File image) =>
-      ApiService.uploadImageInfo(image);
+  static Future<Map<String, dynamic>> uploadImageInfo(
+    File image, {
+    String category = MediaCategory.album,
+  }) =>
+      ApiService.uploadImageInfo(image, category: category);
 }

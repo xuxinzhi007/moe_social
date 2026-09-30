@@ -1045,8 +1045,12 @@ Future<void> _openHandDrawViewerImpl(BuildContext context, Post post) async {
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.88),
       builder: (ctx) {
-        final maxH = MediaQuery.sizeOf(context).height * 0.75;
-        final maxW = MediaQuery.sizeOf(context).width - 24;
+        final viewport = MediaQuery.sizeOf(ctx);
+        // 关闭按钮 48 + 弹窗上下留白 40，再留 8 像素余量，避免贴边溢出。
+        const dialogChrome = 48.0 + 40.0 + 8.0;
+        final maxH = (viewport.height - dialogChrome)
+            .clamp(160.0, viewport.height * 0.72);
+        final maxW = viewport.width - 24;
         return Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,

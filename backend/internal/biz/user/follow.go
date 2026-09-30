@@ -11,11 +11,14 @@ import (
 
 // Follow 关注用户（支持恢复软删除记录）。
 func Follow(ctx context.Context, store UserStore, followerID, followingID uint) error {
-	if store == nil {
-		return gorm.ErrInvalidDB
-	}
 	if followerID == 0 || followingID == 0 {
 		return ErrInvalidArgument
+	}
+	if followerID == followingID {
+		return ErrFollowSelf
+	}
+	if store == nil {
+		return gorm.ErrInvalidDB
 	}
 
 	existing, found, err := store.FindFollowUnscoped(ctx, followerID, followingID)
