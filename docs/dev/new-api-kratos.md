@@ -62,7 +62,7 @@ Client → :8888
 | 单模块 proto | `make api-one PROTO=api/<mod>/v1/<mod>.proto` | 该模块三个 `.pb.go`（OpenAPI 用 `make gen` 同步） |
 | 管理台 gen + 编译 | `make gen-moe-admin` | 见 `scripts/gen/moe-admin.sh` |
 
-> ✗ 已删除的 target：`make gen-api`、`make gen-rpc`、`make gen-http-routes`、`make audit-logic-orphans`（goctl 链，见 [goctl-generation-hygiene.md](./goctl-generation-hygiene.md) 归档说明）。
+> ✗ 已删除的 target：`make gen-api`、`make gen-rpc`、`make gen-http-routes`、`make audit-logic-orphans`。日常契约生成用 `make gen`。
 
 **OpenAPI / Apifox**：见 [openapi-apifox.md](./openapi-apifox.md)。
 

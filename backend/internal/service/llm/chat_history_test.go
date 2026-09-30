@@ -64,12 +64,28 @@ func TestChatHistoryBelongsToActorAndDeletesCascade(t *testing.T) {
 		t.Fatalf("messages=%+v err=%v", messages, err)
 	}
 
+	if _, err = svc.UpsertChatSession(chatHistoryUser(2), llmbiz.ChatSessionInput{
+		SessionID: "session-other",
+		AgentID:   "agent-1",
+		Title:     "另一账号",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
 	if err = svc.DeleteChatSession(ctx, "session-1"); err != nil {
 		t.Fatal(err)
+	}
+	sessions, err = svc.ListChatSessions(ctx, "agent-1", 10)
+	if err != nil || len(sessions) != 0 {
+		t.Fatalf("deleted sessions=%+v err=%v", sessions, err)
 	}
 	messages, err = svc.ListChatMessages(ctx, "session-1", 10)
 	if err != nil || len(messages) != 0 {
 		t.Fatalf("deleted messages=%+v err=%v", messages, err)
+	}
+	otherSessions, err = svc.ListChatSessions(chatHistoryUser(2), "agent-1", 10)
+	if err != nil || len(otherSessions) != 1 || otherSessions[0].SessionID != "session-other" {
+		t.Fatalf("other sessions after delete=%+v err=%v", otherSessions, err)
 	}
 }
 

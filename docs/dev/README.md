@@ -34,9 +34,7 @@
 | [openapi-apifox.md](./openapi-apifox.md) | OpenAPI 3.0 / Apifox |
 | [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 历史清单（§2） |
 | [kratos-server-layout-migration.md](./kratos-server-layout-migration.md) | `internal/server` 目录收敛 |
-| [goctl-generation-hygiene.md](./goctl-generation-hygiene.md) | ⚠️ **已归档**：goctl 链（`make gen-api` / `audit-logic-orphans`）整体移除，仅作迁移期记录 |
 | [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) | 管理台启动、运行时内存指标（⚠️ RPC 监控链路已断，见文内 §0） |
-| [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) | ⚠️ **已失效**：分体 api/rpc 部署随 `backend/rpc/` 目录删除而不可能，现为单进程 |
 | [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) | P6 契约迁移 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 

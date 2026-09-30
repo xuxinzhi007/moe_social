@@ -141,4 +141,3 @@ protoc --proto_path=. --proto_path=./third_party \
 - [kratos-architecture-audit.md](./kratos-architecture-audit.md) — **结论与现存问题**
 - [kratos-server-layout-migration.md](./kratos-server-layout-migration.md)
 - [new-api-kratos.md](./new-api-kratos.md)
-- [goctl-generation-hygiene.md](./goctl-generation-hygiene.md)
