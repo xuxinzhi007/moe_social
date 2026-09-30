@@ -26,27 +26,32 @@ class NetworkImageWidget extends StatelessWidget {
     this.errorWidget,
   });
 
-  int? _cacheDimension(double? value) {
-    if (value == null || !value.isFinite || value <= 0) return null;
-    return (value * 2).ceil().clamp(1, 2048);
+  /// 只按一边缩小解码。宽高同时传给缓存时，Android 会按目标矩形重编码整张原图，
+  /// 大图会一直停在占位上；全屏查看器不走这套缩放，所以点开能看到原图。
+  int? _cacheEdge() {
+    int? edgeOf(double? value) {
+      if (value == null || !value.isFinite || value <= 0) return null;
+      return (value * 2).ceil().clamp(1, 2048);
+    }
+
+    return edgeOf(width) ?? edgeOf(height);
   }
 
   @override
   Widget build(BuildContext context) {
-    final resolved =
-        imageUrl.isEmpty ? '' : resolveMediaUrl(imageUrl);
+    final resolved = imageUrl.isEmpty ? '' : resolveMediaUrl(imageUrl);
     final effective = resolved.isEmpty ? imageUrl : resolved;
+    final cacheEdge = _cacheEdge();
     Widget imageWidget = CachedNetworkImage(
       imageUrl: effective,
       width: width,
       height: height,
       fit: fit,
-      memCacheWidth: _cacheDimension(width),
-      memCacheHeight: _cacheDimension(height),
-      maxWidthDiskCache: _cacheDimension(width),
-      maxHeightDiskCache: _cacheDimension(height),
+      memCacheWidth: cacheEdge,
+      fadeInDuration: const Duration(milliseconds: 120),
       placeholder: (context, url) => placeholder ?? _defaultPlaceholder(),
-      errorWidget: (context, url, error) => errorWidget ?? _defaultErrorWidget(),
+      errorWidget: (context, url, error) =>
+          errorWidget ?? _defaultErrorWidget(),
     );
 
     // 如果有圆角，添加裁剪
@@ -80,7 +85,7 @@ class NetworkImageWidget extends StatelessWidget {
       child: Icon(
         Icons.broken_image_outlined,
         color: Colors.grey[350],
-        size: (width != null && height != null) 
+        size: (width != null && height != null)
             ? (width! < height! ? width! * 0.3 : height! * 0.3)
             : 32,
       ),

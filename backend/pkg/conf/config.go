@@ -117,13 +117,26 @@ type Database struct {
 	Loc       string `mapstructure:"loc"`
 }
 
-// Image 图片存储：driver=local 落盘，driver=oss 走阿里云。
+// Image 图片存储：driver=local 落盘，driver=oss 走阿里云，driver=qiniu 走七牛。
 type Image struct {
-	Driver        string   `mapstructure:"driver"`
-	LocalDir      string   `mapstructure:"local_dir"`
-	PublicBaseURL string   `mapstructure:"public_base_url"`
-	MaxBytes      int64    `mapstructure:"max_bytes"`
-	OSS           ImageOSS `mapstructure:"oss"`
+	Driver        string     `mapstructure:"driver"`
+	LocalDir      string     `mapstructure:"local_dir"`
+	PublicBaseURL string     `mapstructure:"public_base_url"`
+	MaxBytes      int64      `mapstructure:"max_bytes"`
+	OSS           ImageOSS   `mapstructure:"oss"`
+	Qiniu         ImageQiniu `mapstructure:"qiniu"`
+}
+
+// ImageQiniu 七牛 Kodo。密钥优先取文件，否则 MOE_QINIU_ACCESS_KEY / MOE_QINIU_SECRET_KEY。
+type ImageQiniu struct {
+	AccessKey   string `mapstructure:"access_key"`
+	SecretKey   string `mapstructure:"secret_key"`
+	Bucket      string `mapstructure:"bucket"`
+	CDNDomain   string `mapstructure:"cdn_domain"`
+	Region      string `mapstructure:"region"`
+	Prefix      string `mapstructure:"prefix"`
+	Private     bool   `mapstructure:"private"`
+	ProxyViaAPI bool   `mapstructure:"proxy_via_api"`
 }
 
 // ImageOSS 阿里云对象存储。密钥优先取 MOE_OSS_ACCESS_KEY_ID / MOE_OSS_ACCESS_KEY_SECRET。

@@ -19,17 +19,38 @@ func newLocalBlobStore(cfg ImageConfig) *localBlobStore {
 	return &localBlobStore{root: utils.ResolveImageLocalDir(cfg.LocalDir)}
 }
 
-func (s *localBlobStore) abs(folder, filename string) string {
-	return filepath.Join(s.root, filepath.Base(folder), filepath.Base(filename))
+func (s *localBlobStore) abs(folder, filename string) (string, error) {
+	relFolder := cleanFolder(folder)
+	name := filepath.Base(strings.TrimSpace(filename))
+	if relFolder == "" || name == "" || name == "." || name == ".." {
+		return "", fmt.Errorf("invalid media path")
+	}
+	target := filepath.Join(s.root, filepath.FromSlash(relFolder), name)
+	rootAbs, err := filepath.Abs(s.root)
+	if err != nil {
+		return "", err
+	}
+	targetAbs, err := filepath.Abs(target)
+	if err != nil {
+		return "", err
+	}
+	sep := string(os.PathSeparator)
+	if targetAbs != rootAbs && !strings.HasPrefix(targetAbs, rootAbs+sep) {
+		return "", fmt.Errorf("invalid media path")
+	}
+	return target, nil
 }
 
 func (s *localBlobStore) Put(_ context.Context, folder, filename string, r io.Reader, _ string) error {
-	dir := filepath.Join(s.root, filepath.Base(folder))
+	target, err := s.abs(folder, filename)
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(target)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return fmt.Errorf("mkdir media dir: %w", err)
 	}
-	path := s.abs(folder, filename)
-	out, err := os.Create(path)
+	out, err := os.Create(target)
 	if err != nil {
 		return fmt.Errorf("create media file: %w", err)
 	}
@@ -41,7 +62,10 @@ func (s *localBlobStore) Put(_ context.Context, folder, filename string, r io.Re
 }
 
 func (s *localBlobStore) Delete(_ context.Context, folder, filename string) error {
-	path := s.abs(folder, filename)
+	path, err := s.abs(folder, filename)
+	if err != nil {
+		return err
+	}
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil
 	}
@@ -52,7 +76,10 @@ func (s *localBlobStore) Delete(_ context.Context, folder, filename string) erro
 }
 
 func (s *localBlobStore) Open(_ context.Context, folder, filename string) (BlobObject, error) {
-	path := s.abs(folder, filename)
+	path, err := s.abs(folder, filename)
+	if err != nil {
+		return BlobObject{}, err
+	}
 	info, err := os.Stat(path)
 	if err != nil {
 		return BlobObject{}, err
@@ -71,7 +98,11 @@ func (s *localBlobStore) Open(_ context.Context, folder, filename string) (BlobO
 }
 
 func (s *localBlobStore) ListFolder(_ context.Context, folder string) ([]BlobMeta, error) {
-	dir := filepath.Join(s.root, filepath.Base(folder))
+	relFolder := cleanFolder(folder)
+	if relFolder == "" {
+		return nil, fmt.Errorf("invalid media folder")
+	}
+	dir := filepath.Join(s.root, filepath.FromSlash(relFolder))
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -90,11 +121,11 @@ func (s *localBlobStore) ListFolder(_ context.Context, folder string) ([]BlobMet
 		}
 		name := e.Name()
 		out = append(out, BlobMeta{
-			Folder:    filepath.Base(folder),
+			Folder:    relFolder,
 			Filename:  name,
 			Size:      info.Size(),
 			ModTime:   info.ModTime(),
-			ObjectKey: filepath.ToSlash(filepath.Join(filepath.Base(folder), name)),
+			ObjectKey: relFolder + "/" + name,
 		})
 	}
 	return out, nil
@@ -117,8 +148,8 @@ func (s *localBlobStore) ListAll(_ context.Context) ([]BlobMeta, error) {
 			return nil
 		}
 		rel = filepath.ToSlash(rel)
-		parts := strings.Split(rel, "/")
-		if len(parts) != 2 {
+		folder, filename, ok := metaFromRel(rel)
+		if !ok {
 			return nil
 		}
 		info, err := d.Info()
@@ -126,8 +157,8 @@ func (s *localBlobStore) ListAll(_ context.Context) ([]BlobMeta, error) {
 			return nil
 		}
 		out = append(out, BlobMeta{
-			Folder:    parts[0],
-			Filename:  parts[1],
+			Folder:    folder,
+			Filename:  filename,
 			Size:      info.Size(),
 			ModTime:   info.ModTime(),
 			ObjectKey: rel,

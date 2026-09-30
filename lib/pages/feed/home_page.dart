@@ -824,21 +824,20 @@ class _HomeComposeButton extends StatelessWidget {
       excludeSemantics: true,
       child: MoePressable(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: MoeTokens.spaceMd,
-            vertical: MoeTokens.spaceXs,
+            vertical: MoeTokens.spaceSm,
           ),
           decoration: BoxDecoration(
-            gradient: MoeTokens.gradientPrimary,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-            boxShadow: MoeTokens.shadowSm(),
+            color: MoeTokens.primary,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.edit_rounded, size: 14, color: Colors.white),
+              Icon(Icons.edit_rounded, size: 15, color: Colors.white),
               SizedBox(width: MoeTokens.spaceXs),
               Text(
                 '发帖',
@@ -846,6 +845,7 @@ class _HomeComposeButton extends StatelessWidget {
                   fontSize: MoeTokens.textSm,
                   fontWeight: MoeTokens.fontWeightSubtitle,
                   color: Colors.white,
+                  height: 1.1,
                 ),
               ),
             ],

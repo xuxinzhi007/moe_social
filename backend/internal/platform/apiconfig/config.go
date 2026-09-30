@@ -38,9 +38,22 @@ type ImageConf struct {
 	LocalDir      string `json:"LocalDir" yaml:"LocalDir"`
 	PublicBaseUrl string `json:"PublicBaseUrl" yaml:"PublicBaseUrl"`
 	MaxBytes      int64  `json:"MaxBytes" yaml:"MaxBytes"`
-	// Driver: local | oss（空=local）
-	Driver string   `json:"Driver" yaml:"Driver"`
-	OSS    ImageOSS `json:"OSS" yaml:"OSS"`
+	// Driver: local | oss | qiniu（空=local）
+	Driver string     `json:"Driver" yaml:"Driver"`
+	OSS    ImageOSS   `json:"OSS" yaml:"OSS"`
+	Qiniu  ImageQiniu `json:"Qiniu" yaml:"Qiniu"`
+}
+
+// ImageQiniu 七牛对象存储。
+type ImageQiniu struct {
+	AccessKey   string `json:"AccessKey" yaml:"AccessKey"`
+	SecretKey   string `json:"SecretKey" yaml:"SecretKey"`
+	Bucket      string `json:"Bucket" yaml:"Bucket"`
+	CDNDomain   string `json:"CDNDomain" yaml:"CDNDomain"`
+	Region      string `json:"Region" yaml:"Region"`
+	Prefix      string `json:"Prefix" yaml:"Prefix"`
+	Private     bool   `json:"Private" yaml:"Private"`
+	ProxyViaAPI bool   `json:"ProxyViaAPI" yaml:"ProxyViaAPI"`
 }
 
 // ImageOSS 阿里云对象存储。

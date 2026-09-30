@@ -4,6 +4,7 @@ import '../models/private_conversation_item.dart';
 import '../models/private_message_item.dart';
 import 'api_client.dart';
 import 'api_service.dart';
+import 'media_category.dart';
 
 class ChatService {
   static Future<({List<PrivateMessageItem> items, bool hasMore})>
@@ -65,5 +66,6 @@ class ChatService {
   }) =>
       ApiService.getRtcToken(channelName, role: role);
 
-  static Future<String> uploadImage(File image) => ApiClient.uploadImage(image);
+  static Future<String> uploadImage(File image) =>
+      ApiClient.uploadImage(image, category: MediaCategory.chat);
 }

@@ -15,6 +15,8 @@ import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/topic_tag_selector.dart';
 import '../../widgets/moe_input_field.dart';
+import '../../widgets/motion/moe_motion.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../theme/moe_tokens.dart';
 import '../gallery/cloud_gallery_page.dart';
@@ -50,6 +52,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
+  final TopicTagService _topicTagService = TopicTagService();
+  List<TopicTag> _suggestedTopics = const [];
   Timer? _draftSaveTimer;
   bool _draftRestoreFinished = false;
 
@@ -133,13 +137,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
-  void _removeImage(int index) {
-    if (index < _vm.selectedImages.length) {
-      _vm.removeLocalImageAt(index);
-    } else {
-      final urlIndex = index - _vm.selectedImages.length;
-      _vm.removeCloudImageUrl(_vm.selectedImageUrls[urlIndex]);
-    }
+  void _removeImage(ComposerImage slot) {
+    _vm.removeComposerImage(slot);
   }
 
   void _openTopicTagSelector() {
@@ -147,51 +146,65 @@ class _CreatePostPageState extends State<CreatePostPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => Container(
-        height: MediaQuery.of(bottomSheetContext).size.height * 0.8,
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      builder: (bottomSheetContext) {
+        final media = MediaQuery.of(bottomSheetContext);
+        final available = media.size.height -
+            media.viewInsets.bottom -
+            media.padding.top -
+            12;
+        var sheetHeight = media.size.height * 0.72;
+        if (sheetHeight > available) sheetHeight = available;
+        return Padding(
+          padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+          child: Container(
+            height: sheetHeight,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: const BoxDecoration(
+              color: MoeTokens.surface2,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(MoeTokens.radius2xl),
               ),
             ),
-            Row(
+            child: Column(
               children: [
-                Text(
-                  '选择话题标签',
-                  style: Theme.of(bottomSheetContext).textTheme.titleLarge,
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: MoeTokens.lineSoft,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => Navigator.pop(bottomSheetContext),
-                  child: const Text('完成'),
+                Row(
+                  children: [
+                    Text(
+                      '搜索话题',
+                      style: Theme.of(bottomSheetContext).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => Navigator.pop(bottomSheetContext),
+                      child: const Text('完成'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: TopicTagSelector(
+                    selectedTags: _vm.selectedTopicTags,
+                    onTagsChanged: (tags) {
+                      _vm.setTopicTags(List<TopicTag>.from(tags));
+                    },
+                    userId: AuthService.currentUser ?? 'guest',
+                    maxTags: 5,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: TopicTagSelector(
-                selectedTags: _vm.selectedTopicTags,
-                onTagsChanged: (tags) {
-                  _vm.setTopicTags(List<TopicTag>.from(tags));
-                },
-                userId: AuthService.currentUser ?? 'guest',
-                maxTags: 5,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -204,6 +217,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
       communityIdentity: widget.communityIdentity,
     );
     _vm.addListener(_onVmChanged);
+    _suggestedTopics = _topicTagService.getRecommendedTags(
+      AuthService.currentUser ?? 'guest',
+    );
     _contentController.addListener(() {
       if (!_vm.hasUnsavedChanges) {
         _vm.markDirty();
@@ -302,8 +318,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return '晚上好';
   }
 
-  String get _weatherText => '晴朗';
-
   static const Map<String, Color> _moodColors = {
     'happy': MoeTokens.pastelOrange,
     'calm': MoeTokens.pastelTeal,
@@ -338,93 +352,90 @@ class _CreatePostPageState extends State<CreatePostPage> {
           _showExitConfirmation();
         }
       },
-      child: Scaffold(
-        backgroundColor: MoeTokens.softLavenderBg,
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: Text(
-            _vm.isEditMode ? '编辑动态' : (_vm.isGroupPost ? '发到本群' : '记录心情'),
-          ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: MoeTokens.gradientPageBg),
+        child: Scaffold(
           backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          leading: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: _buildPageTitle(
+              _vm.isEditMode ? '编辑动态' : (_vm.isGroupPost ? '发到本群' : '发帖子'),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.close_rounded,
-                  color: MoeTokens.inkMuted, size: 20),
-              onPressed: () {
-                if (_vm.hasUnsavedChanges) {
-                  _showExitConfirmation();
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-              padding: EdgeInsets.zero,
-            ),
-          ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
-              alignment: Alignment.center,
-              child: SizedBox(
-                height: 36,
-                width: 76,
-                child: LoadingButton(
-                  operationKey: LoadingKeys.createPost,
-                  onPressed: _publishPost,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shadowColor: primaryColor.withValues(alpha: 0.3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text(_vm.isEditMode ? '保存' : '发布'),
-                ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            leading: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: MoeTokens.cardBackground,
+                shape: BoxShape.circle,
+                boxShadow: MoeTokens.shadowSm(),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded,
+                    color: MoeTokens.inkMuted, size: 20),
+                onPressed: () {
+                  if (_vm.hasUnsavedChanges) {
+                    _showExitConfirmation();
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+                padding: EdgeInsets.zero,
               ),
             ),
-          ],
-        ),
-        body: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 90, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (widget.communityIdentity?.isValid == true) ...[
+            actions: [
+              Container(
+                margin: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
+                alignment: Alignment.center,
+                child: SizedBox(
+                  height: 36,
+                  width: 76,
+                  child: LoadingButton(
+                    operationKey: LoadingKeys.createPost,
+                    onPressed: _publishPost,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shadowColor: primaryColor.withValues(alpha: 0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: Text(_vm.isEditMode ? '保存' : '发布'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          body: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                MoeTokens.spaceLg,
+                88,
+                MoeTokens.spaceLg,
+                MoeTokens.spaceLg,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.communityIdentity?.isValid == true) ...[
+                    MoeReveal(
+                      delay: Duration.zero,
+                      child: _buildCommunityIdentityBanner(textTheme),
+                    ),
+                    const SizedBox(height: MoeTokens.spaceMd),
+                  ],
                   MoeReveal(
                     delay: Duration.zero,
-                    child: _buildCommunityIdentityBanner(textTheme),
+                    child: _buildInputCard(textTheme),
                   ),
-                  const SizedBox(height: 16),
                 ],
-                MoeReveal(
-                  delay: Duration.zero,
-                  child: _buildGreetingCard(textTheme),
-                ),
-                const SizedBox(height: 16),
-                MoeReveal(
-                  delay: MoeTokens.motionStaggerStep,
-                  child: _buildInputCard(textTheme),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -432,74 +443,56 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
-  Widget _buildGreetingCard(TextTheme textTheme) {
+  Widget _buildPageTitle(String title) {
+    return ShaderMask(
+      shaderCallback: (bounds) => MoeTokens.gradientText.createShader(
+        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComposerHeader(TextTheme textTheme) {
     final now = DateTime.now();
-    final month = now.month;
-    final day = now.day;
     final weekday = ['一', '二', '三', '四', '五', '六', '日'][now.weekday - 1];
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: const BoxDecoration(
         gradient: MoeTokens.gradientMintBlush,
-        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
-        boxShadow: [
-          BoxShadow(
-            color: MoeTokens.mintSoft.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(MoeTokens.radius2xl),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(Icons.wb_sunny_rounded,
-                  size: 18, color: Colors.orange.shade500),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  '$_greeting，${_vm.userName ?? '萌友'}',
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: MoeTokens.inkDark,
-                  ),
-                ),
+          const Icon(Icons.wb_sunny_rounded,
+              size: 18, color: MoeTokens.pastelOrange),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$_greeting，${_vm.userName ?? '萌友'}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: MoeTokens.inkDark,
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.wb_sunny_rounded,
-                        size: 14, color: Colors.orange.shade500),
-                    const SizedBox(width: 4),
-                    Text(
-                      _weatherText,
-                      style: textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: MoeTokens.inkMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
           Text(
-            '$month月$day日 星期$weekday',
-            style: textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
+            '${now.month}月${now.day}日 周$weekday',
+            style: textTheme.labelSmall?.copyWith(
               color: MoeTokens.inkMuted,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -515,18 +508,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(MoeTokens.spaceMd),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.14)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+        boxShadow: MoeTokens.shadowSm(),
       ),
       child: Row(
         children: [
@@ -557,7 +544,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 Text(
                   '内容会进入社区流，并以真实 AI 账号身份展示。',
                   style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: MoeTokens.inkMuted,
                     height: 1.35,
                   ),
                 ),
@@ -575,100 +562,106 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Widget _buildInputCard(TextTheme textTheme) {
-    final hasAttachments = _vm.handDrawCard != null ||
-        _vm.selectedImages.isNotEmpty ||
-        _vm.selectedImageUrls.isNotEmpty;
+    final hasAttachments =
+        _vm.handDrawCard != null || _vm.composerImages.isNotEmpty;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: MoeTokens.primary.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+        boxShadow: MoeTokens.shadowMd(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Form(
-            key: _formKey,
-            child: MoeInputField(
-              controller: _contentController,
-              hintText: '写下此刻的想法…',
-              maxLines: 10,
-              minLines: 5,
-              filled: true,
-              keyboardType: TextInputType.multiline,
-              validator: (v) {
-                if ((v ?? '').trim().isEmpty &&
-                    _vm.handDrawCard == null &&
-                    _vm.selectedImages.isEmpty &&
-                    _vm.selectedImageUrls.isEmpty) {
-                  return '写点文字、选几张图，或画一张手绘卡片再发布吧';
-                }
-                return null;
-              },
+          if (!_vm.isEditMode && !_vm.isGroupPost)
+            _buildComposerHeader(textTheme),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              MoeTokens.spaceLg,
+              MoeTokens.spaceMd,
+              MoeTokens.spaceLg,
+              MoeTokens.spaceLg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Form(
+                  key: _formKey,
+                  child: MoeInputField(
+                    controller: _contentController,
+                    hintText: '写下此刻的想法…',
+                    maxLines: 8,
+                    minLines: 3,
+                    filled: true,
+                    fillColor: MoeTokens.softChipBg,
+                    keyboardType: TextInputType.multiline,
+                    validator: (v) {
+                      if ((v ?? '').trim().isEmpty &&
+                          _vm.handDrawCard == null &&
+                          _vm.composerImages.isEmpty) {
+                        return '写点文字、选几张图，或画一张手绘卡片再发布吧';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: MoeTokens.spaceMd),
+                _buildFormActions(textTheme),
+                if (hasAttachments) ...[
+                  const SizedBox(height: MoeTokens.spaceMd),
+                  _buildAttachments(textTheme),
+                ],
+                if (!_vm.isEditMode) ...[
+                  const SizedBox(height: MoeTokens.spaceLg),
+                  _buildSectionTitle(textTheme, '心情'),
+                  const SizedBox(height: MoeTokens.spaceSm),
+                  _buildMoodChips(textTheme),
+                ],
+                const SizedBox(height: MoeTokens.spaceLg),
+                _buildTopicHeader(textTheme),
+                const SizedBox(height: MoeTokens.spaceSm),
+                _buildTopicPicker(textTheme),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          _buildFormActions(textTheme),
-          if (hasAttachments) ...[
-            const SizedBox(height: 14),
-            _buildDivider(),
-            const SizedBox(height: 12),
-            _buildAttachments(textTheme),
-          ],
-          if (!_vm.isEditMode) ...[
-            const SizedBox(height: 16),
-            _buildDivider(),
-            const SizedBox(height: 14),
-            _buildSectionTitle(textTheme, Icons.mood_rounded, '今天的心情'),
-            const SizedBox(height: 10),
-            _buildMoodChips(textTheme),
-          ],
-          const SizedBox(height: 16),
-          _buildDivider(),
-          const SizedBox(height: 14),
-          _buildSectionTitle(textTheme, Icons.tag_rounded, '话题标签'),
-          const SizedBox(height: 10),
-          if (_vm.selectedTopicTags.isNotEmpty)
-            _buildTopicTags(textTheme)
-          else
-            _buildTopicPlaceholder(textTheme),
         ],
       ),
     );
   }
 
   Widget _buildFormActions(TextTheme textTheme) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    return Row(
       children: [
-        _formActionChip(
-          icon: Icons.brush_rounded,
-          label: '手绘',
-          color: MoeTokens.primary,
-          onTap: _openHandDrawEditor,
+        Expanded(
+          child: _formActionChip(
+            icon: Icons.brush_rounded,
+            label: '手绘',
+            color: MoeTokens.primary,
+            onTap: _openHandDrawEditor,
+          ),
         ),
-        _formActionChip(
-          icon: Icons.image_rounded,
-          label: '相册',
-          color: MoeTokens.pastelTeal,
-          onTap: _addImage,
+        const SizedBox(width: MoeTokens.spaceSm),
+        Expanded(
+          child: _formActionChip(
+            icon: Icons.photo_outlined,
+            label: '相册',
+            color: MoeTokens.pastelTeal,
+            onTap: _addImage,
+          ),
         ),
-        _formActionChip(
-          icon: Icons.cloud_upload_rounded,
-          label: '云端图库',
-          color: MoeTokens.pastelBlue,
-          onTap: _openCloudGallery,
+        const SizedBox(width: MoeTokens.spaceSm),
+        Expanded(
+          child: _formActionChip(
+            icon: Icons.cloud_outlined,
+            label: '图库',
+            color: MoeTokens.pastelBlue,
+            onTap: _openCloudGallery,
+          ),
         ),
       ],
     );
@@ -680,101 +673,187 @@ class _CreatePostPageState extends State<CreatePostPage> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
+    return MoePressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      child: Container(
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopicPlaceholder(TextTheme textTheme) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _openTopicTagSelector,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: MoeTokens.lineSoft,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add_rounded, size: 18, color: MoeTokens.pastelPink),
-              const SizedBox(width: 6),
-              Text(
-                '点击添加话题，最多 5 个',
-                style: textTheme.bodySmall?.copyWith(
-                  color: MoeTokens.inkMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      height: 1,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.transparent,
-            MoeTokens.lineSoft,
-            Colors.transparent,
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(
+  void _toggleTopic(TopicTag tag) {
+    final selected = _vm.selectedTopicTags;
+    final exists = selected.any((item) => item.id == tag.id);
+    if (exists) {
+      _vm.setTopicTags(selected.where((item) => item.id != tag.id).toList());
+      return;
+    }
+    if (selected.length >= 5) {
+      MoeToast.warning(context, '最多 5 个话题');
+      return;
+    }
+    _vm.setTopicTags([...selected, tag]);
+  }
+
+  Widget _buildTopicPicker(TextTheme textTheme) {
+    final selectedIds = _vm.selectedTopicTags.map((tag) => tag.id).toSet();
+    final extraSelected = _vm.selectedTopicTags
+        .where((tag) => !_suggestedTopics.any((item) => item.id == tag.id))
+        .toList();
+
+    return SizedBox(
+      height: 34,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final tag in _suggestedTopics) ...[
+            _topicChoiceChip(
+              textTheme,
+              tag,
+              selected: selectedIds.contains(tag.id),
+              onTap: () => _toggleTopic(tag),
+            ),
+            const SizedBox(width: MoeTokens.spaceSm),
+          ],
+          for (final tag in extraSelected) ...[
+            _topicChoiceChip(
+              textTheme,
+              tag,
+              selected: true,
+              onTap: () => _toggleTopic(tag),
+            ),
+            const SizedBox(width: MoeTokens.spaceSm),
+          ],
+          _buildTopicSearchChip(textTheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _topicChoiceChip(
     TextTheme textTheme,
-    IconData icon,
-    String title,
-  ) {
+    TopicTag tag, {
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final motion =
+        moeReduceMotion(context) ? Duration.zero : MoeTokens.motionFast;
+    return MoePressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+      child: AnimatedContainer(
+        duration: motion,
+        curve: Curves.easeInOut,
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected
+              ? tag.color.withValues(alpha: 0.16)
+              : MoeTokens.softChipBg,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          border: Border.all(
+            color: selected
+                ? tag.color.withValues(alpha: 0.55)
+                : MoeTokens.surfaceBorder,
+          ),
+        ),
+        child: Text(
+          selected ? '#${tag.name}' : tag.name,
+          style: textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: selected ? tag.color : MoeTokens.inkMuted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopicSearchChip(TextTheme textTheme) {
+    return MoePressable(
+      onTap: _openTopicTagSelector,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: MoeTokens.pastelPink.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          border: Border.all(
+            color: MoeTokens.pastelPink.withValues(alpha: 0.28),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_rounded,
+                size: 15, color: MoeTokens.pastelPink),
+            const SizedBox(width: 4),
+            Text(
+              '搜索',
+              style: textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: MoeTokens.pastelPink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopicHeader(TextTheme textTheme) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: MoeTokens.primary),
-        const SizedBox(width: 6),
         Text(
-          title,
-          style: textTheme.titleSmall?.copyWith(
-            color: MoeTokens.inkDark,
+          '话题',
+          style: textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: MoeTokens.titleText,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          '${_vm.selectedTopicTags.length}/5',
+          style: textTheme.labelSmall?.copyWith(
+            color: MoeTokens.inkMuted,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSectionTitle(TextTheme textTheme, String title) {
+    return Text(
+      title,
+      style: textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: MoeTokens.titleText,
+      ),
     );
   }
 
@@ -783,7 +862,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
       children: [
         for (final mood in _moodLabels.keys) ...[
           Expanded(child: _moodChip(mood, textTheme)),
-          if (mood != _moodLabels.keys.last) const SizedBox(width: 10),
+          if (mood != _moodLabels.keys.last)
+            const SizedBox(width: MoeTokens.spaceSm),
         ],
       ],
     );
@@ -844,17 +924,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: SizedBox(
-              height: 160,
+              height: 128,
               width: double.infinity,
               child: HandDrawCardStatic(data: _vm.handDrawCard!),
             ),
           ),
         ],
-        if (_vm.handDrawCard != null &&
-            (_vm.selectedImages.isNotEmpty || _vm.selectedImageUrls.isNotEmpty))
+        if (_vm.handDrawCard != null && _vm.composerImages.isNotEmpty)
           const SizedBox(height: 12),
-        if (_vm.selectedImages.isNotEmpty ||
-            _vm.selectedImageUrls.isNotEmpty) ...[
+        if (_vm.composerImages.isNotEmpty) ...[
           Row(
             children: [
               Container(
@@ -881,7 +959,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               ),
               const Spacer(),
               Text(
-                '${_vm.selectedImages.length + _vm.selectedImageUrls.length} 张',
+                '${_vm.composerImages.length} 张',
                 style: textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: MoeTokens.greyDisabled,
@@ -894,21 +972,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              ...List.generate(_vm.selectedImages.length, (index) {
-                return _buildImageThumb(
-                  imageProvider: FileImage(_vm.selectedImages[index]),
-                  onRemove: () => _removeImage(index),
-                );
-              }),
-              ...List.generate(_vm.selectedImageUrls.length, (index) {
-                final urlIndex = index + _vm.selectedImages.length;
-                return _buildImageThumb(
-                  imageProvider: NetworkImage(
-                    resolveMediaUrl(_vm.selectedImageUrls[index]),
-                  ),
-                  onRemove: () => _removeImage(urlIndex),
-                );
-              }),
+              for (final slot in _vm.composerImages)
+                _buildImageThumb(
+                  imageProvider: slot.file != null
+                      ? FileImage(slot.file!)
+                      : NetworkImage(resolveMediaUrl(slot.remoteUrl ?? ''))
+                          as ImageProvider,
+                  uploading: slot.uploading,
+                  error: slot.error,
+                  onRetry: slot.error == null
+                      ? null
+                      : () => _vm.retryComposerImage(slot),
+                  onRemove: () => _removeImage(slot),
+                ),
             ],
           ),
         ],
@@ -922,42 +998,53 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final icon = _moodIcons[mood]!;
     final label = _moodLabels[mood]!;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          _vm.setMoodTag(selected ? null : mood);
-        },
+    final motion =
+        moeReduceMotion(context) ? Duration.zero : MoeTokens.motionMedium;
+
+    return MoePressable(
+      onTap: () => _vm.setMoodTag(selected ? null : mood),
+      pressedScale: MoeTokens.motionPressScaleStrong,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      child: AnimatedScale(
+        duration: motion,
+        curve: Curves.easeInOut,
+        scale: selected && !moeReduceMotion(context) ? 1.03 : 1,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          duration: motion,
+          curve: Curves.easeInOut,
+          height: 68,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? color.withValues(alpha: 0.18) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            color:
+                selected ? color.withValues(alpha: 0.2) : MoeTokens.softChipBg,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
             border: Border.all(
-              color:
-                  selected ? color.withValues(alpha: 0.5) : MoeTokens.lineSoft,
+              color: selected
+                  ? color.withValues(alpha: 0.7)
+                  : MoeTokens.surfaceBorder,
             ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
+            boxShadow: selected ? MoeTokens.shadowSm() : null,
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon,
-                  size: 26, color: selected ? color : MoeTokens.inkMuted),
+              AnimatedScale(
+                duration: motion,
+                curve: Curves.easeInOut,
+                scale: selected ? 1.08 : 1,
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: selected ? color : MoeTokens.inkMuted,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w800,
                   color: selected ? color : MoeTokens.inkMuted,
                 ),
               ),
@@ -968,57 +1055,53 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
-  Widget _buildTopicTags(TextTheme textTheme) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _vm.selectedTopicTags.map((tag) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: tag.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: tag.color.withValues(alpha: 0.25)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                tag.name,
-                style: textTheme.labelSmall?.copyWith(color: tag.color),
-              ),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () {
-                  _vm.setTopicTags(
-                    _vm.selectedTopicTags.where((t) => t != tag).toList(),
-                  );
-                },
-                child: Icon(Icons.close_rounded, size: 14, color: tag.color),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   Widget _buildImageThumb({
     required ImageProvider imageProvider,
     required VoidCallback onRemove,
+    bool uploading = false,
+    String? error,
+    VoidCallback? onRetry,
   }) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            image: DecorationImage(
-              image: imageProvider,
-              fit: BoxFit.cover,
+        GestureDetector(
+          onTap: onRetry,
+          child: Container(
+            width: 80,
+            height: 80,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              image: DecorationImage(
+                image: imageProvider,
+                fit: BoxFit.cover,
+              ),
             ),
+            child: uploading || (error != null && error.isNotEmpty)
+                ? DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.black.withValues(alpha: 0.35),
+                    ),
+                    child: Center(
+                      child: uploading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.refresh_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                    ),
+                  )
+                : null,
           ),
         ),
         Positioned(

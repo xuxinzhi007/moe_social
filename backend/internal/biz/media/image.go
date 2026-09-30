@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -37,8 +38,10 @@ type ListImagesResult struct {
 // UploadInput 上传参数。
 type UploadInput struct {
 	UserFolder string
-	OrigName   string
-	Reader     io.Reader
+	// Category 分类目录：avatar、album、post、chat。空则写在用户目录根下（旧数据）。
+	Category string
+	OrigName string
+	Reader   io.Reader
 }
 
 // ImageFile 可读图片文件（兼容本地路径与流式 Body）。
@@ -86,7 +89,7 @@ func ListImages(ctx context.Context, cfg ImageConfig, in ListImagesInput) (ListI
 
 // ListImagesWithStore 使用已构造的 store 列目录。
 func ListImagesWithStore(ctx context.Context, cfg ImageConfig, store BlobStore, in ListImagesInput) (ListImagesResult, error) {
-	metas, err := store.ListFolder(ctx, in.UserFolder)
+	metas, err := listAlbumMetas(ctx, store, in.UserFolder)
 	if err != nil {
 		return ListImagesResult{}, err
 	}
@@ -102,7 +105,7 @@ func ListImagesWithStore(ctx context.Context, cfg ImageConfig, store BlobStore, 
 		imageInfos = append(imageInfos, ImageInfo{
 			ID:        key,
 			Filename:  key,
-			URL:       fmt.Sprintf("%s/api/images/%s", base, key),
+			URL:       base + "/api/images/" + url.PathEscape(key),
 			Size:      m.Size,
 			CreatedAt: m.ModTime.Format("2006-01-02 15:04:05"),
 		})
@@ -152,7 +155,7 @@ func DeleteImage(ctx context.Context, cfg ImageConfig, userFolder, key string) e
 // DeleteImageWithStore 使用已构造的 store 删除。
 func DeleteImageWithStore(ctx context.Context, store BlobStore, userFolder, key string) error {
 	folder, filename, ok := SplitImageKey(key)
-	if !ok || folder != userFolder {
+	if !ok || !OwnedFolder(folder, userFolder) {
 		return os.ErrPermission
 	}
 	return store.Delete(ctx, folder, filename)
@@ -215,15 +218,16 @@ func UploadImageWithStore(ctx context.Context, store BlobStore, in UploadInput) 
 	if err != nil {
 		return ImageInfo{}, fmt.Errorf("read upload: %w", err)
 	}
-	if err := store.Put(ctx, in.UserFolder, filename, bytes.NewReader(data), ct); err != nil {
+	folder := StorageFolder(in.UserFolder, in.Category)
+	if err := store.Put(ctx, folder, filename, bytes.NewReader(data), ct); err != nil {
 		return ImageInfo{}, err
 	}
 
-	key := imageKey(in.UserFolder, filename)
+	key := imageKey(folder, filename)
 	return ImageInfo{
 		ID:        key,
 		Filename:  key,
-		URL:       fmt.Sprintf("/api/images/%s", key),
+		URL:       "/api/images/" + url.PathEscape(key),
 		Size:      int64(len(data)),
 		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 	}, nil
@@ -236,7 +240,20 @@ func SaveImageBytes(ctx context.Context, cfg ImageConfig, userFolder, origName s
 	}
 	return UploadImage(ctx, cfg, UploadInput{
 		UserFolder: userFolder,
+		Category:   CategoryPost,
 		OrigName:   origName,
 		Reader:     bytes.NewReader(data),
 	})
+}
+
+func listAlbumMetas(ctx context.Context, store BlobStore, userFolder string) ([]BlobMeta, error) {
+	album, err := store.ListFolder(ctx, StorageFolder(userFolder, CategoryAlbum))
+	if err != nil {
+		return nil, err
+	}
+	legacy, err := store.ListFolder(ctx, userFolder)
+	if err != nil {
+		return nil, err
+	}
+	return mergeBlobMeta(album, legacy), nil
 }

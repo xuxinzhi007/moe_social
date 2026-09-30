@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -144,7 +143,7 @@ func (s *ossBlobStore) ListAll(_ context.Context) ([]BlobMeta, error) {
 }
 
 func filepathBaseFolder(folder string) string {
-	return path.Base(strings.TrimSpace(folder))
+	return cleanFolder(folder)
 }
 
 func (s *ossBlobStore) listPrefix(prefix, forceFolder string) ([]BlobMeta, error) {
@@ -160,17 +159,16 @@ func (s *ossBlobStore) listPrefix(prefix, forceFolder string) ([]BlobMeta, error
 			if s.prefix != "" {
 				rel = strings.TrimPrefix(rel, s.prefix+"/")
 			}
-			parts := strings.Split(rel, "/")
-			if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			folder, filename, ok := metaFromRel(rel)
+			if !ok {
 				continue
 			}
-			folder := parts[0]
 			if forceFolder != "" && folder != forceFolder {
 				continue
 			}
 			out = append(out, BlobMeta{
 				Folder:    folder,
-				Filename:  parts[1],
+				Filename:  filename,
 				Size:      obj.Size,
 				ModTime:   obj.LastModified,
 				ObjectKey: obj.Key,

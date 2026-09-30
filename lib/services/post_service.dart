@@ -7,6 +7,7 @@ import '../models/post.dart';
 import '../models/comment.dart';
 import 'api_client.dart';
 import 'api_service.dart';
+import 'media_category.dart';
 import '../auth_service.dart';
 import 'like_state_manager.dart';
 import 'enhanced_logger.dart';
@@ -171,13 +172,18 @@ class PostService {
     );
   }
 
-  static Future<String> uploadImage(File image) => ApiClient.uploadImage(image);
+  static Future<String> uploadImage(File image) =>
+      ApiClient.uploadImage(image, category: MediaCategory.post);
 
   static Future<String> uploadImageBytes(
     Uint8List bytes, {
     String filename = 'upload.png',
   }) =>
-      ApiClient.uploadImageBytes(bytes, filename: filename);
+      ApiClient.uploadImageBytes(
+        bytes,
+        filename: filename,
+        category: MediaCategory.post,
+      );
 
   static Future<void> reportPost({
     required String postId,

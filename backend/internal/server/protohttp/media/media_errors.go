@@ -10,4 +10,5 @@ var (
 	errUnauthorized = status.Error(codes.Unauthenticated, "unauthorized")
 	errForbidden    = status.Error(codes.PermissionDenied, "forbidden")
 	errNotFound     = status.Error(codes.NotFound, "图片不存在")
+	errBadCategory  = status.Error(codes.InvalidArgument, "分类只能是 avatar、album、post、chat")
 )

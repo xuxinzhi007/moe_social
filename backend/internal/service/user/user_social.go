@@ -3,7 +3,10 @@ package userapp
 
 import (
 	"context"
+	"errors"
 	"strconv"
+
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 
 	userv1 "backend/api/user/v1"
 	userbiz "backend/internal/biz/user"
@@ -19,6 +22,9 @@ func (s *AppService) Follow(ctx context.Context, in *userv1.FollowUserReq) (*use
 		return nil, err
 	}
 	if err := userbiz.Follow(ctx, s.store, followerID, followingID); err != nil {
+		if errors.Is(err, userbiz.ErrFollowSelf) {
+			return nil, kerrors.BadRequest("FOLLOW_SELF", "不能关注自己")
+		}
 		return nil, err
 	}
 	s.recordCompanionEvent(ctx, followerID, "follow_created", strconv.FormatUint(uint64(followingID), 10), map[string]interface{}{

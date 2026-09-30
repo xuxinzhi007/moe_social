@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -33,6 +34,27 @@ class CreatePostPublishResult {
   final String? softWarning;
 }
 
+/// 发帖页里的一张图：选中后立刻上传，发布时只提交已经拿到的地址。
+class ComposerImage {
+  ComposerImage.file(this.file)
+      : remoteUrl = null,
+        uploading = true,
+        error = null;
+
+  ComposerImage.remote(String url)
+      : file = null,
+        remoteUrl = url,
+        uploading = false,
+        error = null;
+
+  final File? file;
+  String? remoteUrl;
+  bool uploading;
+  String? error;
+
+  bool get isReady => remoteUrl != null && remoteUrl!.isNotEmpty;
+}
+
 /// 发帖页状态：作者信息、群权限、选图/话题/心情、发布/编辑 IO、本地草稿。
 class CreatePostViewModel extends ChangeNotifier {
   CreatePostViewModel({
@@ -47,8 +69,9 @@ class CreatePostViewModel extends ChangeNotifier {
   final String? groupId;
   final CompanionCommunityIdentityData? communityIdentity;
 
-  final List<File> selectedImages = [];
+  final List<ComposerImage> composerImages = [];
   final List<String> selectedImageUrls = [];
+  final Map<ComposerImage, Future<void>> _uploads = {};
   List<TopicTag> selectedTopicTags = [];
   HandDrawCardData? handDrawCard;
   String? selectedMoodTag;
@@ -116,38 +139,42 @@ class CreatePostViewModel extends ChangeNotifier {
   }
 
   void addLocalImage(File file) {
-    selectedImages.add(file);
+    final slot = ComposerImage.file(file);
+    composerImages.add(slot);
     hasUnsavedChanges = true;
     _notify();
+    unawaited(_uploadSlot(slot));
   }
 
   void addCloudImageUrl(String url) {
-    selectedImageUrls.add(url);
+    if (url.isEmpty) return;
+    composerImages.add(ComposerImage.remote(url));
+    _syncUploadedUrls();
     hasUnsavedChanges = true;
     _notify();
   }
 
-  void removeLocalImageAt(int index) {
-    if (index < 0 || index >= selectedImages.length) return;
-    selectedImages.removeAt(index);
+  void removeComposerImage(ComposerImage slot) {
+    composerImages.remove(slot);
+    _uploads.remove(slot);
+    _syncUploadedUrls();
     hasUnsavedChanges = true;
     _notify();
   }
 
-  void removeCloudImageUrl(String url) {
-    selectedImageUrls.remove(url);
-    hasUnsavedChanges = true;
-    _notify();
+  void retryComposerImage(ComposerImage slot) {
+    if (!composerImages.contains(slot) || slot.file == null || slot.isReady) {
+      return;
+    }
+    _uploads.remove(slot);
+    unawaited(_uploadSlot(slot));
   }
 
   /// 校验失败返回错误文案；成功返回 null。
   String? validateContent(String caption) {
-    final hasLocal = selectedImages.isNotEmpty;
-    final hasCloud = selectedImageUrls.isNotEmpty;
     if (caption.trim().isEmpty &&
         handDrawCard == null &&
-        !hasLocal &&
-        !hasCloud) {
+        composerImages.isEmpty) {
       return '写点文字、选几张图，或画一张手绘卡片再发布吧';
     }
     return null;
@@ -197,6 +224,9 @@ class CreatePostViewModel extends ChangeNotifier {
         selectedImageUrls
           ..clear()
           ..addAll(urls.map((e) => e.toString()).where((e) => e.isNotEmpty));
+        composerImages
+          ..clear()
+          ..addAll(selectedImageUrls.map(ComposerImage.remote));
       }
       final mood = (data['moodTag'] as String?) ?? '';
       selectedMoodTag = mood.isEmpty ? null : mood;
@@ -246,18 +276,7 @@ class CreatePostViewModel extends ChangeNotifier {
       );
     }
 
-    final imageUrls = <String>[];
-    for (final image in selectedImages) {
-      try {
-        imageUrls.add(await PostService.uploadImage(image));
-      } catch (e) {
-        throw ApiException(
-          MoeErrorCopy.toast(e, scene: MoeErrorScene.feed),
-          e is ApiException ? e.code : 500,
-        );
-      }
-    }
-    imageUrls.addAll(selectedImageUrls);
+    final imageUrls = await _collectImageUrls();
 
     final userId = authorUserId ?? AuthService.currentUser;
     if (userId == null || userId.isEmpty) {
@@ -336,18 +355,7 @@ class CreatePostViewModel extends ChangeNotifier {
 
   Future<Post> _saveEdit(String caption) async {
     final init = initialPost!;
-    final imageUrls = <String>[];
-    for (final image in selectedImages) {
-      try {
-        imageUrls.add(await PostService.uploadImage(image));
-      } catch (e) {
-        throw ApiException(
-          MoeErrorCopy.toast(e, scene: MoeErrorScene.feed),
-          e is ApiException ? e.code : 500,
-        );
-      }
-    }
-    imageUrls.addAll(selectedImageUrls);
+    final imageUrls = await _collectImageUrls();
 
     String? handJson;
     String? thumbUrl;
@@ -387,7 +395,10 @@ class CreatePostViewModel extends ChangeNotifier {
   void seedFromInitialPost(Post post) {
     selectedImageUrls
       ..clear()
-      ..addAll(post.images);
+      ..addAll(post.images.where((e) => e.isNotEmpty));
+    composerImages
+      ..clear()
+      ..addAll(selectedImageUrls.map(ComposerImage.remote));
     selectedTopicTags = List<TopicTag>.from(post.topicTags);
     selectedMoodTag = post.moodTag.isNotEmpty ? post.moodTag : null;
     if (post.handDrawCardJson.isNotEmpty) {
@@ -398,6 +409,72 @@ class CreatePostViewModel extends ChangeNotifier {
     userAvatar = post.userAvatar.isNotEmpty ? post.userAvatar : null;
     hasUnsavedChanges = false;
     _notify();
+  }
+
+  Future<List<String>> _collectImageUrls() async {
+    await _flushImageUploads();
+    final urls = <String>[];
+    for (final slot in composerImages) {
+      final url = slot.remoteUrl;
+      if (url == null || url.isEmpty) {
+        throw ApiException(slot.error ?? '图片还没上传成功，请重试', 500);
+      }
+      urls.add(url);
+    }
+    return urls;
+  }
+
+  Future<void> _flushImageUploads() async {
+    final pending = <Future<void>>[];
+    for (final slot in List<ComposerImage>.from(composerImages)) {
+      if (slot.isReady || slot.file == null) continue;
+      pending.add(_uploadSlot(slot));
+    }
+    if (pending.isNotEmpty) {
+      await Future.wait(pending);
+    }
+  }
+
+  Future<void> _uploadSlot(ComposerImage slot) {
+    final inflight = _uploads[slot];
+    if (inflight != null) return inflight;
+    final file = slot.file;
+    if (file == null || slot.isReady) return Future<void>.value();
+    slot.uploading = true;
+    slot.error = null;
+    _notify();
+    final future = _runUpload(slot, file);
+    _uploads[slot] = future;
+    return future;
+  }
+
+  Future<void> _runUpload(ComposerImage slot, File file) async {
+    try {
+      final url = await PostService.uploadImage(file);
+      if (_disposed || !composerImages.contains(slot)) return;
+      slot.remoteUrl = url;
+      slot.uploading = false;
+      slot.error = null;
+      _syncUploadedUrls();
+    } catch (e) {
+      if (_disposed || !composerImages.contains(slot)) return;
+      slot.uploading = false;
+      slot.error = MoeErrorCopy.toast(e, scene: MoeErrorScene.feed);
+    } finally {
+      _uploads.remove(slot);
+      if (!_disposed && composerImages.contains(slot)) _notify();
+    }
+  }
+
+  void _syncUploadedUrls() {
+    selectedImageUrls
+      ..clear()
+      ..addAll(
+        composerImages
+            .map((slot) => slot.remoteUrl)
+            .whereType<String>()
+            .where((url) => url.isNotEmpty),
+      );
   }
 
   void _notify() {

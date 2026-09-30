@@ -659,9 +659,28 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       body: AiChatBackground(
         child: Column(
           children: [
+            if (_state.memoryNotice.trim().isNotEmpty) _buildMemoryNotice(),
             Expanded(child: _buildContent()),
             _buildComposer(),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMemoryNotice() {
+    final text = _state.memoryNotice.trim();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 12,
+          height: 1.3,
+          color: Color(0xFF8A4B3A),
         ),
       ),
     );
