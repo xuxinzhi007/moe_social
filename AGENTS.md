@@ -20,10 +20,7 @@ Kratos：`docs/dev/kratos-migration-status.md` · OpenAPI：`docs/dev/openapi-ap
 
 ## Skills（`.cursor/skills/`）
 
-**Flutter 统一入口：** `moe-flutter`（产品边界 · 正式架构 · UI · audit）  
-Life：`digital-life` · Flame 舞台：`flame-life-world`（`lib/game/life/` / 拖地图 / 镜头）  
-模拟器 QA：`android-emulator-qa`（启动、截图、UI 树、日志与权限检查）
-Go：`golang-style` · `effective-go` · `implementation-guardrails` · `golang-gin-database` · `git-commit`
+**入口：** `moe-skill`（通用质量规则，对任意改动生效，按整条链路看，不按功能点分叉）
 
 
 # backend目录内执行，生成cover.out

@@ -1,3 +1,11 @@
+---
+name: animation-sheet
+description: >-
+  Turn loose images, atlases, or video frames into a transparent RGBA
+  spritesheet.png plus re-importable JSON. Use when organizing animation
+  sheets, frame sequences, or sprite grids for 2D tools.
+---
+
 # Animation Sheet Skill
 
 ## Purpose
