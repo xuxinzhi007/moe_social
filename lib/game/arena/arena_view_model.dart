@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/arena_state.dart';
 import '../../services/arena_service.dart';
+import 'arena_card_catalog.dart';
+import 'arena_combos.dart';
 
 enum ArenaView {
   lobby,
@@ -124,6 +126,7 @@ class ArenaStrike {
     required this.targeting,
     required this.targetIndex,
     required this.color,
+    required this.school,
   });
 
   final int id;
@@ -131,6 +134,9 @@ class ArenaStrike {
   final ArenaCardTargeting targeting;
   final int targetIndex;
   final int color;
+
+  /// 单体 / 爆发 / 庇护 / 敌袭。演出按这个分流，不参与伤害。
+  final String school;
 }
 
 class ArenaCard {
@@ -144,6 +150,8 @@ class ArenaCard {
     this.sourceHeroId,
     this.sourceHeroName = '队伍',
     this.targeting = ArenaCardTargeting.singleEnemy,
+    this.elements = const ['星'],
+    this.trait = '无',
   });
 
   final String name;
@@ -155,6 +163,10 @@ class ArenaCard {
   final String? sourceHeroId;
   final String sourceHeroName;
   final ArenaCardTargeting targeting;
+  final List<String> elements;
+
+  /// 无 / 破甲 / 连击 / 回能 / 溅射 / 续航。出牌时在组合技之外再结算一次。
+  final String trait;
 
   ArenaCard strengthened() {
     final nextCost = cost > 1 ? cost - 1 : cost;
@@ -170,6 +182,8 @@ class ArenaCard {
       sourceHeroId: sourceHeroId,
       sourceHeroName: sourceHeroName,
       targeting: targeting,
+      elements: elements,
+      trait: trait,
     );
   }
 }
@@ -207,7 +221,7 @@ class ArenaViewModel extends ChangeNotifier {
         _service = service ?? ArenaService(),
         _view = initialView {
     _ownedHeroIds.addAll(starterHeroIds);
-    _deck.addAll(_cardsForFormation());
+    _deck.addAll(catalogCards);
   }
 
   static const int singleSummonCost = 300;
@@ -252,7 +266,9 @@ class ArenaViewModel extends ChangeNotifier {
   int _encounterMaxHp = enemyMaxHp;
   int _restFloor = 0;
   int _shopFloor = 0;
-  String _chainSchool = '';
+  String _fieldRune = '星';
+  ArenaCombo? _activeCombo;
+  final List<List<String>> _chain = <List<String>>[];
   String _routeMessage = '敌人更厚，通关星晶翻倍。牌组有同派连携时再来打。';
   int _starCrystals = 6280;
   String _battleMessage = '选择一张技能卡开始战斗';
@@ -476,56 +492,6 @@ class ArenaViewModel extends ChangeNotifier {
     ),
   ];
 
-  static const List<ArenaCard> _rewardPool = [
-    ArenaCard(
-      name: '潮涌连弹',
-      description: '低费连携伤害',
-      cost: 1,
-      icon: '✧',
-      color: 0xFF69CFE3,
-      damage: 18,
-      sourceHeroName: '肉鸽',
-    ),
-    ArenaCard(
-      name: '星砂爆裂',
-      description: '高伤害终结技',
-      cost: 3,
-      icon: '✹',
-      color: 0xFFE6B64F,
-      damage: 42,
-      sourceHeroName: '肉鸽',
-    ),
-    ArenaCard(
-      name: '月幕庇护',
-      description: '恢复并稳住血线',
-      cost: 2,
-      icon: '☽',
-      color: 0xFFB08BD1,
-      damage: -24,
-      sourceHeroName: '肉鸽',
-      targeting: ArenaCardTargeting.allyTeam,
-    ),
-    ArenaCard(
-      name: '霜痕追击',
-      description: '中费稳定输出',
-      cost: 2,
-      icon: '❄',
-      color: 0xFF79B9B0,
-      damage: 30,
-      sourceHeroName: '肉鸽',
-    ),
-    ArenaCard(
-      name: '流星裁断',
-      description: '全体爆发伤害',
-      cost: 4,
-      icon: '✦',
-      color: 0xFFD47E9B,
-      damage: 32,
-      sourceHeroName: '肉鸽',
-      targeting: ArenaCardTargeting.allEnemies,
-    ),
-  ];
-
   static const List<ArenaTowerNode> towerNodes = [
     ArenaTowerNode(
       label: '战斗',
@@ -540,7 +506,7 @@ class ArenaViewModel extends ChangeNotifier {
     ArenaTowerNode(
       label: '精英',
       kind: '高风险战',
-      description: '敌人更厚，通关星晶翻倍。牌组有同派连携时再来打。',
+      description: '敌人更厚，通关星晶翻倍。用元素组合技把伤害打上去。',
     ),
     ArenaTowerNode(
       label: '商店',
@@ -594,6 +560,8 @@ class ArenaViewModel extends ChangeNotifier {
   int get selectedEnemyIndex => _selectedEnemyIndex;
   int get turn => _turn;
   int get combo => _combo;
+  String get fieldRune => _fieldRune;
+  ArenaCombo? get activeCombo => _activeCombo;
   int get lastPlayedCardIndex => _lastPlayedCardIndex;
   bool get finished => _finished;
   bool get won => _won;
@@ -903,9 +871,8 @@ class ArenaViewModel extends ChangeNotifier {
       _deck
         ..clear()
         ..addAll(state.deck.map(_cardFromDto));
-    } else if (_deck.isEmpty) {
-      _rebuildFormationDeck();
     }
+    _ensureFullCatalogDeck();
   }
 
   /// 空拥有列表补回初始三人，编队里有未拥有英雄时改成可上场的三人。
@@ -1103,15 +1070,18 @@ class ArenaViewModel extends ChangeNotifier {
     _selectedEnemyIndex = 0;
     _turn = 1;
     _combo = 0;
+    _chain.clear();
+    _activeCombo = null;
+    _fieldRune =
+        ArenaCombos.elements[_random.nextInt(ArenaCombos.elements.length)];
     _lastPlayedCardIndex = -1;
     _finished = false;
     _won = false;
     _rewardChoices.clear();
     _beginEncounter();
     final buffSuffix = buffNotes.isEmpty ? '' : ' · ${buffNotes.join(' / ')}';
-    _chainSchool = '';
     _battleMessage =
-        '第 $_towerFloor 层 · ${selectedTowerNode.kind}：牌库 $drawCount · 手牌 ${hand.length}$buffSuffix';
+        '第 $_towerFloor 层 · 场纹 $_fieldRune · 牌库 $drawCount · 手牌 ${hand.length}$buffSuffix';
     notifyListeners();
     unawaited(_persistConsumedBuffs());
   }
@@ -1158,6 +1128,11 @@ class ArenaViewModel extends ChangeNotifier {
     await _persistLocal();
   }
 
+  void noteBattle(String message) {
+    _battleMessage = message;
+    notifyListeners();
+  }
+
   void playCard(int index) {
     if (_finished || index < 0 || index >= _hand.length) return;
     _selectFirstAliveEnemyIfNeeded();
@@ -1173,9 +1148,21 @@ class ArenaViewModel extends ChangeNotifier {
     _lastPlayedCardIndex = index;
     _combo++;
     _energy -= card.cost;
-    final bonus =
-        card.damage > 0 && _combo > 1 ? (_combo - 1) * comboBonusDamage : 0;
-    final amount = card.damage + bonus;
+    _chain.add(card.elements);
+    final recipe = _recipeForChain();
+    _activeCombo = recipe;
+    final fieldHit = recipe != null &&
+        (card.elements.contains(_fieldRune) ||
+            (_chain.length >= 2 &&
+                _chain[_chain.length - 2].contains(_fieldRune)));
+    final fieldBonus = fieldHit && card.damage > 0 ? 8 : 0;
+    final bonus = recipe == null || card.damage < 0 ? 0 : recipe.bonusDamage;
+    var amount = card.damage + bonus + fieldBonus;
+    final abilityHeroes = _abilityHeroesFor(card);
+    final abilityBonus = amount > 0 ? abilityHeroes.length * 4 : 0;
+    amount += abilityBonus;
+    if (card.trait == '破甲' && amount > 0) amount += 6;
+    if (card.trait == '连击' && _combo > 1 && amount > 0) amount += 8;
     if (amount < 0) {
       _playerHp = (_playerHp - amount).clamp(0, _playerMaxHp);
       _battleMessage =
@@ -1185,29 +1172,63 @@ class ArenaViewModel extends ChangeNotifier {
         _enemyHps[enemyIndex] =
             (_enemyHps[enemyIndex] - amount).clamp(0, _encounterMaxHp);
       }
-      _battleMessage = bonus > 0
-          ? '${card.sourceHeroName}发动${card.name}：连携 +$bonus，全体 $amount 点'
-          : '${card.sourceHeroName}发动${card.name}：对全体敌人造成 $amount 点伤害';
+      _battleMessage =
+          '${card.sourceHeroName}发动${card.name}：对全体敌人造成 $amount 点伤害';
     } else {
       final target = _selectedEnemyIndex;
       _enemyHps[target] =
           (_enemyHps[target] - amount).clamp(0, _encounterMaxHp);
-      _battleMessage = bonus > 0
-          ? '${card.sourceHeroName}发动${card.name}：连携 +$bonus，敌影 ${target + 1} 受到 $amount 点'
-          : '${card.sourceHeroName}发动${card.name}：对敌影 ${target + 1} 造成 $amount 点伤害';
+      _battleMessage =
+          '${card.sourceHeroName}发动${card.name}：对敌影 ${target + 1} 造成 $amount 点伤害';
+    }
+    if (recipe != null) {
+      if (recipe.heal > 0) {
+        _playerHp = (_playerHp + recipe.heal).clamp(0, _playerMaxHp);
+      }
+      if (recipe.energy > 0) {
+        _energy = min(10, _energy + recipe.energy);
+      }
+      if (recipe.splash > 0 &&
+          card.targeting != ArenaCardTargeting.allEnemies) {
+        for (var enemyIndex = 0; enemyIndex < _enemyHps.length; enemyIndex++) {
+          if (enemyIndex == _selectedEnemyIndex) continue;
+          _enemyHps[enemyIndex] =
+              (_enemyHps[enemyIndex] - recipe.splash).clamp(0, _encounterMaxHp);
+        }
+      }
+      final fieldNote = fieldHit ? ' · 场纹 $_fieldRune' : '';
+      _battleMessage =
+          '组合技「${recipe.name}」${recipe.formula}$fieldNote · $_battleMessage';
+    }
+    if (card.trait == '回能') {
+      _energy = min(10, _energy + 1);
+      _battleMessage = '$_battleMessage · 回能';
+    } else if (card.trait == '续航') {
+      _playerHp = (_playerHp + 8).clamp(0, _playerMaxHp);
+      _battleMessage = '$_battleMessage · 续航';
+    } else if (card.trait == '溅射' &&
+        card.targeting != ArenaCardTargeting.allEnemies) {
+      for (var enemyIndex = 0; enemyIndex < _enemyHps.length; enemyIndex++) {
+        if (enemyIndex == _selectedEnemyIndex) continue;
+        _enemyHps[enemyIndex] =
+            (_enemyHps[enemyIndex] - 8).clamp(0, _encounterMaxHp);
+      }
+      _battleMessage = '$_battleMessage · 溅射';
+    } else if (card.trait == '破甲' || card.trait == '连击') {
+      _battleMessage = '$_battleMessage · ${card.trait}';
+    }
+    if (abilityHeroes.isNotEmpty && abilityBonus > 0) {
+      final names = abilityHeroes.map((hero) => hero.name).join('、');
+      _battleMessage = '$_battleMessage · $names能力 +$abilityBonus';
     }
     final school = _schoolOf(card);
-    if (_chainSchool == school) {
-      _energy = min(10, _energy + 1);
-      _battleMessage = '$_battleMessage · 同派回能';
-    }
-    _chainSchool = school;
     _strike = ArenaStrike(
       id: ++_strikeSerial,
       damage: amount,
       targeting: card.targeting,
       targetIndex: _selectedEnemyIndex,
       color: card.color,
+      school: school,
     );
     if (allEnemiesDefeated) {
       _finished = true;
@@ -1231,11 +1252,13 @@ class ArenaViewModel extends ChangeNotifier {
       targeting: ArenaCardTargeting.allyTeam,
       targetIndex: 0,
       color: 0xFFD47E9B,
+      school: '敌袭',
     );
     _energy = 6;
     _turn++;
     _combo = 0;
-    _chainSchool = '';
+    _chain.clear();
+    _activeCombo = null;
     _lastPlayedCardIndex = -1;
     if (_playerHp <= 0) {
       _finished = true;
@@ -1309,6 +1332,8 @@ class ArenaViewModel extends ChangeNotifier {
       damage: card.damage,
       sourceHeroId: card.sourceHeroId,
       sourceHeroName: card.sourceHeroName,
+      elements: card.elements,
+      trait: card.trait,
       targeting: switch (card.targeting) {
         ArenaCardTargeting.allEnemies => 'all_enemies',
         ArenaCardTargeting.allyTeam => 'ally_team',
@@ -1327,6 +1352,10 @@ class ArenaViewModel extends ChangeNotifier {
       damage: dto.damage,
       sourceHeroId: dto.sourceHeroId,
       sourceHeroName: dto.sourceHeroName,
+      elements: dto.elements.isNotEmpty
+          ? dto.elements
+          : ArenaCombos.forHero(dto.sourceHeroId, cardName: dto.name),
+      trait: dto.trait.isEmpty ? '无' : dto.trait,
       targeting: switch (dto.targeting) {
         'all_enemies' => ArenaCardTargeting.allEnemies,
         'ally_team' => ArenaCardTargeting.allyTeam,
@@ -1386,8 +1415,30 @@ class ArenaViewModel extends ChangeNotifier {
   }
 
   List<ArenaCard> _rollRewardChoices() {
-    final pool = List<ArenaCard>.of(_rewardPool)..shuffle(_random);
+    final pool = List<ArenaCard>.of(catalogCards)..shuffle(_random);
     return pool.take(3).toList();
+  }
+
+  List<ArenaCard> get catalogCards =>
+      ArenaCardCatalog.entries.map(_cardFromCatalog).toList(growable: false);
+
+  ArenaCard _cardFromCatalog(ArenaCatalogEntry entry) {
+    return ArenaCard(
+      name: entry.name,
+      description: entry.description,
+      cost: entry.cost,
+      icon: entry.icon,
+      color: entry.color,
+      damage: entry.damage,
+      sourceHeroName: '图鉴',
+      elements: [entry.element],
+      trait: entry.trait,
+      targeting: switch (entry.targeting) {
+        'all_enemies' => ArenaCardTargeting.allEnemies,
+        'ally_team' => ArenaCardTargeting.allyTeam,
+        _ => ArenaCardTargeting.singleEnemy,
+      },
+    );
   }
 
   Future<void> runTowerNode() async {
@@ -1408,7 +1459,9 @@ class ArenaViewModel extends ChangeNotifier {
       return;
     }
     if (_deck.isEmpty) return;
-    final rewardIndex = _deck.indexWhere((card) => card.sourceHeroName == '肉鸽');
+    final rewardIndex = _deck.indexWhere(
+      (card) => card.sourceHeroName == '肉鸽' || card.sourceHeroName == '图鉴',
+    );
     final index = rewardIndex >= 0 ? rewardIndex : 0;
     final before = _deck[index];
     _deck[index] = before.strengthened();
@@ -1430,7 +1483,8 @@ class ArenaViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final card = _rewardPool[_random.nextInt(_rewardPool.length)];
+    final pool = catalogCards;
+    final card = pool[_random.nextInt(pool.length)];
     _deck.add(card);
     _shopFloor = _towerFloor;
     final remote = await _service.saveMeta(crystalDelta: -shopCardCost);
@@ -1455,6 +1509,39 @@ class ArenaViewModel extends ChangeNotifier {
     }
   }
 
+  ArenaCombo? previewCombo(ArenaCard card) => previewComboChain([card]);
+
+  ArenaCombo? previewComboChain(List<ArenaCard> cards) {
+    final chain = <List<String>>[
+      for (final marks in _chain) List<String>.of(marks),
+    ];
+    ArenaCombo? last;
+    for (final card in cards) {
+      chain.add(card.elements);
+      last = _recipeFor(chain);
+    }
+    return last;
+  }
+
+  ArenaCombo? _recipeForChain() => _recipeFor(_chain);
+
+  ArenaCombo? _recipeFor(List<List<String>> chain) {
+    if (chain.length >= 3) {
+      return ArenaCombos.triple(
+        chain[chain.length - 3].first,
+        chain[chain.length - 2].first,
+        chain.last.first,
+      );
+    }
+    if (chain.length >= 2) {
+      return ArenaCombos.bestPair(
+        chain[chain.length - 2],
+        chain.last,
+      );
+    }
+    return null;
+  }
+
   String _schoolOf(ArenaCard card) {
     if (card.damage < 0 || card.targeting == ArenaCardTargeting.allyTeam) {
       return '庇护';
@@ -1468,11 +1555,11 @@ class ArenaViewModel extends ChangeNotifier {
     _discard.clear();
     _drawPile.clear();
     _lastPlayedCard = null;
-    final opening = min(handLimit, _deck.length);
-    _hand.addAll(_deck.take(opening));
-    if (_deck.length > opening) {
-      _drawPile.addAll(_deck.skip(opening));
-      _drawPile.shuffle(_random);
+    final pile = List<ArenaCard>.of(_deck)..shuffle(_random);
+    final opening = min(handLimit, pile.length);
+    _hand.addAll(pile.take(opening));
+    if (pile.length > opening) {
+      _drawPile.addAll(pile.skip(opening));
     }
   }
 
@@ -1489,128 +1576,22 @@ class ArenaViewModel extends ChangeNotifier {
   }
 
   void _rebuildFormationDeck() {
-    final rewards = _deck
-        .where((card) => card.sourceHeroName == '肉鸽')
+    _ensureFullCatalogDeck();
+  }
+
+  void _ensureFullCatalogDeck() {
+    final owned = _deck.map((card) => card.name).toSet();
+    for (final card in catalogCards) {
+      if (!owned.contains(card.name)) _deck.add(card);
+    }
+  }
+
+  List<ArenaHero> _abilityHeroesFor(ArenaCard card) {
+    if (card.elements.isEmpty) return const [];
+    final element = card.elements.first;
+    return formationHeroes
+        .where((hero) => ArenaCombos.forHero(hero.id).contains(element))
         .toList(growable: false);
-    _deck
-      ..clear()
-      ..addAll(_cardsForFormation())
-      ..addAll(rewards);
-  }
-
-  List<ArenaCard> _cardsForFormation() {
-    final cards = <ArenaCard>[];
-    for (final hero in formationHeroes) {
-      cards.add(_cardForHero(hero));
-    }
-    cards.add(
-      const ArenaCard(
-        name: '流光合击',
-        description: '队伍连携单体伤害',
-        cost: 2,
-        icon: '☾',
-        color: 0xFFD47E9B,
-        damage: 30,
-        sourceHeroName: '队伍',
-      ),
-    );
-    return cards;
-  }
-
-  ArenaCard _cardForHero(ArenaHero hero) {
-    switch (hero.id) {
-      case 'lanxing':
-        return ArenaCard(
-          name: hero.skillName,
-          description: '单体魔法伤害',
-          cost: 2,
-          icon: '✦',
-          color: hero.color,
-          damage: 26,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-        );
-      case 'tutu':
-        return ArenaCard(
-          name: hero.skillName,
-          description: '前排爆发突击',
-          cost: 2,
-          icon: '⚔',
-          color: hero.color,
-          damage: 32,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-        );
-      case 'maoying':
-        return ArenaCard(
-          name: hero.skillName,
-          description: '单体伤害并虚弱',
-          cost: 3,
-          icon: '❄',
-          color: hero.color,
-          damage: 36,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-        );
-      case 'linglan':
-        return ArenaCard(
-          name: hero.skillName,
-          description: '全队恢复生命',
-          cost: 1,
-          icon: '◇',
-          color: hero.color,
-          damage: -18,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-          targeting: ArenaCardTargeting.allyTeam,
-        );
-      case 'taoyin':
-        return ArenaCard(
-          name: hero.skillName,
-          description: '全队恢复生命',
-          cost: 1,
-          icon: '✿',
-          color: hero.color,
-          damage: -20,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-          targeting: ArenaCardTargeting.allyTeam,
-        );
-      case 'xueli':
-        return ArenaCard(
-          name: hero.skillName,
-          description: '全体冰霜伤害',
-          cost: 4,
-          icon: '❆',
-          color: hero.color,
-          damage: 34,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-          targeting: ArenaCardTargeting.allEnemies,
-        );
-      case 'ziyuan':
-        return ArenaCard(
-          name: hero.skillName,
-          description: '单体魔法斩杀',
-          cost: 2,
-          icon: '✶',
-          color: hero.color,
-          damage: 31,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-        );
-      default:
-        return ArenaCard(
-          name: hero.skillName,
-          description: '${hero.role}技能',
-          cost: 2,
-          icon: '✧',
-          color: hero.color,
-          damage: 28,
-          sourceHeroId: hero.id,
-          sourceHeroName: hero.name,
-        );
-    }
   }
 
   void _selectFirstAliveEnemyIfNeeded() {

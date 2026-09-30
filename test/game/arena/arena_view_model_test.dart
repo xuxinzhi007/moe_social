@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moe_social/game/arena/arena_combos.dart';
 import 'package:moe_social/game/arena/arena_view_model.dart';
 import 'package:moe_social/models/arena_state.dart';
 import 'package:moe_social/services/arena_service.dart';
@@ -125,18 +126,53 @@ void main() {
     expect(model.shardsOf(model.heroes.first), ArenaRarity.ssr.shardValue);
   });
 
+  test('card catalog has mixable elements and rider traits', () {
+    final model = localModel();
+
+    expect(model.catalogCards.length, 64);
+    expect(
+      model.catalogCards.map((card) => card.name).toSet(),
+      hasLength(64),
+    );
+    expect(
+      model.catalogCards.map((card) => card.elements.first).toSet(),
+      ArenaCombos.elements.toSet(),
+    );
+    final breaker = model.catalogCards.firstWhere((card) => card.name == '星刺');
+    expect(breaker.trait, '破甲');
+    expect(breaker.elements, ['星']);
+    expect(breaker.damage, 22);
+    expect(breaker.cost, 2);
+  });
+
   test('playing a card records combo feedback and clears it next turn', () {
     final model = localModel();
 
+    model.selectTowerNode(0);
     model.startBattle();
+    expect(model.cards, hasLength(64));
+    expect(model.hand, hasLength(ArenaViewModel.handLimit));
+    expect(model.drawCount, 64 - ArenaViewModel.handLimit);
+
     model.playCard(0);
 
     expect(model.combo, 1);
+    expect(model.activeCombo, isNull);
+    expect(model.fieldRune, '星');
     expect(model.lastPlayedCardIndex, 0);
+
+    model.playCard(0);
+    expect(model.combo, 2);
+    expect(model.activeCombo, isNotNull);
+    final next = model.hand.first;
+    final preview = model.previewCombo(next);
+    expect(preview, isNotNull);
+    expect(preview!.formula, contains('+'));
 
     model.endTurn();
 
     expect(model.combo, 0);
+    expect(model.activeCombo, isNull);
     expect(model.lastPlayedCardIndex, -1);
   });
 
@@ -148,12 +184,9 @@ void main() {
       '兔突',
       '猫影',
     ]);
-    expect(model.cards.map((card) => card.sourceHeroName), [
-      '澜星',
-      '兔突',
-      '猫影',
-      '队伍',
-    ]);
+    expect(model.cards, hasLength(64));
+    expect(model.cards.map((card) => card.name).toSet(), hasLength(64));
+    expect(model.cards.every((card) => card.sourceHeroName == '图鉴'), isTrue);
   });
 
   test('formation slot can be edited without duplicate heroes', () async {
@@ -171,7 +204,8 @@ void main() {
 
     expect(model.formationHeroAt(1)?.id, 'huhuo');
     expect(model.formationHeroes.map((hero) => hero.id).toSet(), hasLength(3));
-    expect(model.cards.any((card) => card.sourceHeroName == '狐火'), isTrue);
+    expect(model.cards.any((card) => card.sourceHeroName == '狐火'), isFalse);
+    expect(model.cards.any((card) => card.name == '星刺'), isTrue);
   });
 
   test('selected enemy target receives card damage', () {
@@ -179,12 +213,16 @@ void main() {
 
     model.selectTowerNode(0);
     model.startBattle();
+    final index = model.hand.indexWhere(
+      (card) =>
+          card.damage > 0 && card.targeting == ArenaCardTargeting.singleEnemy,
+    );
+    expect(index, greaterThanOrEqualTo(0));
     model.selectEnemy(1);
-    model.playCard(1);
+    model.playCard(index);
 
     expect(model.selectedEnemyIndex, 1);
-    expect(model.enemyHpAt(0), ArenaViewModel.enemyMaxHp);
-    expect(model.enemyHpAt(1), ArenaViewModel.enemyMaxHp - 32);
+    expect(model.enemyHpAt(1), lessThan(ArenaViewModel.enemyMaxHp));
     expect(model.battleMessage, contains('敌影 2'));
   });
 
