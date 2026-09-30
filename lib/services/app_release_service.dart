@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../utils/config.dart';
 import 'api_response.dart';
 import 'api_service.dart';
 
@@ -70,12 +75,12 @@ class AppReleaseFetchResult {
 class AppReleaseService {
   AppReleaseService._();
 
-  /// 拉取指定平台最新启用版本，并保留失败原因供 UI 展示更准确的状态。
+  /// 拉取指定平台最新启用版本。固定打线上地址，不跟当前业务 API 走局域网。
   static Future<AppReleaseFetchResult> fetchLatestResult({
     String platform = 'android',
   }) async {
     try {
-      final response = await ApiService.get(
+      final response = await _getProduction(
         '/api/public/app-release/latest?platform=${Uri.encodeQueryComponent(platform)}',
       );
       if (!ApiResponse.isSuccess(response)) {
@@ -96,7 +101,8 @@ class AppReleaseService {
           info: info,
         );
       }
-      return AppReleaseFetchResult(status: AppReleaseFetchStatus.ok, info: info);
+      return AppReleaseFetchResult(
+          status: AppReleaseFetchStatus.ok, info: info);
     } on ApiException catch (e) {
       return AppReleaseFetchResult(
         status: _statusFromApiException(e),
@@ -113,9 +119,25 @@ class AppReleaseService {
   }
 
   /// 拉取指定平台最新启用版本；网络/业务失败返回 null。
-  static Future<AppReleaseInfo?> fetchLatest({String platform = 'android'}) async {
+  static Future<AppReleaseInfo?> fetchLatest(
+      {String platform = 'android'}) async {
     final result = await fetchLatestResult(platform: platform);
     return result.status == AppReleaseFetchStatus.ok ? result.info : null;
+  }
+
+  static Future<Map<String, dynamic>> _getProduction(String path) async {
+    final uri = Uri.parse('${ApiEnvConfig.productionUrl}$path');
+    final response = await http.get(uri, headers: const {
+      'Content-Type': 'application/json'
+    }).timeout(const Duration(seconds: 15));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException('检查更新失败', response.statusCode);
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map) {
+      throw ApiException('检查更新失败');
+    }
+    return Map<String, dynamic>.from(decoded);
   }
 
   static int? _asStatusCode(Object? value) {

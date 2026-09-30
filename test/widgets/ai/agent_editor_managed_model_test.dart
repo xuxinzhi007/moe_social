@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,29 +7,14 @@ import 'package:http/testing.dart';
 import 'package:moe_social/models/ai_agent.dart';
 import 'package:moe_social/pages/ai/agent_editor_page.dart';
 import 'package:moe_social/providers/loading_provider.dart';
-import 'package:moe_social/services/ai_db_service.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../services/llm_api_config_test.dart' show config, envelope, view;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  late Directory temporaryDatabase;
-  setUpAll(() async {
-    temporaryDatabase =
-        await Directory.systemTemp.createTemp('moe-llm-editor-test-');
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfiNoIsolate;
-    await databaseFactory.setDatabasesPath(temporaryDatabase.path);
-    await AiDbService().database;
-  });
-  tearDownAll(() async {
-    await (await AiDbService().database).close();
-    await temporaryDatabase.delete(recursive: true);
-  });
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     ApiService.setToken('site-jwt');
