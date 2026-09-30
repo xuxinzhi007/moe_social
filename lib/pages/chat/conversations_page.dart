@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
 import '../../constants/feature_flags.dart';
-import '../../models/notification.dart';
 import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
 import '../../services/chat_push_service.dart';
@@ -23,9 +22,8 @@ import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/avatar_image.dart';
-import '../../widgets/motion/moe_pressable.dart';
-import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_motion.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import 'conversations_viewmodel.dart';
 import 'widgets/chat_empty_illustration.dart';
 
@@ -48,7 +46,6 @@ class ConversationsPage extends StatefulWidget {
 
 class _ConversationsPageState extends State<ConversationsPage> {
   late final ConversationsViewModel _vm;
-  final Set<String> _revealedConversationKeys = <String>{};
   int _hideNoticeToken = 0;
   String? _hideNoticePeerId;
 
@@ -109,7 +106,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         const SizedBox(height: 8),
         _buildOnlineFriendsStrip(context),
         const SizedBox(height: 4),
-        Expanded(child: _buildList(context, _vm.localPeers)),
+        Expanded(child: _buildList(context)),
       ],
     );
   }
@@ -231,173 +228,39 @@ class _ConversationsPageState extends State<ConversationsPage> {
     );
   }
 
-  Widget _buildList(BuildContext context, Set<String> localPeers) {
+  Widget _buildList(BuildContext context) {
     final myId = AuthService.currentUser ?? '';
-    final pushUnread = context.watch<NotificationProvider>().unreadDmBySender;
-
-    if (_vm.serverConversations.isNotEmpty) {
-      final rows = List<PrivateConversationItem>.from(_vm.serverConversations)
-          .where((c) {
-        final peerId = c.peerUserId.trim();
-        final lastAt = DateTime.tryParse(c.lastMessage.createdAt) ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-        if (!_vm.isPeerVisibleInConversationList(peerId, lastAt)) {
-          return false;
-        }
-        final body = c.lastMessage.body.trim();
-        return body.isNotEmpty || c.lastMessage.imagePaths.isNotEmpty;
-      }).toList();
-      if (rows.isEmpty) {
-        return _buildListEmptyState(context, searching: false);
-      }
-      return RefreshIndicator(
-        onRefresh: _vm.load,
-        color: MoeTheme.of(context).primary,
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          itemCount: rows.length,
-          separatorBuilder: (_, __) => const Divider(
-            height: 1,
-            indent: 76,
-            color: MoeTokens.surfaceBorder,
-          ),
-          itemBuilder: (context, i) {
-            final c = rows[i];
-            final peerId = c.peerUserId.trim();
-            if (peerId.isEmpty || peerId == myId) {
-              return const SizedBox.shrink();
-            }
-            User? friend;
-            for (final u in _vm.friends) {
-              if (u.id == peerId) {
-                friend = u;
-                break;
-              }
-            }
-            final title = () {
-              final friendName = (friend?.username ?? '').trim();
-              if (friendName.isNotEmpty) return friendName;
-              final peerName = c.peerName.trim();
-              if (peerName.isNotEmpty) return peerName;
-              return ChatPushService.cachedSenderDisplayName(peerId) ?? '用户';
-            }();
-            final avatar = (friend?.avatar ?? '').trim().isNotEmpty
-                ? friend!.avatar
-                : c.peerAvatar;
-            var previewRaw = c.lastMessage.body.trim();
-            if (previewRaw.isEmpty && c.lastMessage.imagePaths.isNotEmpty) {
-              previewRaw = '[IMG]';
-            }
-            final preview = formatDmPreviewForUi(previewRaw);
-            final badge = c.unreadCount;
-            // 解析最后活跃时间
-            DateTime? lastActive;
-            try {
-              lastActive = DateTime.parse(c.lastMessage.createdAt);
-            } catch (_) {}
-            return _dismissibleConversation(
-              peerId: peerId,
-              child: _buildConversationRow(
-                context,
-                avatar: avatar,
-                title: title,
-                preview: preview,
-                badge: badge,
-                lastActive: lastActive,
-                isOnline: PresenceService.isUserOnline(peerId),
-                onTap: () async {
-                  if (!context.mounted) return;
-                  await Navigator.pushNamed(
-                    context,
-                    '/direct-chat',
-                    arguments: {
-                      'userId': peerId,
-                      'username': title,
-                      'avatar': avatar,
-                    },
-                  );
-                  if (mounted) await _vm.load();
-                },
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    final dmNotifs = _vm.notifs
-        .where((n) =>
-            n.type == NotificationModel.directMessage &&
-            (n.senderId ?? '').isNotEmpty &&
-            n.senderId != myId &&
-            _vm.isAfterClearMarker(n.senderId!, n.createdAt))
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    final lastBySender = <String, NotificationModel>{};
-    for (final n in dmNotifs) {
-      final sid = n.senderId!;
-      lastBySender.putIfAbsent(sid, () => n);
-    }
-
-    final peerIds = <String>{};
-    peerIds.addAll(pushUnread.keys);
-    peerIds.addAll(lastBySender.keys);
-    peerIds.addAll(localPeers);
-    peerIds.addAll(_vm.serverThreadTails.keys);
-    peerIds.remove(myId);
-    peerIds.removeWhere((e) => e.isEmpty);
-
-    if (peerIds.isEmpty) {
-      return _buildListEmptyState(context, searching: false);
-    }
-
-    DateTime lastActivity(String peerId) {
-      final nt = lastBySender[peerId]?.createdAt ??
+    final rows =
+        List<PrivateConversationItem>.from(_vm.serverConversations).where((c) {
+      final peerId = c.peerUserId.trim();
+      final lastAt = DateTime.tryParse(c.lastMessage.createdAt) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final lt = _vm.localThreadTails[peerId]?.at ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      final st = _vm.serverThreadTails[peerId]?.at ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      var latest = nt;
-      if (lt.isAfter(latest)) latest = lt;
-      if (st.isAfter(latest)) latest = st;
-      return latest;
-    }
-
-    final rows = peerIds.toList();
-    rows.sort((a, b) => lastActivity(b).compareTo(lastActivity(a)));
-
-    final filteredRows = rows.where((peerId) {
-      if (!_vm.isPeerVisibleInConversationList(
-        peerId,
-        lastActivity(peerId),
-      )) {
+      if (!_vm.isPeerVisibleInConversationList(peerId, lastAt)) {
         return false;
       }
-      return _conversationPreview(
-        peerId: peerId,
-        notification: lastBySender[peerId],
-      ).isNotEmpty;
+      final body = c.lastMessage.body.trim();
+      return body.isNotEmpty || c.lastMessage.imagePaths.isNotEmpty;
     }).toList();
-
-    if (filteredRows.isEmpty) {
+    if (rows.isEmpty) {
       return _buildListEmptyState(context, searching: false);
     }
-
     return RefreshIndicator(
       onRefresh: _vm.load,
       color: MoeTheme.of(context).primary,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        itemCount: filteredRows.length,
+        itemCount: rows.length,
         separatorBuilder: (_, __) => const Divider(
           height: 1,
           indent: 76,
           color: MoeTokens.surfaceBorder,
         ),
         itemBuilder: (context, i) {
-          final peerId = filteredRows[i];
+          final c = rows[i];
+          final peerId = c.peerUserId.trim();
+          if (peerId.isEmpty || peerId == myId) {
+            return const SizedBox.shrink();
+          }
           User? friend;
           for (final u in _vm.friends) {
             if (u.id == peerId) {
@@ -405,46 +268,50 @@ class _ConversationsPageState extends State<ConversationsPage> {
               break;
             }
           }
-          final last = lastBySender[peerId];
-          final title = friend?.username ??
-              ChatPushService.cachedSenderDisplayName(peerId) ??
-              last?.senderName ??
-              '用户';
-          final avatar = friend?.avatar ?? last?.senderAvatar ?? '';
-          final preview = _conversationPreview(
+          final title = () {
+            final friendName = (friend?.username ?? '').trim();
+            if (friendName.isNotEmpty) return friendName;
+            final peerName = c.peerName.trim();
+            if (peerName.isNotEmpty) return peerName;
+            return ChatPushService.cachedSenderDisplayName(peerId) ?? '用户';
+          }();
+          final avatar = (friend?.avatar ?? '').trim().isNotEmpty
+              ? friend!.avatar
+              : c.peerAvatar;
+          var previewRaw = c.lastMessage.body.trim();
+          if (previewRaw.isEmpty && c.lastMessage.imagePaths.isNotEmpty) {
+            previewRaw = '[IMG]';
+          }
+          final preview = formatDmPreviewForUi(previewRaw);
+          final badge = c.unreadCount;
+          // 解析最后活跃时间
+          DateTime? lastActive;
+          try {
+            lastActive = DateTime.parse(c.lastMessage.createdAt);
+          } catch (_) {}
+          return _dismissibleConversation(
             peerId: peerId,
-            notification: last,
-          );
-          final badge = 0;
-
-          return MoeStaggerReveal(
-            index: i,
-            itemKey: 'conv_$peerId',
-            revealedKeys: _revealedConversationKeys,
-            child: _dismissibleConversation(
-              peerId: peerId,
-              child: _buildConversationRow(
-                context,
-                avatar: avatar,
-                title: title,
-                preview: preview,
-                badge: badge,
-                lastActive: lastActivity(peerId),
-                isOnline: PresenceService.isUserOnline(peerId),
-                onTap: () async {
-                  if (!context.mounted) return;
-                  await Navigator.pushNamed(
-                    context,
-                    '/direct-chat',
-                    arguments: {
-                      'userId': peerId,
-                      'username': title,
-                      'avatar': avatar,
-                    },
-                  );
-                  if (mounted) await _vm.load();
-                },
-              ),
+            child: _buildConversationRow(
+              context,
+              avatar: avatar,
+              title: title,
+              preview: preview,
+              badge: badge,
+              lastActive: lastActive,
+              isOnline: PresenceService.isUserOnline(peerId),
+              onTap: () async {
+                if (!context.mounted) return;
+                await Navigator.pushNamed(
+                  context,
+                  '/direct-chat',
+                  arguments: {
+                    'userId': peerId,
+                    'username': title,
+                    'avatar': avatar,
+                  },
+                );
+                if (mounted) await _vm.load();
+              },
             ),
           );
         },
@@ -722,32 +589,6 @@ class _ConversationsPageState extends State<ConversationsPage> {
         ),
       ),
     );
-  }
-
-  /// 有正文或图片才算一条会话；通知占位、空好友行不进列表。
-  String _conversationPreview({
-    required String peerId,
-    required NotificationModel? notification,
-  }) {
-    final lt = _vm.localThreadTails[peerId];
-    final st = _vm.serverThreadTails[peerId];
-    var bestAt = DateTime.fromMillisecondsSinceEpoch(0);
-    var bestRaw = '';
-    if (lt != null && lt.rawPreview.trim().isNotEmpty) {
-      bestAt = lt.at;
-      bestRaw = lt.rawPreview;
-    }
-    if (st != null &&
-        st.rawPreview.trim().isNotEmpty &&
-        !st.at.isBefore(bestAt)) {
-      bestRaw = st.rawPreview;
-    }
-    if (bestRaw.trim().isNotEmpty) {
-      return formatDmPreviewForUi(bestRaw);
-    }
-    final content = (notification?.content ?? '').trim();
-    if (content.isEmpty) return '';
-    return formatDmPreviewForUi(content);
   }
 
   Widget _withHideCapsule(Widget child) {

@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_lorebook.dart';
 import '../../models/ai_provider_profile.dart';
-import '../../services/ai_db_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_service.dart';
@@ -142,7 +141,12 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   }
 
   Future<void> _loadProviders() async {
-    final profiles = await AiProviderService().listProfiles();
+    late final List<AiProviderProfile> profiles;
+    try {
+      profiles = await AiProviderService().listProfiles();
+    } catch (_) {
+      return;
+    }
     final lastSelected = await AiProviderService().readLastSelectedProfileId();
     if (!mounted) return;
     final profile = profiles.firstWhere(
@@ -182,7 +186,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
 
   Future<void> _loadLorebooks() async {
     try {
-      final lorebooks = await AiDbService().getLorebooks();
+      final lorebooks = await AiAgentCloudService().getLorebooks();
       if (!mounted || !_pageActive) return;
       setState(() {
         _lorebooks = lorebooks;

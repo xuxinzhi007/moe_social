@@ -91,5 +91,6 @@ Moe Social 已完成 Kratos HTTP 服务迁移，生产请求由 `backend/cmd/moe
 
 - 普通 AI 聊天历史的归属、删除后列表为空、跨账号隔离，由 `TestChatHistoryBelongsToActorAndDeletesCascade` 覆盖。换设备看到同一份历史，依赖这份服务端数据，不依赖本机库。
 - 伙伴记忆提取失败时，用户还不能区分「聊天已保存」和「这段还没被记住」。
-- 私信未读角标以 `listPrivateConversations` 的 `unread_count` 为准。会话列表已有服务端会话时用这个数；列表为空的回退行不显示本机推送未读。好友行读同一份会话列表。
+- 私信会话列表和未读只来自 `listPrivateConversations`。服务端列表为空就是空列表，不再用本机记录、通知或推送拼行。左滑隐藏仍只记在本机。好友未读读同一份列表。
+- 世界书和模型来源名单只来自 `/api/ai/lorebooks`、`/api/ai/providers`。云端空列表不再回退本机 SQLite。Key 仍可下发到本机安全存储，供直连推理读取。
 - 伙伴记忆提取连续失败达到上限后任务标为 failed，关系首页用 `memory_notice` 说明对话已保存但还有内容没被记住。
