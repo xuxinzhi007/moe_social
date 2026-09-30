@@ -196,11 +196,11 @@ AI 网关负责：
 
 ### 阶段 2.5：普通 AI 聊天历史后端化
 
-当前状态：
+当前状态（2026-09-30 验收）：
 
-- 后端已经有 `ai_chat_sessions` 和 `ai_chat_messages` 表，并且管理台已有只读查询。
-- App 普通 AI 聊天页仍以本地 `AiDbService` / Web `SharedPreferences` 为主保存会话和消息。
-- 结果是：模型调用可以成功，但登录后、换设备后、清缓存后，用户看到的聊天历史可能像“丢了”。
+- 会话和消息按登录用户隔离。删除自己的会话后，再次拉取列表和消息都为空；另一账号的会话还在。
+- Flutter 聊天页只通过 `AiChatHistoryService` 读写。`AiDbService` 里残留的 `sessions` / `messages` 表不参与这条主路径，删除后不会从本地库填回来。
+- 历史加载失败时，页面只在内存放一条未同步的新会话，并提示失败。退出页面后这条不会变成历史。
 
 目标状态：
 
@@ -272,7 +272,7 @@ Flutter 迁移顺序：
 
 - 后端业务规则必须有 biz/service/protohttp 小范围测试。
 - Flutter 只对触及文件跑 analyze 和必要 widget/service 测试，避免每次全量压垮开发机。
-- 文档同步更新 `CODE_WIKI.md` 和本文件的“已落地切片”。
+- 文档只保留仍在生效的边界。已经完成、没有新规则的迁移记录不再往本文追加。
 - 重复踩坑只在确认后写入 `.cursor/LESSONS.md`。
 
 验收：
@@ -301,7 +301,7 @@ Flutter 迁移顺序：
 2. 继续清点 Flutter 直接调用 `ApiService` / `ApiClient` 的页面和 Provider，按 P0/P1 排序。
 3. Companion/AI 只保留后端正式契约，raw/debug 留给诊断入口。
 4. Feed、评论、私信、成长体系逐域迁移，规则进入后端 biz，Flutter 删除重复判断。
-5. 每迁一个域，同步补后端小范围测试、Flutter 目标 analyze 和文档“已落地切片”。
+5. 每迁一个域，同步补后端小范围测试和 Flutter 目标 analyze。边界有变化时改仍然生效的文档，不追加迁移日记。
 
 ## 迁移判定表
 
@@ -319,111 +319,3 @@ Flutter 迁移顺序：
 | 某条帖子是否可见？ | 否 | 是 |
 | 页面按钮是否禁用以防重复点击？ | 是 | 否 |
 | 写操作最终是否允许？ | 否 | 是 |
-
-## 已落地切片
-
-### 2026-09-23：模型提示词读取后端化
-
-- 新增后端结构化接口 `GET /api/llm/model-prompt?model=...`。
-- 后端负责模型授权、调用推理运行时、解析模型元数据中的系统提示词。
-- Flutter 角色编辑页不再调用 `/api/llm/show/raw`，也不再解析 Ollama `modelfile`。
-- `/api/llm/show/raw` 暂时保留为调试/兼容入口，但不作为正式 App 路径。
-
-### 2026-09-23：聊天上下文装配后端化
-
-- `/api/llm/chat` 新增 `agent_id`，后端按登录用户读取服务端角色卡。
-- 后端负责合成系统提示词、角色人设、场景、示例对话、用户 Persona 与世界书命中条目。
-- 后端优先使用服务端角色卡上的 `model_name`，避免 Flutter 旧状态决定模型路由。
-- Flutter 聊天页只发送可见聊天历史、会话 ID、消息 ID 和交互采样参数。
-- 删除 Flutter 侧 `AiChatContextBuilder`、`AiRoleplayPromptBuilder`、`AiLorebookService`，避免提示词业务双维护。
-
-### 2026-09-23：内容生成提示策略后端化
-
-- `/api/content/generate` 从占位实现改为调用后端 LLM 网关。
-- 后端统一维护 text/image/video/code/article/story/poem 七类内容生成策略。
-- 内容生成可携带 `agent_id`，后端会把类型任务提示合并到服务端角色上下文。
-- Flutter 内容生成页只提交类型、用户输入和当前 agent，不再拼 system prompt 或调用 `/api/llm/chat`。
-- 移除 `example.com` 图片/视频假返回，LLM 未初始化时明确暴露后端服务不可用。
-
-### 2026-09-23：群组发帖权限裁决后端化
-
-- 发帖到兴趣小组时，后端 `postbiz.Create`/`LinkPostToGroupTx` 统一校验群组存在与成员关系。
-- `protohttp/post` 将未入群、群不存在、内容为空等业务错误映射为稳定 HTTP/gRPC 状态与中文文案。
-- Flutter 发帖页移除 `canPostToGroup` 预检、按钮禁用和本地阻断，只保留发布交互与后端错误提示。
-- 避免客户端 `group.isJoined` 旧缓存决定是否能发帖，权限事实源以后端为准。
-
-### 2026-09-23：评论关系与评论输入裁决后端化
-
-- 评论列表以后端 `parent_id` 与 `reply_to_user_name` 为准。
-- Flutter 评论页移除按 `@昵称` 推断父评论的兼容逻辑，不再从文本猜业务关系。
-- 后端创建评论会 trim 内容并拒绝空评论，避免前端成为唯一校验点。
-- `protohttp/comment` 将空评论、父评论不存在、父评论不属于当前帖子、未登录等错误映射为稳定状态与中文文案。
-
-### 2026-09-23：私信输入与错误裁决后端化
-
-- 私信发送、拉取会话、清理历史的参数与业务错误统一改为 `chatbiz` sentinel errors。
-- `protohttp/chat` 将未登录、自己给自己发、空消息、图片参数、用户不存在等错误映射为稳定状态与中文文案。
-- Flutter 私信页继续只负责输入、乐观插入、回滚和 toast 展示，不再需要根据后端原始错误字符串推断业务含义。
-
-### 2026-09-23：Companion Ollama 调用闭环修复
-
-- 小主机 Ollama `/api/tags`、流式 `/api/chat`、非流式 `/api/chat` 均已直接验证可用。
-- 后端 Companion 流式调用失败后，非流式兜底不再继承已取消的上游 stream context，避免出现 `stream chat failed ... non-stream fallback failed: inference request canceled` 的误导性错误。
-- 本地 Ollama 推理超时调整为 300 秒，适配 CPU 小主机长上下文首包较慢的情况。
-- Flutter Companion 仍只消费后端 SSE 事件并展示交互，不直接拼接 Prompt 或绕过后端调用 Ollama。
-
-### 2026-09-23：成长域前端适配层收口
-
-- 新增 Flutter `GrowthService` 作为签到、等级、经验日志、每日浏览经验的客户端适配层。
-- `CheckInProvider`、`UserLevelProvider`、`DailyGrowthService` 不再直接调用底层 `ApiService`。
-- 移除 `UserLevelProvider.updateExperience` 中本地推算等级阈值的重复业务逻辑，等级结果以后端 `GetUserLevel` 为准。
-
-### 2026-09-23：全局加载 Provider 去业务 API 化
-
-- `LoadingProvider` 不再直接调用登录、注册和图片上传底层 API。
-- 登录/注册统一转交 `AuthService`，确保 token 保存、在线状态、缓存清理等认证副作用只维护一处。
-- 图片上传统一转交 `UserService.uploadImage`，Provider 只负责加载状态、成功/错误消息和回调编排。
-
-### 2026-09-23：Companion 上下文构建降级
-
-- Companion 聊天上下文中的关系事件属于增强上下文，读取失败时不再中断聊天主路径。
-- `BuildContext` 会记录关系事件读取错误并降级为空事件列表，保留 Profile、State、记忆和聊天历史继续进入模型调用。
-- `companion_relationship_events` 增加按 `user_id + created_at` 的查询索引声明，降低“取最近关系事件”在数据增长后拖慢聊天的风险。
-- 模型回复后的助手消息保存、亲密度更新和完成事件记录使用独立短超时上下文，避免 SSE 请求结束后收尾写入被取消。
-
-### 2026-09-23：AI/Companion 页面底层 API 收口
-
-- `CompanionHubPage` 不再直接调用 `ApiClient.uploadImage*`，伙伴头像上传统一走 `CompanionService`。
-- AI Provider 配置页不再直接读取 `ApiService.baseUrl`，内置后端展示统一走 `AiProviderService.backendBaseUrl`。
-- `AiManagedModelsViewModel` 的账号切换检测改为读取 `AuthService.token`，不再依赖低层 `ApiClient.token`。
-- `pages/widgets/providers` 中剩余的底层 HTTP 命中已收敛到领域服务调用；AutoGLM 保持实验 Flag 例外。
-
-### 2026-09-23：成长页面业务展示去重
-
-- 等级页移除前端写死的每日任务、社区排行、等级特权和经验来源卡片。
-- `UserLevelProvider` 不再维护本地等级称号和等级特权表，页面只展示后端返回的等级、称号、进度和成就数据。
-- 签到页移除前端自行推算的连签里程碑奖励和“更多活跃任务”预告，保留后端返回的今日奖励、明日奖励和等级进度。
-- 成长域后续若要展示任务、里程碑、特权或经验来源，先扩展后端契约，再由 Flutter 负责排版和交互。
-
-### 2026-09-23：Companion 记忆与聊天历史闭环
-
-- 直接验证 `/api/companion/memories`、`/api/companion/chat/history` 和 `/api/companion/state` 可返回当前用户服务端数据，聊天记录已由后端持久化。
-- Flutter `CompanionService` 兼容解析后端 proto JSON 中以字符串返回的 `uint64` ID，避免记忆、冲突、事件和聊天记录 ID 变成 0。
-- 后端记忆注入将未确认记忆标为“待用户确认的印象”，允许模型在用户询问“你记得什么”时自然提起，但不能当成已确认事实。
-- 记忆计入时机：Companion 成功完成一轮聊天后，后端异步从“用户消息 + 助手回复”中提取记忆；确认、置顶、编辑由用户在记忆页管理。
-
-### 2026-09-23：普通 AI 聊天历史后端化第一阶段
-
-- 新增用户侧 AI 聊天历史后端路由：会话列表、会话消息、创建/更新会话、删除会话、保存消息、删除单条消息。
-- 后端复用 `ai_chat_sessions` / `ai_chat_messages` 表，并补充 `agent_id`、`title` 会话元数据，用于按角色恢复历史与显示会话标题。
-- 后端历史写入按当前登录用户归属校验，消息保存按客户端 `message_id/source_msg_id` 幂等，避免重试重复落库。
-- `/api/llm/chat` 收到 `session_id` 与 `source_msg_id` 时会自动保存用户消息与助手回复，前端保存调用只作为外部 Provider 和重试补偿。
-- Flutter 新增 `AiChatHistoryService`，普通 AI 聊天页加载/创建/删除会话、加载/保存/删除消息均走后端历史服务；后端 Provider 的正常对话由后端落库，外部 Provider、开场白和错误气泡由前端通过历史服务补写。
-- `ChatPage` 不再使用本地 `AiDbService` 或 Web `SharedPreferences` 作为普通 AI 聊天历史主路径；本地页面状态只保留输入、气泡、生成中、滚动和错误提示。
-- 已验证：`flutter analyze lib/pages/ai/chat_page.dart lib/services/ai_chat_history_service.dart` 通过；`go test ./internal/service/llm ./internal/data/llm ./internal/server/protohttp/llm -count=1` 通过。
-
-### 2026-09-30：Companion 模型选择与聊天提示词展示
-
-- Companion SSE 不再接受客户端传来的供应商地址、模型名和 API Key。
-- 后端按用户已保存的 `last_selected_provider_id`、供应商资料和解密后的 Key 选择模型；未选择或内置后端时使用服务端默认推理配置。
-- 普通 AI 聊天页的系统提示词改为读取 `GET /api/llm/model-prompt`，页面只展示，不再编辑或写回角色卡。
