@@ -165,7 +165,7 @@ backend/.codex-tmp/
 moe_social_mcp_server/
 # 同为「独立仓放在工作区里对照」的情形：目录内含自己的 .git，只排除版本控制，不删本地目录
 moe_social_backend/
-.qoder
+.qoder/
 
 # Moe Admin 构建产物（独立仓，暂时放在工作区里联调）
 moe-admin/node_modules/
