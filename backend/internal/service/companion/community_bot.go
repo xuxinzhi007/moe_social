@@ -77,6 +77,7 @@ func (s *AppService) ensureCommunityBot(
 		}
 		return nil, "", fmt.Errorf("create companion bot for agent %s: %w", agentID, err)
 	}
+	s.syncCommunityBotAppearance(ctx, &botUser, profile)
 	return &botUser, agentID, nil
 }
 
@@ -135,6 +136,14 @@ func (s *AppService) syncCommunityBotAppearance(
 	if persona != "" && strings.TrimSpace(bot.Signature) != persona {
 		updates["signature"] = truncateRunes(persona, 100)
 	}
+	if display := companionBotDisplayName(profile.Name); display != "" && bot.Username != display {
+		var taken int64
+		if err := s.db.WithContext(ctx).Model(&model.User{}).
+			Where("username = ? AND id <> ?", display, bot.ID).
+			Count(&taken).Error; err == nil && taken == 0 {
+			updates["username"] = display
+		}
+	}
 	if len(updates) == 0 {
 		return
 	}
@@ -144,6 +153,9 @@ func (s *AppService) syncCommunityBotAppearance(
 	}
 	if v, ok := updates["signature"].(string); ok {
 		bot.Signature = v
+	}
+	if v, ok := updates["username"].(string); ok {
+		bot.Username = v
 	}
 }
 
@@ -156,4 +168,12 @@ func truncateRunes(s string, max int) string {
 		return s
 	}
 	return string(r[:max])
+}
+
+func companionBotDisplayName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+	return truncateRunes(name, 50)
 }

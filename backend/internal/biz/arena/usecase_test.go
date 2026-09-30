@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/rand"
 	"testing"
+	"time"
 
 	arenabiz "backend/internal/biz/arena"
 	"backend/model"
@@ -227,6 +228,57 @@ func TestSetFormationRejectsUnowned(t *testing.T) {
 	_, err := uc.SetFormation(context.Background(), "u1", []string{"lanxing", "tutu", "xueli"})
 	if err == nil {
 		t.Fatal("expected error for unowned hero")
+	}
+}
+
+func TestVipDailyCrystalsOncePerShanghaiDay(t *testing.T) {
+	repo := newMemRepo()
+	uc := arenabiz.NewUsecase(repo)
+	day := time.Date(2026, 10, 1, 4, 0, 0, 0, time.UTC)
+	uc.SetClock(func() time.Time { return day })
+	uc.SetMembership(func(context.Context, string) (bool, error) { return true, nil })
+
+	first, err := uc.GetState(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.VipDailyGranted != arenabiz.VipDailyCrystals {
+		t.Fatalf("granted=%d", first.VipDailyGranted)
+	}
+	if first.StarCrystals != arenabiz.DefaultStarCrystals+arenabiz.VipDailyCrystals {
+		t.Fatalf("crystals=%d", first.StarCrystals)
+	}
+
+	second, err := uc.GetState(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.VipDailyGranted != 0 || second.StarCrystals != first.StarCrystals {
+		t.Fatalf("second grant=%d crystals=%d", second.VipDailyGranted, second.StarCrystals)
+	}
+
+	uc.SetClock(func() time.Time { return day.Add(24 * time.Hour) })
+	third, err := uc.GetState(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if third.VipDailyGranted != arenabiz.VipDailyCrystals {
+		t.Fatalf("next day granted=%d", third.VipDailyGranted)
+	}
+	if third.StarCrystals != first.StarCrystals+arenabiz.VipDailyCrystals {
+		t.Fatalf("next day crystals=%d", third.StarCrystals)
+	}
+}
+
+func TestVipDailyCrystalsSkipInactive(t *testing.T) {
+	uc := arenabiz.NewUsecase(newMemRepo())
+	uc.SetMembership(func(context.Context, string) (bool, error) { return false, nil })
+	st, err := uc.GetState(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.VipDailyGranted != 0 || st.StarCrystals != arenabiz.DefaultStarCrystals {
+		t.Fatalf("granted=%d crystals=%d", st.VipDailyGranted, st.StarCrystals)
 	}
 }
 

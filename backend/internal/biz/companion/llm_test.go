@@ -91,6 +91,20 @@ func TestSystemPromptIncludesUnfinishedTopics(t *testing.T) {
 	}
 }
 
+func TestSystemPromptStaysPersonalChat(t *testing.T) {
+	prompt := buildSystemPrompt(&Profile{Name: "啾啾", RelationshipLevel: 3}, nil, nil)
+	for _, banned := range []string{"社区工具", "搜公开动态", "发动态", "[你自己会的事]"} {
+		if strings.Contains(prompt, banned) {
+			t.Fatalf("prompt still mentions community action %q", banned)
+		}
+	}
+	for _, want := range []string{"不要编造名字", "用场景里给出的时间回答"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q", want)
+		}
+	}
+}
+
 func TestLegacyMessageBuilderRemainsCompatible(t *testing.T) {
 	legacy := buildMessages(&Profile{Name: "Mochi"}, nil, nil, nil, "hello")
 	current := buildMessagesWithRelationshipEvents(&Profile{Name: "Mochi"}, nil, nil, nil, nil, "hello")

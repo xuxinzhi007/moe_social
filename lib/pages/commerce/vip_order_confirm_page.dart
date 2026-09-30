@@ -9,7 +9,9 @@ import '../../models/vip_plan.dart';
 import '../../services/achievement_hooks.dart';
 import '../../services/api_client.dart' show ApiException;
 import '../../services/commerce_service.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import 'vip_benefit_catalog.dart';
 import '../../widgets/moe_toast.dart';
 import 'order_center_page.dart';
 import 'recharge_page.dart';
@@ -176,42 +178,63 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
-          title: const Row(
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          ),
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)),
-              SizedBox(width: 8),
+              const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: MoeTokens.success),
+                  SizedBox(width: 8),
+                  Text(
+                    '支付成功',
+                    style: TextStyle(
+                      fontSize: MoeTokens.textXl,
+                      fontWeight: MoeTokens.fontWeightTitle,
+                      color: MoeTokens.titleText,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: MoeTokens.spaceMd),
               Text(
-                '支付成功',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                '已使用钱包余额支付 ¥${amount.toStringAsFixed(2)}，会员权益已生效。',
+                style: const TextStyle(
+                  color: MoeTokens.bodyText,
+                  fontSize: MoeTokens.textBase,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: MoeTokens.spaceLg),
+              SizedBox(
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogContext, 'vip_center'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _moe.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(MoeTokens.radiusButton),
+                    ),
+                  ),
+                  child: const Text('返回会员中心'),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, 'order_center'),
+                style: TextButton.styleFrom(
+                  foregroundColor: _moe.primary,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text('查看订单中心'),
               ),
             ],
           ),
-          content: Text(
-            '已成功使用站内钱包余额支付 ¥${amount.toStringAsFixed(2)}，会员权益已生效。',
-            style: TextStyle(
-              color: MoeTokens.bodyText,
-              height: 1.5,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, 'order_center'),
-              child: const Text('查看订单中心'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(dialogContext, 'vip_center'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _moe.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              child: const Text('返回会员中心'),
-            ),
-          ],
         );
       },
     );
@@ -234,30 +257,22 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: Column(
           children: [
             MoeReveal(child: _buildOrderSummaryCard()),
             const SizedBox(height: 14),
+            const MoeReveal(
+              delay: Duration(milliseconds: 60),
+              child: VipBenefitPanel(
+                showIntro: false,
+                caption: '使用钱包余额扣款',
+              ),
+            ),
+            const SizedBox(height: 14),
             MoeReveal(
               delay: const Duration(milliseconds: 80),
               child: _buildAmountDetailsCard(),
-            ),
-            const SizedBox(height: 14),
-            MoeReveal(
-              delay: const Duration(milliseconds: 120),
-              child: _buildWalletPayHintCard(),
-            ),
-            const SizedBox(height: 14),
-            if (_shortfall > 0)
-              MoeReveal(
-                delay: const Duration(milliseconds: 140),
-                child: _buildInsufficientCard(),
-              ),
-            const SizedBox(height: 14),
-            MoeReveal(
-              delay: const Duration(milliseconds: 200),
-              child: _buildProtocolCard(),
             ),
           ],
         ),
@@ -269,66 +284,64 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
   Widget _buildOrderSummaryCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(MoeTokens.spaceLg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_moe.primary, MoeTokens.secondary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
-        boxShadow: [
-          BoxShadow(
-            color: _moe.primary.withValues(alpha: 0.22),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+        boxShadow: MoeTokens.shadowSm(),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+              color: _moe.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.workspace_premium_rounded,
-              color: Colors.white,
-              size: 28,
+              color: _moe.primary,
+              size: 18,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: MoeTokens.spaceMd),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   widget.plan.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    color: MoeTokens.titleText,
+                    fontSize: MoeTokens.textLg,
+                    fontWeight: MoeTokens.fontWeightTitle,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  '开通时长 ${widget.plan.durationDays} 天',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontSize: 13,
+                  '开通 ${widget.plan.durationDays} 天',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MoeTokens.hintText,
+                    fontSize: MoeTokens.textSm,
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: MoeTokens.spaceSm),
           Text(
             '¥${widget.plan.price.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _moe.primary,
               fontSize: MoeTokens.textLg,
-              fontWeight: FontWeight.w900,
+              fontWeight: MoeTokens.fontWeightTitle,
             ),
           ),
         ],
@@ -343,13 +356,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       decoration: BoxDecoration(
         color: MoeTokens.cardBackground,
         borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-        boxShadow: [
-          BoxShadow(
-            color: _moe.primary.withValues(alpha: 0.1),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(color: MoeTokens.surfaceBorder),
+        boxShadow: MoeTokens.shadowSm(),
       ),
       child: Column(
         children: [
@@ -371,167 +379,13 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
     );
   }
 
-  Widget _buildInsufficientCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFFFD180)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.warning_amber_rounded,
-            color: Color(0xFFED6C02),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '余额不足',
-                  style: TextStyle(
-                    color: Color(0xFF8B6914),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '还需充值 ¥${_shortfall.toStringAsFixed(2)} 才能完成支付',
-                  style: const TextStyle(
-                    color: Color(0xFF8B6914),
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 36,
-                  child: ElevatedButton.icon(
-                    onPressed: _goRecharge,
-                    icon: const Icon(Icons.add_card_rounded, size: 18),
-                    label: const Text('去充值'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MoeTokens.pastelOrange,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProtocolCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: MoeTokens.cardBackground,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: _moe.primary.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Checkbox(
-            value: _isAgreeProtocol,
-            activeColor: _moe.primary,
-            onChanged: (value) {
-              setState(() {
-                _isAgreeProtocol = value ?? false;
-              });
-            },
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                '我已阅读并同意《会员服务协议》并确认使用站内钱包余额支付本次订单',
-                style: TextStyle(
-                  color: MoeTokens.bodyText,
-                  fontSize: 13,
-                  height: 1.35,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWalletPayHintCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF3FF),
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        border: Border.all(color: const Color(0xFFD9E3FF)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_rounded,
-            color: _moe.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              '本次将使用站内钱包余额扣款，若余额不足请先充值后再完成支付。',
-              style: TextStyle(
-                color: MoeTokens.bodyText,
-                fontSize: 13,
-                height: 1.45,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBottomBar() {
     final canPay = !_isPaying && _isAgreeProtocol && _shortfall <= 0;
-    String helperMessage = '支付前请确认套餐和钱包余额';
-    if (!_isAgreeProtocol) {
-      helperMessage = '请先勾选会员服务协议';
-    } else if (_shortfall > 0) {
-      helperMessage = '余额不足，请先充值后再支付';
-    } else if (_isPaying) {
-      helperMessage = '正在创建订单并完成扣款...';
-    }
     return Container(
       decoration: BoxDecoration(
         color: MoeTokens.cardBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: _moe.primary.withValues(alpha: 0.1),
-            blurRadius: 16,
-            offset: const Offset(0, -6),
-          ),
-        ],
+        border: const Border(top: BorderSide(color: MoeTokens.surfaceBorder)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: SafeArea(
@@ -539,9 +393,55 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            MoePressable(
+              onTap: _isPaying
+                  ? null
+                  : () {
+                      setState(() {
+                        _isAgreeProtocol = !_isAgreeProtocol;
+                      });
+                    },
+              child: Row(
+                children: [
+                  IgnorePointer(
+                    child: Checkbox(
+                      value: _isAgreeProtocol,
+                      activeColor: _moe.primary,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onChanged: (_) {},
+                    ),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      '同意使用钱包余额支付这次订单',
+                      style: TextStyle(
+                        color: MoeTokens.bodyText,
+                        fontSize: MoeTokens.textSm,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                  if (_shortfall > 0)
+                    TextButton(
+                      onPressed: _goRecharge,
+                      style: TextButton.styleFrom(
+                        foregroundColor: _moe.primary,
+                        visualDensity: VisualDensity.compact,
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: MoeTokens.textSm,
+                        ),
+                      ),
+                      child: const Text('去充值'),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
             SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 44,
               child: ElevatedButton(
                 onPressed: canPay ? _confirmPay : null,
                 style: ElevatedButton.styleFrom(
@@ -568,38 +468,11 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                             ? '余额不足，请先充值'
                             : '确认支付 ¥${widget.plan.price.toStringAsFixed(2)}',
                         style: const TextStyle(
-                          fontSize: MoeTokens.textLg,
+                          fontSize: MoeTokens.textBase,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    helperMessage,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: MoeTokens.bodyText,
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-                if (_shortfall > 0)
-                  TextButton(
-                    onPressed: _goRecharge,
-                    style: TextButton.styleFrom(
-                      foregroundColor: _moe.primary,
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                    child: const Text('去充值'),
-                  ),
-              ],
             ),
           ],
         ),

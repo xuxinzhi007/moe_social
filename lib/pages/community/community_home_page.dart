@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
+import '../../providers/companion_presence_provider.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../services/companion_service.dart';
 import '../../widgets/ai_bot_badge.dart';
@@ -30,6 +31,8 @@ class _CommunityHomePageState extends State<CommunityHomePage>
   late TabController _tabController;
   final GlobalKey<InterestGroupsPageState> _groupsKey =
       GlobalKey<InterestGroupsPageState>();
+  final CompanionPresenceProvider _presence =
+      CompanionPresenceProvider.instance;
   CompanionSnapshotData? _companionSnapshot;
   CompanionCommunityIdentityData? _communityIdentity;
 
@@ -41,13 +44,19 @@ class _CommunityHomePageState extends State<CommunityHomePage>
       if (_tabController.indexIsChanging) return;
       setState(() {});
     });
+    _presence.addListener(_onPresenceChanged);
     unawaited(_loadCompanionPresence());
   }
 
   @override
   void dispose() {
+    _presence.removeListener(_onPresenceChanged);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onPresenceChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadCompanionPresence() async {
@@ -129,18 +138,22 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                           child: _buildHeader(scheme),
                         ),
                       ),
-                      if (!onCirclesTab)
-                        IconButton(
-                          tooltip: '搜索动态',
-                          onPressed: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.pushNamed(context, '/community-search');
-                          },
-                          icon: Icon(
-                            Icons.search_rounded,
-                            color: scheme.onSurfaceVariant,
-                          ),
+                      IconButton(
+                        tooltip: onCirclesTab ? '搜索圈子' : '搜索动态',
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          Navigator.pushNamed(
+                            context,
+                            onCirclesTab
+                                ? '/community-group-search'
+                                : '/community-search',
+                          );
+                        },
+                        icon: Icon(
+                          Icons.search_rounded,
+                          color: scheme.onSurfaceVariant,
                         ),
+                      ),
                       IconButton(
                         tooltip: onCirclesTab ? '新建群组' : '发帖',
                         onPressed: _onPrimaryActionPressed,
@@ -275,87 +288,115 @@ class _CommunityHomePageState extends State<CommunityHomePage>
         : identity?.agentId;
     final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
     final emoji = profile.emoji.trim().isNotEmpty ? profile.emoji.trim() : '🐾';
-    final status = state.greeting.trim().isNotEmpty
-        ? state.greeting.trim()
-        : '当前已接入社区身份，可直接参与互动。';
+    final status = _companionStatusLine(state.greeting);
+    final attention = _presence.attentionMessage.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: MoeTokens.surface1,
+      child: Material(
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            Navigator.pushNamed(context, '/ai-chat');
+          },
           borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
-          border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: MoeTokens.surface0,
-                borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+              border: Border.all(
+                color: attention
+                    ? MoeTokens.primary.withValues(alpha: 0.45)
+                    : MoeTokens.primary.withValues(alpha: 0.12),
               ),
-              alignment: Alignment.center,
-              child: Text(emoji, style: const TextStyle(fontSize: 20)),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: MoeTokens.surface0,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: MoeTokens.titleText,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: MoeTokens.titleText,
+                              ),
+                            ),
                           ),
+                          const SizedBox(width: 6),
+                          AiBotBadge(compact: true, agentKey: agentKey),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        status,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.3,
+                          color: attention
+                              ? MoeTokens.primary
+                              : Colors.grey.shade700,
+                          fontWeight:
+                              attention ? FontWeight.w700 : FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      AiBotBadge(compact: true, agentKey: agentKey),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    status,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.3,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: 'AI 主页',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () =>
+                      context.read<MainNavController>().requestTab(2),
+                  icon: Icon(Icons.auto_awesome_rounded,
+                      size: 20, color: MoeTokens.primary),
+                ),
+                IconButton(
+                  tooltip: '聊天',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => Navigator.pushNamed(context, '/ai-chat'),
+                  icon: Icon(Icons.chat_bubble_rounded,
+                      size: 20, color: MoeTokens.primary),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            IconButton(
-              tooltip: 'AI 主页',
-              visualDensity: VisualDensity.compact,
-              onPressed: () => context.read<MainNavController>().requestTab(2),
-              icon: Icon(Icons.auto_awesome_rounded,
-                  size: 20, color: MoeTokens.primary),
-            ),
-            IconButton(
-              tooltip: '聊天',
-              visualDensity: VisualDensity.compact,
-              onPressed: () => Navigator.pushNamed(context, '/ai-chat'),
-              icon: Icon(Icons.chat_bubble_rounded,
-                  size: 20, color: MoeTokens.primary),
-            ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  String _companionStatusLine(String snapshotGreeting) {
+    final attention = _presence.attentionMessage.trim();
+    if (attention.isNotEmpty) return attention;
+    final live = _presence.greeting.trim();
+    if (live.isNotEmpty) return live;
+    final snapshot = snapshotGreeting.trim();
+    if (snapshot.isNotEmpty) return snapshot;
+    return '点这里和我聊天';
   }
 }
 

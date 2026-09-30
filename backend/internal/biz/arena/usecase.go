@@ -9,14 +9,17 @@ import (
 	"time"
 
 	"backend/model"
+	"backend/pkg/achievement"
 )
 
 const (
-	DefaultStarCrystals   = 6280
-	DefaultTowerFloor     = 1
-	DefaultTowerNode      = 2
-	FormationSize         = 3
-	SingleSummonCost      = 300
+	DefaultStarCrystals = 6280
+	DefaultTowerFloor   = 1
+	DefaultTowerNode    = 2
+	FormationSize       = 3
+	SingleSummonCost    = 300
+	// VipDailyCrystals 会员每个上海自然日赠送的星辉结晶，对齐一次单抽。
+	VipDailyCrystals      = SingleSummonCost
 	TenSummonCost         = 2700
 	TowerClearReward      = 120
 	TowerWinShardBonus    = 4
@@ -63,9 +66,10 @@ type DeckCard struct {
 
 // Progress 会话级可持久化进度。
 type Progress struct {
-	RestBuffReady     bool `json:"rest_buff_ready"`
-	BondBuffReady     bool `json:"bond_buff_ready"`
-	SelectedTowerNode int  `json:"selected_tower_node"`
+	RestBuffReady     bool   `json:"rest_buff_ready"`
+	BondBuffReady     bool   `json:"bond_buff_ready"`
+	SelectedTowerNode int    `json:"selected_tower_node"`
+	VipCrystalDay     string `json:"vip_crystal_day,omitempty"`
 }
 
 // State DTO。
@@ -80,7 +84,11 @@ type State struct {
 	BondBuffReady     bool        `json:"bond_buff_ready"`
 	SelectedTowerNode int         `json:"selected_tower_node"`
 	UpdatedAt         string      `json:"updated_at,omitempty"`
+	VipDailyGranted   int         `json:"vip_daily_granted,omitempty"`
 }
+
+// Membership 判断用户当前是否仍在会员有效期内。未注入时不发放每日结晶。
+type Membership func(ctx context.Context, userID string) (bool, error)
 
 // SummonPull 单次抽卡结果。
 type SummonPull struct {
@@ -110,8 +118,33 @@ type ProfileRepo interface {
 
 // Usecase 星辉远征业务。
 type Usecase struct {
-	repo ProfileRepo
-	rng  *rand.Rand
+	repo       ProfileRepo
+	rng        *rand.Rand
+	membership Membership
+	now        func() time.Time
+}
+
+// SetMembership 注入会员有效期判断。未设置时 GetState 不改结晶。
+func (u *Usecase) SetMembership(fn Membership) {
+	if u == nil {
+		return
+	}
+	u.membership = fn
+}
+
+// SetClock 注入当前时间，供每日发放按上海自然日去重。
+func (u *Usecase) SetClock(now func() time.Time) {
+	if u == nil {
+		return
+	}
+	u.now = now
+}
+
+func (u *Usecase) clock() time.Time {
+	if u == nil || u.now == nil {
+		return time.Now()
+	}
+	return u.now()
 }
 
 // NewUsecase 创建用例。
@@ -262,13 +295,46 @@ func (u *Usecase) loadProfile(ctx context.Context, userID string) (*model.ArenaP
 	return p, nil
 }
 
-// GetState 读取存档 DTO。
+// GetState 读取存档 DTO，并在会员有效期内补发当日星辉结晶。
 func (u *Usecase) GetState(ctx context.Context, userID string) (*State, error) {
 	p, err := u.loadProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	return toState(p), nil
+	granted, err := u.grantVipDaily(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	st := toState(p)
+	st.VipDailyGranted = granted
+	return st, nil
+}
+
+// grantVipDaily 每个上海自然日最多发放一次。非会员或当天已发过时返回 0。
+func (u *Usecase) grantVipDaily(ctx context.Context, p *model.ArenaProfile) (int, error) {
+	if u == nil || u.membership == nil || p == nil {
+		return 0, nil
+	}
+	active, err := u.membership(ctx, p.UserID)
+	if err != nil {
+		return 0, fmt.Errorf("arena vip daily: %w", err)
+	}
+	if !active {
+		return 0, nil
+	}
+	day := achievement.ShanghaiDayString(u.clock())
+	prog := decodeProgress(p.ProgressJSON)
+	if prog.VipCrystalDay == day {
+		return 0, nil
+	}
+	prog.VipCrystalDay = day
+	p.StarCrystals += VipDailyCrystals
+	p.ProgressJSON = mustJSON(prog)
+	p.UpdatedAt = u.clock()
+	if err := u.repo.Save(ctx, p); err != nil {
+		return 0, fmt.Errorf("arena vip daily: %w", err)
+	}
+	return VipDailyCrystals, nil
 }
 
 // SetFormation 设置出战阵容。

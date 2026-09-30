@@ -48,6 +48,9 @@ func TestEnsureCommunityBotRebindsHistoricalBot(t *testing.T) {
 	if stored.BotAgentKey != "new-agent" {
 		t.Fatalf("bot agent key = %q, want new-agent", stored.BotAgentKey)
 	}
+	if stored.Username != "啾啾" {
+		t.Fatalf("bot username = %q, want 啾啾", stored.Username)
+	}
 }
 
 func TestEnsureCommunityBotDoesNotAdoptRegularUser(t *testing.T) {
@@ -80,5 +83,34 @@ func TestEnsureCommunityBotDoesNotAdoptRegularUser(t *testing.T) {
 	}
 	if stored.IsBot || stored.BotAgentKey != "" {
 		t.Fatalf("regular user was adopted as bot: %+v", stored)
+	}
+}
+
+func TestEnsureCommunityBotKeepsUsernameWhenDisplayNameTaken(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Skipf("sqlite unavailable: %v", err)
+	}
+	if err := db.AutoMigrate(&model.User{}); err != nil {
+		t.Fatalf("migrate users: %v", err)
+	}
+	taken := model.User{
+		Username: "啾啾",
+		Email:    "human@example.com",
+		Password: "human-password",
+	}
+	if err := db.Create(&taken).Error; err != nil {
+		t.Fatalf("create human: %v", err)
+	}
+	service := &AppService{db: db}
+	bot, _, err := service.ensureCommunityBot(context.Background(), 2, &companionbiz.Profile{
+		AgentID: "companion-2",
+		Name:    "啾啾",
+	})
+	if err != nil {
+		t.Fatalf("ensure community bot: %v", err)
+	}
+	if bot.Username != "bot_c_2" {
+		t.Fatalf("username = %q, want bot_c_2", bot.Username)
 	}
 }
