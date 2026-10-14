@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../game/arena/arena_view_model.dart';
 import '../../game/life/life_flame_game.dart';
+import '../../models/arena_state.dart';
 import '../../models/life_state.dart';
+import '../../services/arena_service.dart';
 import '../../services/life_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/moe_error_copy.dart';
@@ -27,7 +29,9 @@ class ArenaCampPreviewPage extends StatefulWidget {
 
 class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
   late final LifeFlameGame _game;
+  final ArenaService _arenaService = ArenaService();
   LifeInitialState? _state;
+  ArenaHeroSummaryDto? _summary;
   int? _selectedEntityId;
   Object? _loadError;
   bool _loading = true;
@@ -38,6 +42,14 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
     super.initState();
     _game = LifeFlameGame(onEntityTap: _selectEntity);
     unawaited(_loadWorld());
+    unawaited(_loadSummary());
+  }
+
+  /// O4 登录快进摘要：增强信息，失败静默隐藏摘要卡。
+  Future<void> _loadSummary() async {
+    final summary = await _arenaService.fetchHeroSummary(widget.hero.id);
+    if (!mounted || summary == null) return;
+    setState(() => _summary = summary);
   }
 
   Future<void> _loadWorld() async {
@@ -187,6 +199,10 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
                       ),
                     ],
                   ),
+                  if (_summary != null) ...[
+                    const SizedBox(height: MoeTokens.spaceSm),
+                    _OfflineSummaryCard(summary: _summary!),
+                  ],
                   const Spacer(),
                   _TopCard(
                     title: selectedTitle,
@@ -237,6 +253,58 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
       );
     }
     return MoeErrorCopy.resolve(error, scene: MoeErrorScene.pageLoad);
+  }
+}
+
+class _OfflineSummaryCard extends StatelessWidget {
+  const _OfflineSummaryCard({required this.summary});
+
+  final ArenaHeroSummaryDto summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: MoeTokens.softChipBg,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(MoeTokens.spaceMd),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.auto_stories_rounded,
+              size: 20,
+              color: MoeTokens.primary,
+            ),
+            const SizedBox(width: MoeTokens.spaceSm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '你不在的 ${summary.offlineHours} 小时里',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    summary.text,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

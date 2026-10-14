@@ -152,6 +152,26 @@ class ArenaService {
     throw ApiException('小星暂时没有回应，稍后再试试');
   }
 
+  /// O4 登录快进摘要；无摘要或请求失败返回 null（摘要卡为增强信息，不挡主流程）。
+  Future<ArenaHeroSummaryDto?> fetchHeroSummary(String heroSlug) async {
+    try {
+      final res = await ApiService.get(
+        '/api/companion/hero/summary?hero_slug=${Uri.encodeQueryComponent(heroSlug)}',
+      );
+      final data = res['data'] ?? res;
+      if (data is! Map || data['generated'] != true) return null;
+      final text = data['summary']?.toString().trim() ?? '';
+      if (text.isEmpty) return null;
+      return ArenaHeroSummaryDto(
+        text: text,
+        offlineHours: (data['offline_hours'] as num?)?.toInt() ?? 0,
+        eventCount: (data['event_count'] as num?)?.toInt() ?? 0,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   ArenaStateDto? _stateFrom(Map<String, dynamic> res) {
     final data = res['data'] ?? res;
     if (data is Map<String, dynamic>) return ArenaStateDto.fromJson(data);

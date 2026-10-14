@@ -282,3 +282,16 @@ class ArenaClearTowerResultDto {
     );
   }
 }
+
+/// O4 登录快进摘要（GET /api/companion/hero/summary）。
+class ArenaHeroSummaryDto {
+  const ArenaHeroSummaryDto({
+    required this.text,
+    required this.offlineHours,
+    required this.eventCount,
+  });
+
+  final String text;
+  final int offlineHours;
+  final int eventCount;
+}
