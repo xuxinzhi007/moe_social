@@ -55,11 +55,16 @@ void main() {
     final model = localModel();
 
     expect(model.ownedCount, 3);
-    expect(model.heroes, hasLength(9));
+    expect(model.heroes, hasLength(10));
     expect(model.heroes.first.name, '澜星');
     expect(
         model.heroes.first.imageAsset, 'assets/arena/heroes/lanxing_001.jpg');
     expect(model.isOwned(model.heroes.first), isTrue);
+    final flagship = model.heroes.firstWhere(
+      (hero) => hero.id == ArenaViewModel.flagshipHeroId,
+    );
+    expect(flagship.name, '小星');
+    expect(flagship.imageAsset, 'assets/branding/xiaoxing_mascot.png');
   });
 
   test('new grok image heroes are included in the arena roster', () {

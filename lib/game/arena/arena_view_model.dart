@@ -233,6 +233,9 @@ class ArenaViewModel extends ChangeNotifier {
   static const int towerWinShardBonus = 4;
   static const int homeGiftCost = 80;
   static const int homeGiftBondGain = 5;
+  // 旗舰英雄（活世界 K3）：小家闲聊解锁羁绊门槛，与后端 HeroChatBondRequired 对齐。
+  static const String flagshipHeroId = 'xiaoxing';
+  static const int heroChatBondRequired = 3;
   static const int homeRestHpBonus = 5;
   static const int homeBondEnergyBonus = 1;
   static const int handLimit = 4;
@@ -489,6 +492,24 @@ class ArenaViewModel extends ChangeNotifier {
           tint: 0xFFD0B0FF,
         ),
       ],
+    ),
+    // 旗舰英雄小星：活世界向导，全服默认拥有（后端 repairRoster 补发），
+    // 不进召唤池；K3 小家闲聊 bond≥3 解锁。
+    ArenaHero(
+      id: flagshipHeroId,
+      name: '小星',
+      title: '活世界向导',
+      role: '辅助',
+      faction: '星辉',
+      rarity: ArenaRarity.ssr,
+      color: 0xFFF5C96B,
+      level: 40,
+      stars: 3,
+      power: 18000,
+      favorite: 60,
+      skillName: '星光指引',
+      skillDescription: '为全队恢复能量，并鼓舞士气提升下回合伤害。',
+      imageAsset: 'assets/branding/xiaoxing_mascot.png',
     ),
   ];
 

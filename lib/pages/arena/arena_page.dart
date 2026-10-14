@@ -13,6 +13,7 @@ import '../../services/create_post_draft_prefs.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import 'arena_camp_preview_page.dart';
+import 'arena_hero_chat_page.dart';
 
 const _friendlySlots = <Alignment>[
   Alignment(-.72, .42),
@@ -117,6 +118,14 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
   Future<void> _openCampPreview(ArenaHero hero) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => ArenaCampPreviewPage(hero: hero)),
+    );
+  }
+
+  Future<void> _openHeroChat(ArenaHero hero, int bond) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ArenaHeroChatPage(hero: hero, bond: bond),
+      ),
     );
   }
 
@@ -753,6 +762,21 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
                           onTap: () => _model.navigate(ArenaView.tower),
                         ),
                       ),
+                      if (hero.id == ArenaViewModel.flagshipHeroId) ...[
+                        const SizedBox(width: MoeTokens.spaceSm),
+                        Expanded(
+                          child: _HomeActionCard(
+                            icon: bond >= ArenaViewModel.heroChatBondRequired
+                                ? Icons.chat_bubble_outline_rounded
+                                : Icons.lock_outline_rounded,
+                            title: '闲聊',
+                            body: bond >= ArenaViewModel.heroChatBondRequired
+                                ? '和小星聊聊营地里今天发生的事。'
+                                : '羁绊 ${ArenaViewModel.heroChatBondRequired} 级解锁 · 当前 $bond 级。',
+                            onTap: () => unawaited(_openHeroChat(hero, bond)),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

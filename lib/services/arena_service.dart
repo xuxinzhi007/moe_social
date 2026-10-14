@@ -138,6 +138,20 @@ class ArenaService {
     return null;
   }
 
+  /// K3 小家闲聊：与旗舰英雄对话。失败抛 [ApiException]（含服务端解锁/错误提示）。
+  Future<String> heroChat(String heroSlug, String message) async {
+    final res = await ApiService.post(
+      '/api/companion/hero/chat',
+      body: {'hero_slug': heroSlug, 'message': message},
+    );
+    final data = res['data'] ?? res;
+    if (data is Map && data['reply'] != null) {
+      final reply = data['reply'].toString().trim();
+      if (reply.isNotEmpty) return reply;
+    }
+    throw ApiException('小星暂时没有回应，稍后再试试');
+  }
+
   ArenaStateDto? _stateFrom(Map<String, dynamic> res) {
     final data = res['data'] ?? res;
     if (data is Map<String, dynamic>) return ArenaStateDto.fromJson(data);
