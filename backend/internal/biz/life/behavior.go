@@ -57,16 +57,17 @@ func shouldDie(e *model.LifeEntity, cell *WorldCell) bool {
 }
 
 func decideAction(e *model.LifeEntity) LifeAction {
-	if e.Energy < 15 {
+	w := weightsFor(e.Personality)
+	if e.Energy < w.SleepEnergyBelow {
 		return ActionSleeping
 	}
 	if e.Hunger < 26 && e.Energy > 18 {
 		return ActionSeekingFood
 	}
-	if e.Mood < 28 {
+	if e.Mood < w.WanderMoodBelow {
 		return ActionWandering
 	}
-	if rand.Float64() < 0.18 {
+	if rand.Float64() < w.WalkChance {
 		return ActionWalking
 	}
 	return ActionIdle
@@ -74,8 +75,9 @@ func decideAction(e *model.LifeEntity) LifeAction {
 
 // decideActionWithRelations 关系感知的行为决策
 func decideActionWithRelations(e *model.LifeEntity, entities map[uint]*model.LifeEntity, rels []*model.LifeRelationship) LifeAction {
+	w := weightsFor(e.Personality)
 	// 基础需求优先
-	if e.Energy < 15 {
+	if e.Energy < w.SleepEnergyBelow {
 		return ActionSleeping
 	}
 	if e.Hunger < 26 && e.Energy > 18 {
@@ -101,7 +103,7 @@ func decideActionWithRelations(e *model.LifeEntity, entities map[uint]*model.Lif
 
 	// 有朋友/伴侣在附近 → 倾向于走向对方
 	friendID, friendDist := FindNearbyFriend(e, entities, rels)
-	if friendID > 0 && friendDist > 40 && friendDist < 200 {
+	if friendID > 0 && friendDist > 40 && friendDist < w.SocialApproachDist {
 		friend := entities[friendID]
 		if friend != nil {
 			// 向朋友移动
@@ -118,10 +120,10 @@ func decideActionWithRelations(e *model.LifeEntity, entities map[uint]*model.Lif
 	}
 
 	// 低情绪时寻求漫游
-	if e.Mood < 28 {
+	if e.Mood < w.WanderMoodBelow {
 		return ActionWandering
 	}
-	if rand.Float64() < 0.18 {
+	if rand.Float64() < w.WalkChance {
 		return ActionWalking
 	}
 	return ActionIdle
