@@ -9,6 +9,7 @@ import '../../services/auth_flow_service.dart';
 import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../achievements/achievements_page.dart';
 import 'checkin_page.dart';
@@ -34,6 +35,7 @@ class _UserLevelPageState extends State<UserLevelPage>
   final AchievementService _achievementService = AchievementService();
   BadgeStatistics? _achievementStats;
   List<AchievementBadge> _recentUnlocked = [];
+  Object? _achievementError;
 
   @override
   void initState() {
@@ -68,22 +70,31 @@ class _UserLevelPageState extends State<UserLevelPage>
       final levelProvider = context.read<UserLevelProvider>();
       levelProvider.loadUserLevel(widget.userId);
       context.read<CheckInProvider>().loadCheckInStatus(widget.userId);
-      try {
-        await _achievementService.refreshFromServer(widget.userId);
-        if (!mounted) return;
-        final badges = _achievementService.getUserBadges(widget.userId);
-        setState(() {
-          _achievementStats =
-              _achievementService.getBadgeStatistics(widget.userId);
-          _recentUnlocked = badges.where((b) => b.isUnlocked).toList()
-            ..sort((a, b) => (b.unlockedAt ?? DateTime(2000))
-                .compareTo(a.unlockedAt ?? DateTime(2000)));
-          if (_recentUnlocked.length > 2) {
-            _recentUnlocked = _recentUnlocked.sublist(0, 2);
-          }
-        });
-      } catch (_) {}
+      await _loadAchievements();
     });
+  }
+
+  Future<void> _loadAchievements() async {
+    try {
+      await _achievementService.refreshFromServer(widget.userId);
+      if (!mounted) return;
+      final badges = _achievementService.getUserBadges(widget.userId);
+      setState(() {
+        _achievementError = null;
+        _achievementStats =
+            _achievementService.getBadgeStatistics(widget.userId);
+        _recentUnlocked = badges.where((b) => b.isUnlocked).toList()
+          ..sort((a, b) => (b.unlockedAt ?? DateTime(2000))
+              .compareTo(a.unlockedAt ?? DateTime(2000)));
+        if (_recentUnlocked.length > 2) {
+          _recentUnlocked = _recentUnlocked.sublist(0, 2);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _achievementError = e);
+      }
+    }
   }
 
   @override
@@ -317,18 +328,11 @@ class _UserLevelPageState extends State<UserLevelPage>
               colors.last.withValues(alpha: 0.08),
             ],
           ),
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusCardLarge),
           border: Border.all(
             color: colors.first.withValues(alpha: 0.35),
-            width: 1.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.first.withValues(alpha: 0.2),
-              blurRadius: 28,
-              offset: const Offset(0, 14),
-            ),
-          ],
+          boxShadow: MoeTokens.shadowMd(),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,7 +383,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                             ),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(colors: colors),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius:
+                                  BorderRadius.circular(MoeTokens.radiusFull),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.first.withValues(alpha: 0.35),
@@ -410,9 +415,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                                   : '距下一级还差 ${p.expToNext} EXP',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade800,
+                                color: MoeTokens.bodyText,
                                 height: 1.3,
                               ),
                             ),
@@ -440,8 +445,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                           height: 12,
                           width: barW,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8ECF4),
-                            borderRadius: BorderRadius.circular(999),
+                            color: MoeTokens.lineSoft,
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusFull),
                           ),
                         ),
                         AnimatedContainer(
@@ -451,7 +457,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                           width: fillW,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(colors: colors),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusFull),
                             boxShadow: [
                               BoxShadow(
                                 color: colors.first.withValues(alpha: 0.45),
@@ -490,9 +497,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                       children: [
                         Text(
                           '本阶 ${p.currentExperience} / ${ul?.nextLevelExp ?? 100} EXP',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade800,
+                            color: MoeTokens.bodyText,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -509,9 +516,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                     const SizedBox(height: 4),
                     Text(
                       '累计总经验 ${p.totalExperience}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
-                        color: Colors.grey.shade600,
+                        color: MoeTokens.inkMuted,
                       ),
                     ),
                   ],
@@ -538,13 +545,13 @@ class _UserLevelPageState extends State<UserLevelPage>
                   if (!context.mounted) return;
                   await checkInProvider.loadCheckInStatus(widget.userId);
                 },
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
                     color: colors.first.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                     border: Border.all(
                       color: colors.first.withValues(alpha: 0.22),
                     ),
@@ -575,9 +582,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                               checkIn.hasCheckedToday
                                   ? '今日已签到 · 连续 ${checkIn.consecutiveDays} 天'
                                   : '去签到页领取经验 · 已连续 ${checkIn.consecutiveDays} 天',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade700,
+                                color: MoeTokens.inkMuted,
                                 height: 1.3,
                               ),
                             ),
@@ -586,7 +593,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                       ),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.grey.shade500,
+                        color: MoeTokens.hintText,
                       ),
                     ],
                   ),
@@ -606,16 +613,10 @@ class _UserLevelPageState extends State<UserLevelPage>
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE8ECF4)),
-          boxShadow: [
-            BoxShadow(
-              color: MoeTokens.primary.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusCardLarge),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+          boxShadow: MoeTokens.shadowMd(),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -659,7 +660,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                       horizontal: 8,
                     ),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius:
+                          BorderRadius.circular(MoeTokens.radiusLg),
                       gradient: unlocked
                           ? LinearGradient(
                               begin: Alignment.topLeft,
@@ -672,13 +674,13 @@ class _UserLevelPageState extends State<UserLevelPage>
                               ],
                             )
                           : null,
-                      color: unlocked ? null : const Color(0xFFF0F2F7),
+                      color: unlocked ? null : MoeTokens.softChipBg,
                       border: current
                           ? Border.all(color: Colors.white, width: 2)
                           : Border.all(
                               color: unlocked
                                   ? Colors.white.withValues(alpha: 0.5)
-                                  : const Color(0xFFE0E4EE),
+                                  : MoeTokens.lineSoft,
                             ),
                       boxShadow: current
                           ? [
@@ -696,7 +698,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                       children: [
                         Icon(
                           unlocked ? Icons.star_rounded : Icons.lock_rounded,
-                          color: unlocked ? Colors.white : Colors.grey.shade500,
+                          color: unlocked ? Colors.white : MoeTokens.hintText,
                           size: 26,
                         ),
                         const SizedBox(height: 4),
@@ -706,12 +708,14 @@ class _UserLevelPageState extends State<UserLevelPage>
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color:
-                                unlocked ? Colors.white : Colors.grey.shade600,
+                                unlocked ? Colors.white : MoeTokens.inkMuted,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          current ? p.levelTitle : 'Lv.$level',
+                          current
+                              ? p.levelTitle
+                              : (unlocked ? '已达成' : '未解锁'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
@@ -721,7 +725,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                             fontWeight: FontWeight.w600,
                             color: unlocked
                                 ? Colors.white.withValues(alpha: 0.92)
-                                : Colors.grey.shade500,
+                                : MoeTokens.hintText,
                           ),
                         ),
                       ],
@@ -748,23 +752,18 @@ class _UserLevelPageState extends State<UserLevelPage>
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.95),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusCardLarge),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+          boxShadow: MoeTokens.shadowMd(),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.emoji_events_rounded,
-                    color: Colors.amber.shade700, size: 22),
+                const Icon(Icons.emoji_events_rounded,
+                    color: MoeTokens.pastelOrange, size: 22),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
@@ -781,39 +780,50 @@ class _UserLevelPageState extends State<UserLevelPage>
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFFFD700),
+                    color: MoeTokens.pastelOrange,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: total > 0 ? pct / 100 : 0,
-              backgroundColor: Colors.grey.shade200,
-              color: MoeTokens.primary,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '已完成 ${pct.toStringAsFixed(0)}% · 解锁成就可获得经验奖励',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            if (_recentUnlocked.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              ..._recentUnlocked.map(
-                (b) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    '「${b.name}」已解锁',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: MoeTokens.primary,
+            if (_achievementError != null && stats == null) ...[
+              const SizedBox(height: 8),
+              MoeErrorState.fromError(
+                _achievementError,
+                onRetry: _loadAchievements,
+                variant: MoeErrorVariant.plain,
+                padding: EdgeInsets.zero,
+              ),
+            ] else ...[
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: total > 0 ? pct / 100 : 0,
+                backgroundColor: MoeTokens.lineSoft,
+                color: MoeTokens.primary,
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '已完成 ${pct.toStringAsFixed(0)}% · 解锁成就可获得经验奖励',
+                style:
+                    const TextStyle(fontSize: 12, color: MoeTokens.inkMuted),
+              ),
+              if (_recentUnlocked.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ..._recentUnlocked.map(
+                  (b) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      '「${b.name}」已解锁',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: MoeTokens.primary,
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
             const SizedBox(height: 8),
             SizedBox(
