@@ -470,21 +470,26 @@ class _HeroCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFEFE7FF), Color(0xFFFBE8F0), Color(0xFFF8F3E7)],
+          colors: [
+            MoeTokens.primary.withValues(alpha: 0.10),
+            MoeTokens.pastelPink.withValues(alpha: 0.10),
+            MoeTokens.pastelOrange.withValues(alpha: 0.12),
+          ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isAttention
-              ? const Color(0xFFFFB2C1)
+              ? MoeTokens.pastelPink.withValues(alpha: 0.45)
               : Colors.white.withValues(alpha: 0.65),
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                isAttention ? const Color(0x33E97891) : const Color(0x1A8A2387),
+            color: isAttention
+                ? MoeTokens.pastelPink.withValues(alpha: 0.20)
+                : MoeTokens.primary.withValues(alpha: 0.10),
             blurRadius: isAttention ? 30 : 24,
             offset: const Offset(0, 10),
           ),
@@ -531,7 +536,7 @@ class _HeroCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         height: 1.25,
-                        color: Color(0xFF5D4E6E),
+                        color: MoeTokens.inkMuted,
                       ),
                     ),
                     if (state.memoryNotice.trim().isNotEmpty) ...[
@@ -543,7 +548,7 @@ class _HeroCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           height: 1.25,
-                          color: Color(0xFF8A4B3A),
+                          color: MoeTokens.pastelOrange,
                         ),
                       ),
                     ],
@@ -566,7 +571,7 @@ class _HeroCard extends StatelessWidget {
                       width: 7,
                       height: 7,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF51B982),
+                        color: MoeTokens.success,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -661,8 +666,7 @@ class _CompanionSummaryBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAttention = pulse.kind == 'attention';
-    final accent =
-        isAttention ? const Color(0xFFE97891) : AiBrandTokens.primary;
+    final accent = isAttention ? MoeTokens.pastelPink : AiBrandTokens.primary;
     final stage = profile.relationshipStageLabel;
     final progress = profile.relationshipProgress;
     final progressLabel = profile.relationshipProgressLabel;
@@ -688,7 +692,7 @@ class _CompanionSummaryBlock extends StatelessWidget {
         border: Border.all(color: accent.withValues(alpha: 0.12)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x147F7FD5),
+            color: MoeTokens.surfaceBorder,
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -769,7 +773,7 @@ class _CompanionSummaryBlock extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         height: 1.2,
-                        color: Colors.grey.shade700,
+                        color: MoeTokens.inkMuted,
                       ),
                     ),
                   ),
@@ -780,9 +784,9 @@ class _CompanionSummaryBlock extends StatelessWidget {
                   child: LinearProgressIndicator(
                     minHeight: 4,
                     value: progress,
-                    backgroundColor: const Color(0xFFF2E9F4),
+                    backgroundColor: MoeTokens.lineSoft,
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFFE97891),
+                      MoeTokens.pastelPink,
                     ),
                   ),
                 ),
@@ -796,7 +800,7 @@ class _CompanionSummaryBlock extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     height: 1.2,
-                    color: Colors.grey.shade700,
+                    color: MoeTokens.inkMuted,
                   ),
                 ),
               ],
