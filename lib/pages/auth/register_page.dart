@@ -198,7 +198,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
         if (!mounted) return;
         MoeToast.success(context, '欢迎加入 Moe Social！(≧∇≦)/');
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/onboarding');
       },
       onError: (_) {
         if (!mounted) return;

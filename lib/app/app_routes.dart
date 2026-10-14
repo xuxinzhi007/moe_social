@@ -49,6 +49,7 @@ import '../pages/life/life_entity_detail.dart';
 import '../pages/life/life_world_page.dart';
 import '../pages/notifications/notification_center_page.dart'
     deferred as notification_center;
+import '../pages/onboarding/interest_onboarding_page.dart';
 import '../pages/profile/edit_profile_page.dart';
 import '../pages/profile/friend_search_page.dart';
 import '../pages/profile/profile_page.dart' deferred as profile_page;
@@ -79,6 +80,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
   return {
     '/login': (context) => const LoginPage(),
     '/register': (context) => const RegisterPage(),
+    '/onboarding': (context) => const InterestOnboardingPage(),
     '/home': (context) => const MainPage(),
     '/battle/room': (context) {
       if (!FeatureFlags.liveGiftPk) {
