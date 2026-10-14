@@ -59,7 +59,7 @@ func TestEnsureProfileDefaults(t *testing.T) {
 	if len(st.FormationHeroIDs) != arenabiz.FormationSize {
 		t.Fatalf("formation=%v", st.FormationHeroIDs)
 	}
-	if len(st.OwnedHeroes) != 3 {
+	if len(st.OwnedHeroes) != 4 {
 		t.Fatalf("owned=%v", st.OwnedHeroes)
 	}
 }
@@ -88,7 +88,7 @@ func TestGetStateRepairsEmptyRoster(t *testing.T) {
 	if st.TowerFloor != 3 {
 		t.Fatalf("floor=%d", st.TowerFloor)
 	}
-	if len(st.OwnedHeroes) != 3 {
+	if len(st.OwnedHeroes) != 4 {
 		t.Fatalf("owned=%v", st.OwnedHeroes)
 	}
 	if len(st.FormationHeroIDs) != arenabiz.FormationSize {

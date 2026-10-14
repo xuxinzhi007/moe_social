@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	lifebiz "backend/internal/biz/life"
 	"backend/model"
 	"backend/pkg/achievement"
 )
@@ -169,6 +170,8 @@ type heroDef struct {
 	Stars    int
 	Power    int
 	Favorite int
+	// GrantOnly 为 true 时仅由系统赠送（不进召唤池）。
+	GrantOnly bool
 }
 
 var heroCatalog = []heroDef{
@@ -181,6 +184,8 @@ var heroCatalog = []heroDef{
 	{ID: "taoyin", Rarity: RaritySR, Level: 32, Stars: 2, Power: 12400, Favorite: 46},
 	{ID: "xueli", Rarity: RaritySSR, Level: 40, Stars: 3, Power: 18800, Favorite: 66},
 	{ID: "ziyuan", Rarity: RaritySR, Level: 35, Stars: 2, Power: 15100, Favorite: 55},
+	// 旗舰英雄小星：全服默认拥有（活世界 O3），不进召唤池。
+	{ID: lifebiz.HeroSlugXiaoxing, Rarity: RaritySSR, Level: 40, Stars: 3, Power: 18000, Favorite: 60, GrantOnly: true},
 }
 
 var defaultFormation = []string{"lanxing", "tutu", "maoying"}
@@ -705,7 +710,7 @@ func (u *Usecase) randomHero(minRarity *Rarity) heroDef {
 	}
 	pool := make([]heroDef, 0, 4)
 	for _, h := range heroCatalog {
-		if h.Rarity == rarity {
+		if h.Rarity == rarity && !h.GrantOnly {
 			pool = append(pool, h)
 		}
 	}
@@ -744,6 +749,13 @@ func repairRoster(p *model.ArenaProfile) bool {
 	ownedSet := make(map[string]struct{}, len(owned))
 	for _, hero := range owned {
 		ownedSet[hero.HeroID] = struct{}{}
+	}
+	// 旗舰英雄小星全服默认拥有：缺失时幂等补发（新老用户一致）。
+	if _, ok := ownedSet[lifebiz.HeroSlugXiaoxing]; !ok {
+		owned = append(owned, newOwnedFromCatalog(lifebiz.HeroSlugXiaoxing))
+		ownedSet[lifebiz.HeroSlugXiaoxing] = struct{}{}
+		p.OwnedHeroesJSON = mustJSON(owned)
+		changed = true
 	}
 	formation := decodeStrings(p.FormationJSON)
 	if formationPlayable(formation, ownedSet) {
