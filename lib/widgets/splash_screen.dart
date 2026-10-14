@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
+import '../theme/moe_tokens.dart';
+
 class SplashScreen extends StatefulWidget {
   final Future<void> Function()? onInit;
   final Widget Function(BuildContext) onComplete;
@@ -120,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
@@ -134,7 +136,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildLogo(theme),
+                      _buildLogo(),
                       const SizedBox(height: 32),
                       _buildTitle(theme),
                       const SizedBox(height: 48),
@@ -152,30 +154,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildLogo(ThemeData theme) {
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF7F7FD5), Color(0xFF91EAE4)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: const Icon(
-        Icons.star,
-        size: 64,
-        color: Colors.white,
-      ),
+  Widget _buildLogo() {
+    return Image.asset(
+      'assets/branding/xiaoxing_mascot.png',
+      width: 140,
+      height: 140,
     );
   }
 
@@ -187,7 +170,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         fontWeight: FontWeight.bold,
         foreground: Paint()
           ..shader = const LinearGradient(
-            colors: [Color(0xFF7F7FD5), Color(0xFF91EAE4)],
+            colors: [MoeTokens.primary, MoeTokens.accent],
           ).createShader(const Rect.fromLTWH(0, 0, 200, 50)),
       ),
     );
@@ -198,7 +181,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       width: 200,
       height: 4,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: MoeTokens.lineSoft,
         borderRadius: BorderRadius.circular(2),
       ),
       child: ClipRRect(
@@ -206,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         child: LinearProgressIndicator(
           value: _progress,
           backgroundColor: Colors.transparent,
-          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5)),
+          valueColor: const AlwaysStoppedAnimation<Color>(MoeTokens.primary),
           minHeight: 4,
         ),
       ),
@@ -216,8 +199,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget _buildStatusText(ThemeData theme) {
     return Text(
       _statusText,
-      style: TextStyle(
-        color: Colors.grey[600],
+      style: const TextStyle(
+        color: MoeTokens.inkMuted,
         fontSize: 14,
       ),
     );

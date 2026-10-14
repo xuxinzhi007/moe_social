@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="moe_splash_background">#7F7FD5</color>
+    <!-- 与 MoeTokens.pageBackground 一致，衔接 Flutter 启动页 -->
+    <color name="moe_splash_background">#F5F8FC</color>
 </resources>

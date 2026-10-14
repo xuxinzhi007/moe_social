@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- 原生启动屏：小星 mascot，与 Flutter SplashScreen 一致 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/moe_splash_background" />
     <item
-        android:width="96dp"
-        android:height="96dp"
+        android:width="128dp"
+        android:height="128dp"
         android:gravity="center"
-        android:drawable="@drawable/moe_splash_mark" />
+        android:drawable="@drawable/xiaoxing_mascot" />
 </layer-list>
