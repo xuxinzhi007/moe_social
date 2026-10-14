@@ -41,6 +41,8 @@ import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
 import '../pages/arena/arena_page.dart';
 import '../pages/companion/companion_chat_page.dart' deferred as companion_chat;
+import '../pages/companion/companion_journey_page.dart'
+    deferred as companion_journey;
 import '../pages/ai/character_card_plaza_page.dart'
     deferred as character_card_plaza;
 import '../pages/companion/companion_memories_page.dart'
@@ -315,6 +317,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         () => companion_chat.CompanionChatPage(initialDraft: draft),
       );
     },
+    '/companion-journey': (context) => _deferred(
+          companion_journey.loadLibrary,
+          () => companion_journey.CompanionJourneyPage(),
+          message: '正在加载历程…',
+        ),
     '/ai-memories': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       int? focusId;

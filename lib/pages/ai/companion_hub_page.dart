@@ -170,6 +170,10 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     await Navigator.of(context).pushNamed('/game/arena');
   }
 
+  Future<void> _openJourney() async {
+    await Navigator.of(context).pushNamed('/companion-journey');
+  }
+
   Future<void> _editProfile() async {
     final saved = await Navigator.of(context).push<CompanionProfileData>(
       MaterialPageRoute(
@@ -241,6 +245,13 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                         onCustomize: _isSavingProfile ? null : _editProfile,
                       );
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  _QuickAction(
+                    icon: Icons.favorite_rounded,
+                    label: '历程',
+                    tint: MoeTokens.pastelPink,
+                    onTap: _openJourney,
                   ),
                   if (FeatureFlags.showLifeEngine) ...[
                     const SizedBox(height: 12),
