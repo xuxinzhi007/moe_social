@@ -509,6 +509,26 @@ func (s *AppService) HeroChat(
 	return reply, nil
 }
 
+// HeroOfflineSummary 登录快进摘要（O4）：只读 + 幂等水位线前移，不挂 bond 门槛。
+func (s *AppService) HeroOfflineSummary(
+	ctx context.Context,
+	userID uint,
+	heroSlug string,
+) (*companionbiz.HeroSummary, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	summary, err := engine.HeroOfflineSummary(ctx, userID, heroSlug, time.Now())
+	if err != nil {
+		if errors.Is(err, companionbiz.ErrHeroNotFound) {
+			return nil, kerrors.BadRequest("HERO_NOT_FOUND", "这位英雄还没有入住世界")
+		}
+		return nil, err
+	}
+	return summary, nil
+}
+
 func clampLimit(raw int32) int {
 	limit := int(raw)
 	if limit <= 0 {

@@ -144,6 +144,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		companionv1.RegisterCompanionHTTPServer(srv, companionhttp.New(d.CompanionApp))
 		companionhttp.RegisterChatStreamRoute(srv, d.CompanionApp)
 		companionhttp.RegisterHeroChatRoute(srv, d.CompanionApp)
+		companionhttp.RegisterHeroSummaryRoute(srv, d.CompanionApp)
 		companionhttp.RegisterIntimacyBumpRoute(srv, d.CompanionApp)
 	}
 	if d.PetApp != nil {
