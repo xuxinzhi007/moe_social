@@ -1,0 +1,33 @@
+{
+  "skill": "prd",
+  "generated_at": "2026-10-14T00:00:00+08:00",
+  "project_name": "Moe Social",
+  "direction": "代码事实反推版全集 PRD",
+  "prd_file": "docs/product/prd/moe-social-prd.md",
+  "sections_summary": {
+    "summary": "萌系心情社交 App：社交主路径 + AI 长期陪伴 + 星辉远征养成，下一阶段押注星辉活世界",
+    "primary_persona": "小莓（轻社交二次元用户）/ 阿星（陪伴付费型用户）",
+    "product_goal": "让用户愿意每天回来看看：动态有回应、伙伴有生活、世界在往前走",
+    "success_metrics": [
+      { "metric": "次日留存", "target": ">=40%", "timeframe": "90天(建议值)" },
+      { "metric": "三条主路径周完成率", "target": ">=30%", "timeframe": "90天(建议值)" },
+      { "metric": "Companion 周对话>=3天占比", "target": ">=25%", "timeframe": "90天(建议值)" }
+    ],
+    "feature_count": 4,
+    "in_scope_features": ["社交核心域(P0)", "AI伙伴域(P1)", "星辉远征域(P1,Flag开)", "商业化域(P2)"],
+    "out_of_scope_features": ["多人实时联机", "AI酒馆大厅", "AutoGLM普通用户化", "Life独立产品线"],
+    "critical_assumption": "用户会因为TA/英雄在离线时也在生活而显著提高回访动机",
+    "mvp_stories": ["活世界M1单英雄MVP", "Companion多bond(依赖M1结论)", "兴趣onboarding"]
+  },
+  "source_skills": {
+    "brief": false,
+    "stories": false,
+    "sitemap": false,
+    "flow_web": false,
+    "flow_mobile": false,
+    "frame": false,
+    "scope": false,
+    "check": false
+  },
+  "thin_sections": ["goals_success_metrics", "personas"]
+}

@@ -1,0 +1,68 @@
+{
+  "skill": "frame",
+  "generated_at": "2026-10-14T00:00:00+08:00",
+  "project_name": "Moe Social",
+  "persona": {
+    "name": "阿星",
+    "description": "26 岁，陪伴需求型用户，愿意为爱付费",
+    "situation": "独处/通勤/睡前想说话、想看看 TA 们在干嘛",
+    "goal": "与记得共同经历的 TA 维持长期关系，并有一起做的事",
+    "workaround": "Character.AI/星野聊天（无持续世界）+ 独立卡牌游戏（与陪伴割裂）",
+    "frustrations": ["AI 聊完就停", "关系无可视化沉淀", "游戏成就无社交出口", "付费点单薄"],
+    "what_good_looks_like": "每天打开能看到 TA 的新动态、世界在往前走、关系有积累"
+  },
+  "jtbd": {
+    "functional": "当独处或有分享欲时，阿星想和记得共同经历的 TA 说话并一起做点事，从而获得持续陪伴感与关系沉淀",
+    "social": "让同好觉得阿星有品位、有自己的生活",
+    "emotional": "感到被记得、被等待 / 避免聊完就散的空虚与单机感",
+    "combined": "当独处或有分享欲时，阿星想和记得共同经历的 TA 说话并一起做点事，从而获得持续陪伴感；让同好觉得他有品位；感到被记得、被等待，避免聊完就散的空虚"
+  },
+  "opportunities": [
+    { "title": "我希望 TA/英雄在我关掉 App 后也有自己的生活", "importance": "H", "satisfaction": "L", "priority": "高" },
+    { "title": "我刚来时不知道怎么找到同好", "importance": "H", "satisfaction": "M", "priority": "高" },
+    { "title": "我和 TA 的关系没有可视化的积累", "importance": "M", "satisfaction": "L", "priority": "中" },
+    { "title": "我在游戏里的成就没有社交出口", "importance": "M", "satisfaction": "L", "priority": "中" },
+    { "title": "我发的动态很难被同温层看到", "importance": "M", "satisfaction": "M", "priority": "中" },
+    { "title": "我想用更丰富的形式表达自己", "importance": "M", "satisfaction": "M", "priority": "中" },
+    { "title": "我每次都得绕路回顾共同回忆", "importance": "M", "satisfaction": "M", "priority": "低" },
+    { "title": "（团队）我们不知道功能做对了没有", "importance": "H", "satisfaction": "L", "priority": "高" }
+  ],
+  "competitive_landscape": [
+    { "product": "星野", "bet_on": "沉浸式 AI 角色社交 + UGC 角色生态", "got_right": "角色卡创作门槛、语音质感", "gap_left": "角色无持续世界、无真实社交链、记忆黑盒" },
+    { "product": "猫箱", "bet_on": "短平快 AI 剧情对话", "got_right": "内容供给密度、滑动切换", "gap_left": "关系快餐化、无长期沉淀" },
+    { "product": "Character.AI", "bet_on": "多角色群聊 + 角色市场", "got_right": "对话质量、角色生态规模", "gap_left": "无世界/养成层、记忆薄弱" },
+    { "product": "Talkie", "bet_on": "卡牌化角色收集 + 聊天", "got_right": "收集欲与聊天结合", "gap_left": "卡牌是皮肤不是养成、无共享世界" }
+  ],
+  "business_angle": {
+    "why_now": "功能面完整进入验证留存阶段；AI 陪伴赛道形态趋同，共享世界是开口；个人开发必须押差异化",
+    "who_pays": "陪伴型用户直接付费（VIP/礼物/星晶），社交用户间接贡献内容",
+    "monetization": "订阅 + 虚拟经济双轨；LLM 成本护栏是单位经济前提",
+    "strategic_intent": "retention"
+  },
+  "directions": [
+    { "id": "A", "one_liner": "落地星辉活世界 M1→M2（已定稿方案执行）", "addresses_opportunity": "1", "user_value": "TA 离线也生活，回访有理由", "business_value": "差异化护城河 + 付费新场景", "riskiest_assumption": "用户因离线演化提高回访（未验证）" },
+    { "id": "B", "one_liner": "社交冷启动与分发补强（规则版 onboarding + 推荐关注）", "addresses_opportunity": "2/5", "user_value": "新用户 10 分钟找到同好", "business_value": "拉高次留扩漏斗", "riskiest_assumption": "规则版足够改善冷启动" },
+    { "id": "C", "one_liner": "关系沉淀与社交货币（里程碑 + 回忆册 + 成就分享）", "addresses_opportunity": "3/4/7", "user_value": "关系有进度、成就能被看见", "business_value": "里程碑即付费点", "riskiest_assumption": "用户愿意分享游戏成就到社交流" }
+  ],
+  "lean_direction": "A",
+  "critical_assumption": "用户会因 TA/英雄离线也在生活而显著提高回访动机（⚠️ 未验证，M1 即测试）",
+  "pressure_test": {
+    "ran": true,
+    "verdict": "holds_with_conditions",
+    "conditions": ["M1 死守最小验证集，不达标不启 M2", "上线前实测 LLM 单次对话成本并回算 K3 护栏", "onboarding 只做规则版不上算法", "M1 开工前把验证指标达标线写进任务卡"]
+  },
+  "hmw_cards": {
+    "ran": true,
+    "cards": [
+      { "hmw": "我们如何能让英雄在用户离线时的经历，变成用户打开 App 第一眼想看的内容？", "addresses_opportunity": "1", "workshop_hint": "M1 设计起头卡" },
+      { "hmw": "我们如何能让『你不在的 8 小时』摘要既有叙事感又控制 token 成本？", "addresses_opportunity": "1", "workshop_hint": "成本约束反向脑暴" },
+      { "hmw": "我们如何能让世界事件自然进入聊天而不是生硬系统播报？", "addresses_opportunity": "1", "workshop_hint": "对话注入体验卡" },
+      { "hmw": "我们如何能让新用户 3 步内完成兴趣表达并看到同好内容？", "addresses_opportunity": "2", "workshop_hint": "onboarding 卡" },
+      { "hmw": "我们如何能让关注 Tab 空态直接变成可一键关注的同好列表？", "addresses_opportunity": "2", "workshop_hint": "空态即产品卡" },
+      { "hmw": "我们如何能让关系进展被感知而不只是亲密度数字？", "addresses_opportunity": "3", "workshop_hint": "关系可视化卡" },
+      { "hmw": "我们如何能让游戏成就不打扰不尬地进入社交流？", "addresses_opportunity": "4", "workshop_hint": "需先验证分享意愿假设" },
+      { "hmw": "我们如何能让共同回忆有一个不绕路的入口？", "addresses_opportunity": "7", "workshop_hint": "IA 收口卡" },
+      { "hmw": "我们如何能让每个新功能上线时就带着可观测指标？", "addresses_opportunity": "8", "workshop_hint": "Metric 体系卡" }
+    ]
+  }
+}

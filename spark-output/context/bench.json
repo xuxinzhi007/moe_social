@@ -1,0 +1,43 @@
+{
+  "skill": "bench",
+  "generated_at": "2026-10-14T00:00:00+08:00",
+  "project_name": "Moe Social",
+  "scope": {
+    "goal": "全面对标",
+    "dimensions": ["information-architecture", "interaction-patterns", "visual-language", "content-strategy"],
+    "time_budget": "标准(压缩,基于公开资料)"
+  },
+  "competitors": [
+    { "name": "星野", "tier": "direct", "url": "https://www.aixq.cc/27547.html", "rationale": "国内AI陪伴头部,UGC角色生态+羁绊记忆" },
+    { "name": "猫箱", "tier": "direct", "url": "https://cn.technode.com/post/2024-11-08/maoxiang-app-tested/", "rationale": "字节短平快剧情流,反面对标(快餐化)" },
+    { "name": "Talkie", "tier": "direct", "url": "https://www.woshipm.com/ai/6359331.html", "rationale": "卡牌收集+聊天结合,关系可视化最佳样本" },
+    { "name": "Character.AI", "tier": "aspirational", "url": "https://www.fastcompany.com/91380915/", "rationale": "生态规模与2025社交feed转型参考" }
+  ],
+  "castle_vs_shack": {
+    "durable_advantages": ["MiniMax/字节模型自研+流量分发", "C.AI角色生态规模与品牌", "星野UGC交易市场网络效应(2%分成飞轮)"],
+    "mimicable_advantages": ["好感度进度条/成就徽章(Talkie)", "抽卡即时动效(Talkie)", "三层分步创建引导(星野)", "人格化断联召回文案(Talkie)", "AI内容Feed化呈现(C.AI)"]
+  },
+  "visual_strategy_decision": {
+    "choice": "diverge",
+    "rationale": "赛道视觉高度同质化(暗夜+厚涂立绘+收集卡面),Airy Moe清透明亮独占象限且与低压力定位同构",
+    "reference_landscape": ["星野:暗夜渐变卡面", "猫箱:全屏剧情沉浸", "C.AI:白+紫", "Talkie:潮流卡牌册", "Replika:3D写实", "明亮清透日常系=空位"]
+  },
+  "takeaways": [
+    { "id": "takeaway-1", "action": "borrow", "description": "关系进度可视化(里程碑时间线,非进度条)", "copy_check": { "why_it_works": "抽象情感变可见目标,提供持续投入理由", "context_match": "partial", "side_effects": "过度游戏化损陪伴感,需叙事化呈现" }, "source_competitor": "Talkie", "target_design_area": "Companion Hub(frame机会#3)" },
+    { "id": "takeaway-2", "action": "borrow", "description": "召唤抽卡即时动效仪式感", "copy_check": { "why_it_works": "即时视觉奖励强化获取正反馈", "context_match": "yes", "side_effects": "低,避免氪金光污染" }, "source_competitor": "Talkie", "target_design_area": "Arena 召唤" },
+    { "id": "takeaway-3", "action": "borrow", "description": "伙伴自定义分步引导(形象/人设/音色)", "copy_check": { "why_it_works": "分步漏斗降认知负荷+创造仪式感", "context_match": "yes", "side_effects": "步骤变多需保留一键跳过" }, "source_competitor": "星野", "target_design_area": "Companion 自定义/角色卡导入" },
+    { "id": "takeaway-4", "action": "borrow", "description": "人格化断联召回文案(抱怨冷落)", "copy_check": { "why_it_works": "人格化情绪触发回访", "context_match": "yes", "side_effects": "频率失控即骚扰,需监控" }, "source_competitor": "Talkie", "target_design_area": "Companion 主动消息" },
+    { "id": "takeaway-5", "action": "borrow", "description": "AI内容Feed化呈现", "copy_check": { "why_it_works": "AI从工具变内容生产者,给回访理由", "context_match": "partial", "side_effects": "内容质量需生成检查通路" }, "source_competitor": "Character.AI", "target_design_area": "活世界 moments/社区 bot 日常流" },
+    { "id": "avoid-1", "action": "avoid", "description": "滑动切换式快餐角色消费(猫箱)——关系价值趋零" },
+    { "id": "avoid-2", "action": "avoid", "description": "记忆黑盒——我方记忆可见可管是差异化,不得退化" },
+    { "id": "avoid-3", "action": "avoid", "description": "语音付费强隔离(Talkie)——免费体验残疾化" },
+    { "id": "avoid-4", "action": "avoid", "description": "灰色内容带运营——合规生死线,D1护栏不可松动" },
+    { "id": "avoid-5", "action": "avoid", "description": "无限沉浸Feed成瘾设计——与anti-metric冲突" },
+    { "id": "match-1", "action": "match", "description": "流式回复/语音通话/角色卡导入导出/每日免费额度/空态插画CTA" }
+  ],
+  "handoff": {
+    "to_audit": ["检查记忆专页是否保持可见可管优势", "检查主动消息频控是否有骚扰风险"],
+    "to_brief": ["视觉策略diverge决策", "Castle清单:不拼模型/流量/生态规模"],
+    "to_pitch": ["ref-1/4/6 作为差异化论据"]
+  }
+}

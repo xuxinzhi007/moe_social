@@ -1,0 +1,24 @@
+{
+  "skill": "flow-mobile",
+  "generated_at": "2026-10-14T00:00:00+08:00",
+  "project_name": "Moe Social",
+  "mode": "review",
+  "scenario": "Consumer Social + AI Companion(混合场景,Flutter 原生)",
+  "tech_stack": "Flutter(既有代码,非本skill生成路径)",
+  "flows": [
+    { "name": "TabBar 导航骨架", "verdict": "pass", "note": "5Tab边界清晰,deferred加载+IndexedStack保活" },
+    { "name": "记录心情(发帖)", "verdict": "pass", "note": "草稿恢复/双模式/配额语义完整" },
+    { "name": "浏览互动(Feed+评论)", "verdict": "pass", "note": "媒体密度收口有测试锁定,空态矩阵已落地" },
+    { "name": "建立关系(私信/好友)", "verdict": "pass", "note": "未读后端对齐,语音/通话/皮肤完整" },
+    { "name": "新用户冷启动", "verdict": "fail", "note": "无onboarding/推荐关注/搜索默认态——frame机会#2" },
+    { "name": "陪伴关系可视化", "verdict": "fail", "note": "Hub有状态无进度——bench takeaway-1 待落地" },
+    { "name": "游戏成就社交出口", "verdict": "fail", "note": "D1护栏下缺合规分享出口——frame机会#4" }
+  ],
+  "review_findings": {
+    "p1": ["P1-3 部分违反: 39文件273处硬编码颜色,需收敛6页(memories/live_pk/checkin/gallery/profile/gacha); Arena/Life为设计内例外不动"],
+    "p2": ["P2-7 违反: 社区搜索空关键词无历史/热门默认态"],
+    "p3_open": ["P3-1 恢复购买(待真机核实)", "P3-3 权限说明页", "P3-5 Feed骨架屏", "P3-7 核心成就时刻Peak反馈不足", "P3-8 发帖完成落崖", "P3-9 无新用户引导"]
+  },
+  "action_list_top3": ["兴趣onboarding flow(规则版)", "Companion关系里程碑时间线", "搜索默认态(历史/热门)"],
+  "output_file": "docs/product/prd/flow-mobile-设计模式审查.md"
+}
