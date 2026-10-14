@@ -1602,7 +1602,34 @@ func (s *fakeStore) ListRecentChatLogs(_ context.Context, userID uint, limit int
 
 	out := make([]model.CompanionChatLog, 0, len(s.logs))
 	for index := len(s.logs) - 1; index >= 0; index-- {
-		if s.logs[index].UserID == userID {
+		if s.logs[index].UserID == userID && s.logs[index].HeroID == "" {
+			out = append(out, s.logs[index])
+		}
+	}
+	for left, right := 0, len(out)-1; left < right; left, right = left+1, right-1 {
+		out[left], out[right] = out[right], out[left]
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[len(out)-limit:]
+	}
+	return out, nil
+}
+
+func (s *fakeStore) ListRecentHeroChatLogs(
+	_ context.Context,
+	userID uint,
+	heroID string,
+	limit int,
+) ([]model.CompanionChatLog, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if heroID == "" {
+		return nil, fmt.Errorf("list recent hero chat logs: hero id is empty")
+	}
+	out := make([]model.CompanionChatLog, 0, len(s.logs))
+	for index := len(s.logs) - 1; index >= 0; index-- {
+		if s.logs[index].UserID == userID && s.logs[index].HeroID == heroID {
 			out = append(out, s.logs[index])
 		}
 	}

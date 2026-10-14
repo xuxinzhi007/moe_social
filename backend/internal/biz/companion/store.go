@@ -45,6 +45,8 @@ type Store interface {
 		job *model.CompanionMemoryExtractionJob,
 	) error
 	ListRecentChatLogs(ctx context.Context, userID uint, limit int) ([]model.CompanionChatLog, error)
+	// ListRecentHeroChatLogs 只读指定英雄的闲聊记录（hero_id 命名空间，与主伙伴隔离）。
+	ListRecentHeroChatLogs(ctx context.Context, userID uint, heroID string, limit int) ([]model.CompanionChatLog, error)
 	GetChatLogByID(ctx context.Context, userID, chatLogID uint) (*model.CompanionChatLog, error)
 	ClaimNextMemoryExtractionJob(
 		ctx context.Context,

@@ -403,8 +403,9 @@ func (s *store) ListRecentChatLogs(ctx context.Context, userID uint, limit int) 
 		limit = 20
 	}
 	var rows []model.CompanionChatLog
+	// hero_id = '' 锁死账号级边界：主伙伴链路永远读不到英雄闲聊。
 	err := s.db.WithContext(ctx).
-		Where("user_id = ?", userID).
+		Where("user_id = ? AND hero_id = ''", userID).
 		Order("id DESC").
 		Limit(limit).
 		Find(&rows).Error
@@ -412,6 +413,33 @@ func (s *store) ListRecentChatLogs(ctx context.Context, userID uint, limit int) 
 		return nil, err
 	}
 	// 反转为时间正序（与 game store 一致）
+	for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
+		rows[i], rows[j] = rows[j], rows[i]
+	}
+	return rows, nil
+}
+
+func (s *store) ListRecentHeroChatLogs(
+	ctx context.Context,
+	userID uint,
+	heroID string,
+	limit int,
+) ([]model.CompanionChatLog, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if heroID == "" {
+		return nil, fmt.Errorf("list recent hero chat logs: hero id is empty")
+	}
+	var rows []model.CompanionChatLog
+	err := s.db.WithContext(ctx).
+		Where("user_id = ? AND hero_id = ?", userID, heroID).
+		Order("id DESC").
+		Limit(limit).
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
 	for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
 		rows[i], rows[j] = rows[j], rows[i]
 	}
