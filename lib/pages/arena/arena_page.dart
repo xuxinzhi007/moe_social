@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import '../../game/arena/arena_battle_game.dart';
 import '../../game/arena/arena_combos.dart';
 import '../../game/arena/arena_view_model.dart';
+import '../../services/behavior_analytics_service.dart';
+import '../../services/create_post_draft_prefs.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import 'arena_camp_preview_page.dart';
@@ -1990,6 +1992,20 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _shareBattleResult() async {
+    final floor = _model.towerFloor;
+    final crystals = _model.crystalRewardForNode();
+    BehaviorAnalyticsService.instance.trackTap(
+      'game_arena',
+      params: {'action': 'share_battle', 'floor': '$floor'},
+    );
+    await prefillCreatePostShareDraft(
+      '我在星辉远征·星砂回廊打过了第 $floor 层！星晶 +$crystals\n\n#星辉远征',
+    );
+    if (!mounted) return;
+    Navigator.of(context).pushNamed('/create-post');
+  }
+
   Widget _buildBattleDock() {
     if (_model.hasPendingReward) {
       return Column(
@@ -1999,6 +2015,7 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
             choices: _model.rewardChoices,
             crystalReward: _model.crystalRewardForNode(),
             onChoose: _model.chooseRewardCard,
+            onShare: _shareBattleResult,
           ),
           const SizedBox(height: 6),
           Align(
@@ -5724,11 +5741,13 @@ class _BattleRewardPanel extends StatelessWidget {
     required this.choices,
     required this.crystalReward,
     required this.onChoose,
+    required this.onShare,
   });
 
   final List<ArenaCard> choices;
   final int crystalReward;
   final ValueChanged<int> onChoose;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) => _SurfaceCard(
@@ -5771,6 +5790,33 @@ class _BattleRewardPanel extends StatelessWidget {
                     highlighted: false,
                     onTap: () => onChoose(index),
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: MoeTokens.spaceXs),
+            MoePressable(
+              onTap: onShare,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.ios_share_rounded,
+                      size: 14,
+                      color: _ArenaColors.violet,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      '分享战绩',
+                      style: TextStyle(
+                        color: _ArenaColors.violet,
+                        fontSize: MoeTokens.textXs,
+                        fontWeight: MoeTokens.fontWeightSubtitle,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

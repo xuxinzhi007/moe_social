@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/achievement_badge.dart';
+import '../services/behavior_analytics_service.dart';
+import '../services/create_post_draft_prefs.dart';
 import 'achievement/achievement_badge_medallion.dart';
 import 'achievement/achievement_badge_visuals.dart';
 
@@ -537,6 +539,19 @@ class BadgeDetailDialog extends StatelessWidget {
     required this.badge,
   });
 
+  Future<void> _shareBadgeToFeed(BuildContext context) async {
+    BehaviorAnalyticsService.instance.trackTap(
+      'achievements',
+      params: {'action': 'share_badge', 'badge_id': badge.id},
+    );
+    await prefillCreatePostShareDraft(
+      '我解锁了成就「${badge.name}」！\n${badge.description}\n\n#萌社成就',
+    );
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+    Navigator.of(context).pushNamed('/create-post');
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = badge.rarity.tierGradient;
@@ -778,6 +793,30 @@ class BadgeDetailDialog extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 18),
+                  if (badge.isUnlocked) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _shareBadgeToFeed(context),
+                        icon: const Icon(Icons.ios_share_rounded, size: 18),
+                        label: const Text(
+                          '分享到动态',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: badge.color,
+                          side: BorderSide(
+                            color: badge.color.withValues(alpha: 0.4),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: DecoratedBox(

@@ -12,6 +12,7 @@ import '../../models/post.dart';
 import '../../models/topic_tag.dart';
 import '../../services/api_client.dart' show ApiException;
 import '../../services/companion_service.dart';
+import '../../services/create_post_draft_prefs.dart';
 import '../../services/post_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/hand_draw_raster.dart';
@@ -63,7 +64,7 @@ class CreatePostViewModel extends ChangeNotifier {
     this.communityIdentity,
   });
 
-  static const String _draftPrefsKey = 'create_post_draft_v1';
+  static const String _draftPrefsKey = createPostDraftPrefsKey;
 
   final Post? initialPost;
   final String? groupId;
