@@ -127,8 +127,22 @@ func (s *store) ListActiveMemories(ctx context.Context, userID uint, limit int) 
 		limit = 10
 	}
 	var rows []model.CompanionMemory
+	// hero_id = '' 锁死账号级边界：主伙伴链路永远读不到英雄记忆。
 	err := s.db.WithContext(ctx).
-		Where("user_id = ? AND (expires_at IS NULL OR expires_at > ? OR pinned = ?)", userID, time.Now(), true).
+		Where("user_id = ? AND hero_id = '' AND (expires_at IS NULL OR expires_at > ? OR pinned = ?)", userID, time.Now(), true).
+		Order("pinned DESC, importance DESC, created_at DESC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) ListActiveHeroMemories(ctx context.Context, userID uint, heroID string, limit int) ([]model.CompanionMemory, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	var rows []model.CompanionMemory
+	err := s.db.WithContext(ctx).
+		Where("user_id = ? AND hero_id = ? AND (expires_at IS NULL OR expires_at > ? OR pinned = ?)", userID, heroID, time.Now(), true).
 		Order("pinned DESC, importance DESC, created_at DESC").
 		Limit(limit).
 		Find(&rows).Error

@@ -21,6 +21,7 @@ type Store interface {
 	// Memory
 	CreateMemory(ctx context.Context, m *model.CompanionMemory) error
 	ListActiveMemories(ctx context.Context, userID uint, limit int) ([]model.CompanionMemory, error)
+	ListActiveHeroMemories(ctx context.Context, userID uint, heroID string, limit int) ([]model.CompanionMemory, error)
 	ListMemoriesBySourceChatLogID(ctx context.Context, userID, chatLogID uint) ([]model.CompanionMemory, error)
 	GetMemoryByID(ctx context.Context, userID, memoryID uint) (*model.CompanionMemory, error)
 	DeleteMemory(ctx context.Context, userID, memoryID uint) error

@@ -1347,7 +1347,23 @@ func (s *fakeStore) ListActiveMemories(_ context.Context, userID uint, limit int
 
 	out := make([]model.CompanionMemory, 0, len(s.memories))
 	for _, m := range s.memories {
-		if m.UserID == userID {
+		if m.UserID == userID && m.HeroID == "" {
+			out = append(out, m)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (s *fakeStore) ListActiveHeroMemories(_ context.Context, userID uint, heroID string, limit int) ([]model.CompanionMemory, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	out := make([]model.CompanionMemory, 0, len(s.memories))
+	for _, m := range s.memories {
+		if m.UserID == userID && m.HeroID == heroID {
 			out = append(out, m)
 		}
 	}

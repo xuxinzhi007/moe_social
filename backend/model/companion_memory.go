@@ -5,7 +5,8 @@ import "time"
 // CompanionMemory AI 伙伴的持久记忆（对话摘要/里程碑/偏好/事实）。
 type CompanionMemory struct {
 	ID              uint       `gorm:"primarykey" json:"id"`
-	UserID          uint       `gorm:"not null;index:idx_comp_mem_user" json:"user_id"`
+	UserID          uint       `gorm:"not null;index:idx_comp_mem_user;index:idx_comp_mem_user_hero,priority:1" json:"user_id"`
+	HeroID          string     `gorm:"size:32;not null;default:'';index:idx_comp_mem_user_hero,priority:2" json:"hero_id"` // 空串=主伙伴；英雄 slug（arena heroID）
 	MemoryType      string     `gorm:"size:16;not null;index:idx_comp_mem_type" json:"memory_type"` // conversation / milestone / preference / fact
 	MemoryKey       string     `gorm:"size:64;index:idx_comp_mem_key" json:"memory_key"`
 	Content         string     `gorm:"type:text;not null" json:"content"`
