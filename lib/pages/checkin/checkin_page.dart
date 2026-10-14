@@ -612,7 +612,7 @@ class _CheckInPageState extends State<CheckInPage>
                     value: '+${checkInProvider.nextDayReward} EXP',
                     subtitle: '保持节奏更容易升级',
                     icon: Icons.wb_sunny_outlined,
-                    colors: const [Color(0xFFFFB347), Color(0xFFFFD56A)],
+                    colors: const [MoeTokens.pastelOrange, MoeTokens.pastelOrange],
                   ),
                 ),
               ],
@@ -643,7 +643,7 @@ class _CheckInPageState extends State<CheckInPage>
                   child: LinearProgressIndicator(
                     value: progress.clamp(0.0, 1.0),
                     minHeight: 8,
-                    backgroundColor: const Color(0xFFF1F3F8),
+                    backgroundColor: MoeTokens.softChipBg,
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       MoeTokens.primary,
                     ),
@@ -742,7 +742,7 @@ class _CheckInPageState extends State<CheckInPage>
               child: LinearProgressIndicator(
                 value: progress.clamp(0.0, 1.0),
                 minHeight: 8,
-                backgroundColor: const Color(0xFFF1F3F8),
+                backgroundColor: MoeTokens.softChipBg,
                 valueColor: const AlwaysStoppedAnimation<Color>(
                   MoeTokens.primary,
                 ),
@@ -790,9 +790,11 @@ class _CheckInPageState extends State<CheckInPage>
             constraints: BoxConstraints(
               maxHeight: MediaQuery.sizeOf(context).height * 0.82,
             ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            decoration: BoxDecoration(
+              color: MoeTokens.pageBackground,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(MoeTokens.radius2xl),
+              ),
             ),
             child: Column(
               children: [
@@ -801,7 +803,7 @@ class _CheckInPageState extends State<CheckInPage>
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD7DBE6),
+                    color: MoeTokens.lineSoft,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -869,7 +871,7 @@ class _CheckInPageState extends State<CheckInPage>
             ? Icons.check_circle_rounded
             : Icons.bolt_rounded,
         accent: checkInProvider.hasCheckedToday
-            ? const Color(0xFF2E9B62)
+            ? MoeTokens.success
             : MoeTokens.primary,
         completed: checkInProvider.hasCheckedToday,
       ),
@@ -956,7 +958,7 @@ class _CheckInPageState extends State<CheckInPage>
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.45,
-                    color: Colors.grey.shade700,
+                    color: MoeTokens.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -975,7 +977,7 @@ class _CheckInPageState extends State<CheckInPage>
                       const Icon(
                         Icons.verified_rounded,
                         size: 16,
-                        color: Color(0xFF2E9B62),
+                        color: MoeTokens.success,
                       ),
                     ],
                   ],
@@ -1072,7 +1074,7 @@ class _CheckInPageState extends State<CheckInPage>
             title,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade700,
+              color: MoeTokens.inkMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1091,7 +1093,7 @@ class _CheckInPageState extends State<CheckInPage>
             style: TextStyle(
               fontSize: 12,
               height: 1.4,
-              color: Colors.grey.shade700,
+              color: MoeTokens.inkMuted,
             ),
           ),
         ],
@@ -1137,7 +1139,7 @@ class _CheckInPageState extends State<CheckInPage>
             title,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade700,
+              color: MoeTokens.inkMuted,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -1161,7 +1163,7 @@ class _CheckInPageState extends State<CheckInPage>
   }
 
   Color _statusColor(bool ctaEnabled, bool hasChecked) {
-    if (hasChecked) return const Color(0xFF2E9B62);
+    if (hasChecked) return MoeTokens.success;
     if (ctaEnabled) return MoeTokens.primary;
     return const Color(0xFF9095A0);
   }
