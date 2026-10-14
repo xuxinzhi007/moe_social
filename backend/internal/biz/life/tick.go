@@ -732,19 +732,21 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 }
 
 func createSeedEntities(worldID string) []*model.LifeEntity {
+	xiaoxing, _ := HeroForSlug(HeroSlugXiaoxing)
 	seeds := []struct {
 		name, emoji string
 		x, y        float64
 		age         int
 		personality string
+		heroSlug    string
 	}{
-		{"小星", "⭐", 640, 360, 120, PersonalityDiligent}, // 旗舰英雄，少年
-		{"小花", "🐰", 200, 300, 20, ""},                  // 幼年
-		{"时雨", "🦊", 800, 400, 150, ""},                 // 少年
-		{"团子", "🐹", 500, 200, 400, ""},                 // 成年
-		{"啾啾", "🐥", 640, 150, 50, ""},                  // 幼年
-		{"泡泡", "🐠", 300, 500, 250, ""},                 // 少年
-		{"小眠", "🦌", 900, 600, 850, ""},                 // 老年
+		{xiaoxing.Name, xiaoxing.Emoji, 640, 360, 120, xiaoxing.Personality, xiaoxing.Slug}, // 旗舰英雄，少年
+		{"小花", "🐰", 200, 300, 20, "", ""},   // 幼年
+		{"时雨", "🦊", 800, 400, 150, "", ""},  // 少年
+		{"团子", "🐹", 500, 200, 400, "", ""},  // 成年
+		{"啾啾", "🐥", 640, 150, 50, "", ""},   // 幼年
+		{"泡泡", "🐠", 300, 500, 250, "", ""},  // 少年
+		{"小眠", "🦌", 900, 600, 850, "", ""},  // 老年
 	}
 	var result []*model.LifeEntity
 	now := time.Now()
@@ -760,6 +762,7 @@ func createSeedEntities(worldID string) []*model.LifeEntity {
 			Age:           s.age,
 			GrowthStage:   stage,
 			Personality:   s.personality,
+			HeroSlug:      s.heroSlug,
 			Experience:    float64(s.age),
 			IsAlive:       true,
 			CurrentAction: string(ActionIdle),

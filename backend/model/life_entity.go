@@ -18,6 +18,7 @@ type LifeEntity struct {
 	Age               int       `json:"age" gorm:"default:0"`                                     // 年龄（存活 tick 数）
 	GrowthStage       string    `json:"growth_stage" gorm:"size:32;default:'juvenile'"`           // 成长阶段: juvenile/adolescent/adult/elderly
 	Personality       string    `json:"personality" gorm:"size:32;not null;default:''"`           // 性格: ''(默认)/diligent/curious/social/sleepy，影响行为偏好阈值
+	HeroSlug          string    `json:"hero_slug" gorm:"size:32;not null;default:''"`             // 旗舰英雄 slug（如 xiaoxing），空=普通居民
 	Experience        float64   `json:"experience" gorm:"default:0"`                              // 累计经验值
 	IsAlive           bool      `json:"is_alive" gorm:"default:true;index:idx_life_entity_alive"` // 是否存活，死亡后标记为 false
 	ActiveEffectsJSON string    `json:"active_effects_json" gorm:"type:text"`                     // 活跃 buff（JSON 序列化）

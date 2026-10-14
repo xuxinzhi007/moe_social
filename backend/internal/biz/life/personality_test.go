@@ -91,9 +91,15 @@ func TestCreateSeedEntitiesFlagshipHero(t *testing.T) {
 	if hero.Personality != PersonalityDiligent {
 		t.Errorf("hero personality=%q, want %q", hero.Personality, PersonalityDiligent)
 	}
+	if hero.HeroSlug != HeroSlugXiaoxing {
+		t.Errorf("hero hero_slug=%q, want %q", hero.HeroSlug, HeroSlugXiaoxing)
+	}
 	for _, e := range entities[1:] {
 		if e.Personality != "" {
 			t.Errorf("NPC %s personality=%q, want empty (default behavior)", e.Name, e.Personality)
+		}
+		if e.HeroSlug != "" {
+			t.Errorf("NPC %s hero_slug=%q, want empty", e.Name, e.HeroSlug)
 		}
 	}
 }
