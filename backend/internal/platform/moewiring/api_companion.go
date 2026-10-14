@@ -2,11 +2,15 @@ package moewiring
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	aibiz "backend/internal/biz/ai"
+	arenabiz "backend/internal/biz/arena"
 	companionbiz "backend/internal/biz/companion"
 	lifebiz "backend/internal/biz/life"
 	aidata "backend/internal/data/ai"
+	arenadata "backend/internal/data/arena"
 	companiondata "backend/internal/data/companion"
 	"backend/internal/platform/appdb"
 	companionapp "backend/internal/service/companion"
@@ -44,6 +48,20 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 		return nil, nil
 	}
 	engine := companionbiz.NewEngine(store, lifeStore, inf, model)
+	// K3 小家闲聊羁绊门槛：从 arena 存档解析 OwnedHero.Bond，未拥有按 0 计。
+	arenaUC := arenabiz.NewUsecase(arenadata.NewRepo(db))
+	engine.SetHeroBondResolver(func(ctx context.Context, userID uint, heroSlug string) (int, error) {
+		state, err := arenaUC.GetState(ctx, strconv.FormatUint(uint64(userID), 10))
+		if err != nil {
+			return 0, fmt.Errorf("resolve arena bond for user %d: %w", userID, err)
+		}
+		for _, owned := range state.OwnedHeroes {
+			if owned.HeroID == heroSlug {
+				return owned.Bond, nil
+			}
+		}
+		return 0, nil
+	})
 	hub := companionbiz.NewCompanionWSHub()
 	// 绑定居民免死：Life tick 查询 companion_profiles.life_entity_id。
 	if lifeApp != nil && lifeApp.Engine() != nil {

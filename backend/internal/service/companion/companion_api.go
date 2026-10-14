@@ -3,6 +3,7 @@ package companionapp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -471,6 +472,41 @@ func (s *AppService) ChatStreamWithInputMode(
 		return "", kerrors.BadRequest("MESSAGE_TOO_LONG", "消息长度不能超过 4000 个字符")
 	}
 	return engine.ChatStreamWithInputMode(ctx, userID, message, onChunk, scene, inputMode, override)
+}
+
+// HeroChat 小家闲聊（K3）：非流式，bond 门槛与 300 字截断在引擎侧执行。
+func (s *AppService) HeroChat(
+	ctx context.Context,
+	userID uint,
+	heroSlug string,
+	message string,
+	override *llminference.Config,
+) (string, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return "", err
+	}
+	message = strings.TrimSpace(message)
+	if message == "" {
+		return "", kerrors.BadRequest("MESSAGE_REQUIRED", "消息不能为空")
+	}
+	if utf8.RuneCountInString(message) > maxCompanionMessageRunes {
+		return "", kerrors.BadRequest("MESSAGE_TOO_LONG", "消息长度不能超过 4000 个字符")
+	}
+	reply, err := engine.HeroChat(ctx, userID, heroSlug, message, override)
+	if err != nil {
+		switch {
+		case errors.Is(err, companionbiz.ErrHeroNotFound):
+			return "", kerrors.BadRequest("HERO_NOT_FOUND", "这位英雄还没有入住世界")
+		case errors.Is(err, companionbiz.ErrHeroChatBondTooLow):
+			return "", kerrors.Forbidden(
+				"HERO_CHAT_LOCKED",
+				fmt.Sprintf("羁绊达到 %d 级后解锁闲聊，继续送礼培养吧", companionbiz.HeroChatBondRequired),
+			)
+		}
+		return "", err
+	}
+	return reply, nil
 }
 
 func clampLimit(raw int32) int {
