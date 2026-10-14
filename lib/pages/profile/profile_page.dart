@@ -1011,7 +1011,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 width: 34,
                                 height: 34,
                                 decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
+                                    color: MoeTokens.softChipBg,
                                     borderRadius: BorderRadius.circular(10)),
                                 child: Center(
                                   child: Text(
@@ -1043,7 +1043,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ? stats.unlockedBadges / stats.totalBadges
                             : 0,
                         strokeWidth: 4,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: MoeTokens.lineSoft,
                         color: _moe.primary,
                       ),
                       Text(

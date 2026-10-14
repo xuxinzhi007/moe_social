@@ -1032,7 +1032,7 @@ class _CheckInPageState extends State<CheckInPage>
                     title: '连续签到',
                     value: '${checkInProvider.consecutiveDays} 天',
                     icon: Icons.local_fire_department_rounded,
-                    color: const Color(0xFFFF6B6B),
+                    color: MoeTokens.pastelOrange,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1165,7 +1165,7 @@ class _CheckInPageState extends State<CheckInPage>
   Color _statusColor(bool ctaEnabled, bool hasChecked) {
     if (hasChecked) return MoeTokens.success;
     if (ctaEnabled) return MoeTokens.primary;
-    return const Color(0xFF9095A0);
+    return MoeTokens.hintText;
   }
 
   Future<void> _performCheckIn(
