@@ -46,6 +46,9 @@ type Engine struct {
 	OnProactive func(userID uint, message, reason string) (notificationID uint, delivered bool)
 	OnEvent     func(userID uint, event *model.CompanionEvent)
 
+	// heroBondResolver 解析用户对英雄的羁绊等级（K3 小家闲聊门槛，装配层注入）。
+	heroBondResolver HeroBondResolver
+
 	// 内部
 	cancelCleanup  context.CancelFunc
 	cancelGreeting context.CancelFunc
