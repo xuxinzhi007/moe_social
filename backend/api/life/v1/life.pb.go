@@ -250,8 +250,10 @@ type LifeEntity struct {
 	LastActionAt   string                 `protobuf:"bytes,16,opt,name=last_action_at,json=lastActionAt,proto3" json:"last_action_at,omitempty"`
 	UpdatedAt      string                 `protobuf:"bytes,17,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	CreatedAt      string                 `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// 旗舰英雄 slug（如 xiaoxing），空=普通居民。
+	HeroSlug      string `protobuf:"bytes,19,opt,name=hero_slug,json=heroSlug,proto3" json:"hero_slug,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LifeEntity) Reset() {
@@ -406,6 +408,13 @@ func (x *LifeEntity) GetUpdatedAt() string {
 func (x *LifeEntity) GetCreatedAt() string {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *LifeEntity) GetHeroSlug() string {
+	if x != nil {
+		return x.HeroSlug
 	}
 	return ""
 }
@@ -1156,7 +1165,7 @@ const file_api_life_v1_life_proto_rawDesc = "" +
 	"total_food\x18\b \x01(\x01R\ttotalFood\x12'\n" +
 	"\x0fhabitable_cells\x18\t \x01(\x05R\x0ehabitableCells\x12!\n" +
 	"\fdanger_cells\x18\n" +
-	" \x01(\x05R\vdangerCells\"\x88\x04\n" +
+	" \x01(\x05R\vdangerCells\"\xa5\x04\n" +
 	"\n" +
 	"LifeEntity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x19\n" +
@@ -1183,7 +1192,8 @@ const file_api_life_v1_life_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x11 \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x12 \x01(\tR\tcreatedAt\"\x95\x02\n" +
+	"created_at\x18\x12 \x01(\tR\tcreatedAt\x12\x1b\n" +
+	"\thero_slug\x18\x13 \x01(\tR\bheroSlug\"\x95\x02\n" +
 	"\fLifeEventLog\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x19\n" +
 	"\bworld_id\x18\x02 \x01(\tR\aworldId\x12\x1b\n" +

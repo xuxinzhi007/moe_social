@@ -50,6 +50,8 @@ message LifeEntity {
   string last_action_at = 16;
   string updated_at = 17;
   string created_at = 18;
+  // 旗舰英雄 slug（如 xiaoxing），空=普通居民。
+  string hero_slug = 19;
 }
 
 message LifeEventLog {

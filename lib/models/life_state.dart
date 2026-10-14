@@ -16,6 +16,7 @@ class LifeEntity {
   final double experience;  // 经验值
   final int age;            // 年龄（tick 数）
   final List<ActiveEffectSummary> activeEffects; // 活跃 buff 效果
+  final String heroSlug;    // 旗舰英雄 slug（如 xiaoxing），空=普通居民
 
   const LifeEntity({
     required this.id,
@@ -31,6 +32,7 @@ class LifeEntity {
     this.experience = 0,
     this.age = 0,
     this.activeEffects = const [],
+    this.heroSlug = '',
   });
 
   factory LifeEntity.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,9 @@ class LifeEntity {
       experience: _asDouble(json['experience']),
       age: _asInt(json['age']),
       activeEffects: _parseActiveEffects(json['active_effects'] ?? json['activeEffects']),
+      heroSlug: json['hero_slug']?.toString() ??
+          json['heroSlug']?.toString() ??
+          '',
     );
   }
 
@@ -86,6 +91,11 @@ class LifeEntity {
           : json.containsKey('activeEffects')
               ? _parseActiveEffects(json['activeEffects'])
               : activeEffects,
+      heroSlug: json.containsKey('hero_slug')
+          ? json['hero_slug']?.toString() ?? heroSlug
+          : json.containsKey('heroSlug')
+              ? json['heroSlug']?.toString() ?? heroSlug
+              : heroSlug,
     );
   }
 
@@ -184,6 +194,7 @@ class LifeEntity {
     'experience': experience,
     'age': age,
     'active_effects': activeEffects.map((e) => e.toJson()).toList(),
+    'hero_slug': heroSlug,
   };
 
   /// 预计算 Canvas 渲染数据，避免在 paint() 中重复计算

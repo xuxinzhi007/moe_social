@@ -10641,6 +10641,9 @@ components:
                     type: string
                 createdAt:
                     type: string
+                heroSlug:
+                    type: string
+                    description: 旗舰英雄 slug（如 xiaoxing），空=普通居民。
         life.v1.LifeEventLog:
             type: object
             properties:

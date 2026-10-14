@@ -739,8 +739,8 @@ class _ArenaPageState extends State<ArenaPage> with TickerProviderStateMixin {
                       Expanded(
                         child: _HomeActionCard(
                           icon: Icons.park_rounded,
-                          title: '营地预览',
-                          body: '查看共享世界的实时快照，验证英雄入驻前的营地舞台。',
+                          title: '星辉营地',
+                          body: '进入共享世界，看看你的英雄今天过得怎么样。',
                           onTap: () => unawaited(_openCampPreview(hero)),
                         ),
                       ),

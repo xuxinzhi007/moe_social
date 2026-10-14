@@ -12,10 +12,10 @@ import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 
-/// Arena 营地的只读预览页。
+/// Arena 营地的全屏世界页（O1）。
 ///
-/// 本页只验证 Arena → Life 世界 → Flame 渲染的入口与快照链路。
-/// 英雄和 Life 居民的持久映射将在后续 M1 版本接入。
+/// 进入共享世界，视角默认聚焦自己的英雄（hero_slug 匹配，
+/// M1 为旗舰英雄小星）；其他英雄与居民可见为营地居民。
 class ArenaCampPreviewPage extends StatefulWidget {
   const ArenaCampPreviewPage({super.key, required this.hero});
 
@@ -48,8 +48,7 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
     try {
       final state = await LifeService.getInitialState();
       if (!mounted) return;
-      final selectedId =
-          state.entities.isNotEmpty ? state.entities.first.id : null;
+      final selectedId = _resolveFocusEntityId(state);
       setState(() {
         _state = state;
         _selectedEntityId = selectedId;
@@ -71,6 +70,21 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
     if (_selectedEntityId == entityId) return;
     setState(() => _selectedEntityId = entityId);
     _game.focusEntity(entityId);
+  }
+
+  /// 默认聚焦自己的英雄：优先 hero_slug 与当前小家英雄一致，
+  /// 否则任一英雄居民，最后回退第一个居民。
+  int? _resolveFocusEntityId(LifeInitialState state) {
+    if (state.entities.isEmpty) return null;
+    for (final entity in state.entities) {
+      if (entity.heroSlug.isNotEmpty && entity.heroSlug == widget.hero.id) {
+        return entity.id;
+      }
+    }
+    for (final entity in state.entities) {
+      if (entity.heroSlug.isNotEmpty) return entity.id;
+    }
+    return state.entities.first.id;
   }
 
   void _syncGame() {
@@ -123,7 +137,7 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
     }
     if (_loadError != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('营地预览')),
+        appBar: AppBar(title: const Text('星辉营地')),
         body: Center(
           child: MoeErrorState(
             presentation: _campErrorPresentation(_loadError),
@@ -134,7 +148,7 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
     }
     if (state == null || state.entities.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('营地预览')),
+        appBar: AppBar(title: const Text('星辉营地')),
         body: const Center(child: Text('营地正在准备中，请稍后再试')),
       );
     }
@@ -143,6 +157,8 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
     final selectedTitle = selected == null
         ? '正在观察营地'
         : '${selected.emoji} ${selected.name} · ${selected.actionLabel}';
+    final selectedIsHero = selected != null && selected.heroSlug.isNotEmpty;
+    final worldHasHero = state.entities.any((e) => e.heroSlug.isNotEmpty);
     return Scaffold(
       backgroundColor: const Color(0xFFB8D9C4),
       body: Stack(
@@ -165,8 +181,8 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
                       const SizedBox(width: MoeTokens.spaceSm),
                       Expanded(
                         child: _TopCard(
-                          title: '${widget.hero.name} 的营地预览',
-                          subtitle: '共享世界只读快照 · Tick ${state.tick}',
+                          title: '${widget.hero.name} 的星辉营地',
+                          subtitle: '共享世界实时快照 · Tick ${state.tick}',
                         ),
                       ),
                     ],
@@ -174,7 +190,11 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
                   const Spacer(),
                   _TopCard(
                     title: selectedTitle,
-                    subtitle: '当前为入口与渲染验证；英雄居民映射将在下一阶段接入。',
+                    subtitle: selectedIsHero
+                        ? '这是你的英雄在共享营地里的实时生活。'
+                        : worldHasHero
+                            ? '点下方居民可切换观察对象，⭐ 是入驻英雄。'
+                            : '英雄暂未出现在营地舞台上，先看看居民们的生活。',
                   ),
                   const SizedBox(height: MoeTokens.spaceSm),
                   SizedBox(
@@ -191,7 +211,9 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
                           selected: selected,
                           onSelected: (_) => _selectEntity(entity.id),
                           avatar: Text(entity.emoji),
-                          label: Text(entity.name),
+                          label: Text(entity.heroSlug.isNotEmpty
+                              ? '⭐ ${entity.name}'
+                              : entity.name),
                         );
                       },
                     ),

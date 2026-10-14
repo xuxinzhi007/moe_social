@@ -197,6 +197,7 @@ func lifeEntityToProto(e model.LifeEntity) *lifev1.LifeEntity {
 		LastActionAt:  formatLifeTime(e.LastActionAt),
 		UpdatedAt:     formatLifeTime(e.UpdatedAt),
 		CreatedAt:     formatLifeTime(e.CreatedAt),
+		HeroSlug:      e.HeroSlug,
 	}
 	if e.TargetEntityID != nil {
 		out.TargetEntityId = uint64(*e.TargetEntityID)
