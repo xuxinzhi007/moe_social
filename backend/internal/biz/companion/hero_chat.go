@@ -206,12 +206,19 @@ func buildHeroSystemPrompt(
 		}
 	}
 
-	// [4] 关于来访者的记忆（K1 per-hero 命名空间）.
+	// [4] 关于来访者的记忆（K1 per-hero 命名空间；system 机器行不注入）.
 	if len(memories) > 0 {
-		b.WriteString("\n\n[你记得关于TA的事]")
+		var b4 strings.Builder
 		for _, memory := range memories {
-			b.WriteString("\n- ")
-			b.WriteString(memory.Content)
+			if memory.MemoryType == heroSystemMemoryType {
+				continue
+			}
+			b4.WriteString("\n- ")
+			b4.WriteString(memory.Content)
+		}
+		if b4.Len() > 0 {
+			b.WriteString("\n\n[你记得关于TA的事]")
+			b.WriteString(b4.String())
 		}
 	}
 
