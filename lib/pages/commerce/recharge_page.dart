@@ -386,10 +386,10 @@ class _RechargePageState extends State<RechargePage> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color:
-                      const Color(0xFFFFF9C4).withValues(alpha: 0.3), // 浅黄色背景
+                      MoeTokens.pastelOrange.withValues(alpha: 0.12), // 浅黄色背景
                   borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                   border: Border.all(
-                      color: const Color(0xFFFFE082).withValues(alpha: 0.5)),
+                      color: MoeTokens.pastelOrange.withValues(alpha: 0.35)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

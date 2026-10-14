@@ -93,8 +93,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
         context,
         '余额不足，请先充值',
         icon: Icons.account_balance_wallet_rounded,
-        backgroundColor: const Color(0xFFFFF8E1),
-        textColor: const Color(0xFF8B6914),
+        backgroundColor: MoeTokens.pastelOrange.withValues(alpha: 0.18),
+        textColor: MoeTokens.warning,
       );
       return;
     }
@@ -447,7 +447,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _moe.primary,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(0xFFCACEEB),
+                  disabledBackgroundColor: MoeTokens.greyDisabled,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(MoeTokens.radiusButton),

@@ -426,7 +426,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               _MenuItem(
                                   icon: Icons.logout_rounded,
                                   title: '退出登录',
-                                  color: const Color(0xFFFF6B6B),
+                                  color: MoeTokens.danger,
                                   isDestructive: true,
                                   onTap: () {
                                     HapticFeedback.lightImpact();
@@ -586,7 +586,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 MoeTokens.radiusFull,
                               ),
                               border: Border.all(
-                                color: const Color(0xFFFFE082)
+                                color: MoeTokens.pastelOrange
                                     .withValues(alpha: 0.9),
                               ),
                             ),
@@ -595,7 +595,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFFFFF8E1),
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -901,7 +901,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         width: 17,
                         height: 17,
                         decoration: const BoxDecoration(
-                            color: Color(0xFFFF6B35), shape: BoxShape.circle),
+                            color: MoeTokens.danger, shape: BoxShape.circle),
                         child: Center(
                           child: Text(
                             '${action.badge}',
@@ -964,7 +964,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             horizontal: 7, vertical: 1),
                         decoration: BoxDecoration(
                           color:
-                              const Color(0xFFFFB347).withValues(alpha: 0.15),
+                              MoeTokens.pastelOrange.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -972,7 +972,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFFE65100))),
+                                color: MoeTokens.warning)),
                       ),
                     ],
                   ),
@@ -1175,7 +1175,7 @@ class _ProfilePageState extends State<ProfilePage> {
             style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF2D2D3D),
+                color: MoeTokens.titleText,
                 letterSpacing: 0.2)),
       ]);
 }

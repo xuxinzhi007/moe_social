@@ -411,8 +411,8 @@ class _WalletPageState extends State<WalletPage> {
     final type = transaction['type'] as String;
     final isRecharge = type == 'recharge';
     final color = isRecharge
-        ? const Color(0xFF4ECDC4)
-        : const Color(0xFFFF6B6B); // 充值青色，消费红色
+        ? MoeTokens.pastelTeal
+        : MoeTokens.danger; // 充值青色，消费红色
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

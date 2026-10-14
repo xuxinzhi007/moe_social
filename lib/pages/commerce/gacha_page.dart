@@ -34,10 +34,10 @@ class _GachaPageState extends State<GachaPage>
 
   final List<GachaBall> _balls = [];
   final List<Color> _ballColors = [
-    const Color(0xFFFF9A9E), // Pink - SSR
-    const Color(0xFFA18CD1), // Purple - SR
-    const Color(0xFF8FD3F4), // Blue - R
-    const Color(0xFFE2E2E2), // Grey - N
+    MoeTokens.pastelPink, // Pink - SSR
+    MoeTokens.primary, // Purple - SR
+    MoeTokens.pastelBlue, // Blue - R
+    MoeTokens.lineSoft, // Grey - N
   ];
 
   // 用户数据
@@ -750,8 +750,11 @@ class _GachaPageState extends State<GachaPage>
               width: 280,
               height: 400,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFB7C5), Color(0xFFFFA5B5)],
+                gradient: LinearGradient(
+                  colors: [
+                    MoeTokens.pastelPink.withValues(alpha: 0.45),
+                    MoeTokens.pastelPink.withValues(alpha: 0.65),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -899,7 +902,7 @@ class _GachaPageState extends State<GachaPage>
                         label: '十连',
                         price: '¥45.0',
                         subLabel: '必出SR',
-                        color: const Color(0xFFFF9A9E),
+                        color: MoeTokens.pastelPink,
                         onTap: () => _startGacha(10),
                       ),
                     ),

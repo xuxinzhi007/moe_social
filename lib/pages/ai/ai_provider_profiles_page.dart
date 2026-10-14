@@ -22,6 +22,7 @@ import '../../widgets/ai/ai_status_dot.dart';
 import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/moe_action_row.dart';
+import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_pressable.dart';
 
@@ -1410,7 +1411,18 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
           ? const AiLoadingSkeleton()
           : RefreshIndicator(
               onRefresh: _load,
-              child: ListView(
+              child: _loadError != null && visibleProfiles.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: 120),
+                        MoeErrorState.fromError(
+                          _loadError,
+                          onRetry: _load,
+                        ),
+                      ],
+                    )
+                  : ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
                   AiTheme.pagePadding,
