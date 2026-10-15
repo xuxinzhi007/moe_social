@@ -95,7 +95,7 @@ moe_social/
 | 文档总索引 | [docs/README.md](docs/README.md) |
 | 产品定位 SSOT | [docs/product/product-positioning.md](docs/product/product-positioning.md) |
 | 记忆系统 SSOT | [docs/dev/用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md) |
-| Kratos 迁移状态 | [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) |
+| Kratos 架构 / 迁移历史 | [docs/dev/new-api-kratos.md](docs/dev/new-api-kratos.md) · [docs/dev/kratos-migration-history.md](docs/dev/kratos-migration-history.md) |
 | 部署平台 / Agent | [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md) |
 | 闲置功能清理记录 | [docs/dev/cleanup-2026-10-15.md](docs/dev/cleanup-2026-10-15.md) |
 | Code Review | [code_review.md](code_review.md) |

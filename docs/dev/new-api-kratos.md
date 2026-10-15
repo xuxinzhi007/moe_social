@@ -1,7 +1,7 @@
 # 新接口开发（纯 Kratos · 对齐官网）
 
 > **生产入口**：`cd backend && make moe-social` → 单进程 Kratos HTTP `:8888`（**无对外 gRPC 监听**）
-> **目录 SSOT**：[kratos-directory-ssot.md](./kratos-directory-ssot.md)（⚠️ 该篇已标注归档）· [moe-social-runtime.md](./moe-social-runtime.md)
+> **目录 SSOT**：[backend/LAYOUT.md](../../backend/LAYOUT.md) · [moe-social-runtime.md](./moe-social-runtime.md)（迁移历史归档见 [kratos-migration-history.md](./kratos-migration-history.md)）
 > **新路由一律走域 proto** `backend/api/<domain>/v1/*.proto` 的 `google.api.http`，改完 `make gen`。
 > **最后核对：2026-09-11**（目录树删掉已不存在的 `moeconf`、补上 `appdb`/`yamlconf` 等 5 个实际存在的包；`27 个域` 与 `28 处 Register*HTTPServer` 经 `ls` / `grep -c` 实测确认无误）
 

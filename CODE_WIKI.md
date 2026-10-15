@@ -464,7 +464,7 @@ Flutter 3.x · Go 1.25+ · MySQL 8 · Node 18+（管理台）
 - **规范入口**：`.cursor/rules/moe-social-unified.mdc`、`AGENTS.md`  
 - **踩坑**：`.cursor/LESSONS.md`  
 - **Review**：`code_review.md`  
-- **Kratos 迁移 SSOT**：`docs/dev/kratos-migration-status.md`  
+- **Kratos 架构 SSOT**：`docs/dev/new-api-kratos.md`（迁移历史见 `docs/dev/kratos-migration-history.md`）  
 - **Flutter 页面**：`lib/pages/<domain>/`  
 - **后端 biz**：`internal/biz/<domain>/`  
 - **Proto 改动**：`cd backend && make gen` 后 `go build` 验证  
@@ -491,7 +491,7 @@ Flutter 3.x · Go 1.25+ · MySQL 8 · Node 18+（管理台）
 | 后端布局 | [backend/LAYOUT.md](backend/LAYOUT.md) |
 | OpenAPI | [backend/openapi.yaml](backend/openapi.yaml) |
 | 文档中心 | [docs/README.md](docs/README.md) |
-| Kratos 迁移 | [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) |
+| Kratos 架构 | [docs/dev/new-api-kratos.md](docs/dev/new-api-kratos.md)（迁移历史：[docs/dev/kratos-migration-history.md](docs/dev/kratos-migration-history.md)） |
 
 ### B. 设计原型
 

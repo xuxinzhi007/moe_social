@@ -3395,7 +3395,7 @@ backend/internal/oauthflow:                 mkdir /var/folders/.../b643/: no spa
 - [API调试指南.md](./API调试指南.md) · [快速调试步骤.md](./快速调试步骤.md) — ✅ §14.4 已清除失效的 `_isProduction` / cpolar / 按平台分支说法
 - [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) — Flutter 侧配置分层（**待补环境基址归属**；同名 `AppConfig` 冲突已消除）
 - [ports.md](./ports.md) — 本地端口表（**§4.2 指出存在越界硬编码**）
-- [kratos-migration-status.md](./kratos-migration-status.md) — Kratos 迁移状态板
+- [kratos-migration-history.md](./kratos-migration-history.md) — Kratos 迁移历史归档（原状态板 `kratos-migration-status.md` 已并入）
 - [full-review-2026-09-02.md](./full-review-2026-09-02.md) — 上一次全栈审查快照
 - [deploy-platform.md](./deploy-platform.md) — 云平台部署
 - [n100-pipeline.md](./n100-pipeline.md) — n100 预发流水线

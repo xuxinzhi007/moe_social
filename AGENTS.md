@@ -16,7 +16,7 @@
 | 后端 | `cd backend && make gen` · `make check` · `make test` · `make test-race` · `make moe-social` · `make temp-mail-password EMAIL=foo@web-library.net` |
 | 管理台 | `cd moe-admin && npm run build` |
 
-Kratos：`docs/dev/kratos-migration-status.md` · OpenAPI：`docs/dev/openapi-apifox.md`
+Kratos：`docs/dev/new-api-kratos.md`（当前架构）· `docs/dev/kratos-migration-history.md`（迁移历史归档）· OpenAPI：`docs/dev/openapi-apifox.md`
 
 ## Skills（`.cursor/skills/`）
 

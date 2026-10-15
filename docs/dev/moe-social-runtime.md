@@ -1,7 +1,7 @@
 # moe-social 运行时
 
 > **最后更新：2026-09-11**（第九批：配置读取统一到 `backend/pkg/conf`，`-f` 全局权威）
-> 架构：[kratos-migration.md](./kratos-migration.md) · 状态：[kratos-migration-status.md](./kratos-migration-status.md)
+> 架构：[new-api-kratos.md](./new-api-kratos.md) · 迁移历史：[kratos-migration-history.md](./kratos-migration-history.md)
 
 ## 是什么？
 
@@ -46,7 +46,7 @@ HTTP  Client → :8888
 
 `run_http_only.go` 的启动顺序：`opts.NormalizeOptions()` → `conf.Load()`（:19，失败即返回，不再静默取零值）→ （可选）`utils.InitDBWithMigrate()`（:23）→ `wiring.StartWithResult({WireOnly:true})`（:29）→ `bootstrap.AfterWire()`（:33）→ `externalHTTPPort()`（:35）→ `newKratosPureHTTPServer()`（:36）→ `kratos.New(...).Run()`（:41-46）。
 
-compat 余量清单：[kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-httplegacy-compat-清单)
+compat 余量清单（历史归档）：[kratos-migration-history.md §5](./kratos-migration-history.md#5-存量接口迁移p3-基线历史)
 （注：`httplegacy` / `RegisterCompatHTTP` 已在代码中删除，该清单仅作历史归档参考。）
 
 ## 生成（与运行时无关）
