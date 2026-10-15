@@ -23,7 +23,7 @@ Flame 舞台改动 → **必须再读** [flame-life-world](../flame-life-world/S
 - General Flutter bar: follow unified skill [moe-flutter](../moe-flutter/SKILL.md)（含 §1.1 Ticker 规则）。
 - 正式壳层：底栏关系首页第一眼；`LifeWorldPage` = 「TA 的世界」地图延伸（见 `docs/dev/ai-companion-formal-decisions.md` 决策 10）。
 - Flame 实验：`FeatureFlags.useFlameLifeWorld` → 叠用 [flame-life-world](../flame-life-world/SKILL.md)；`false` 回退 `LifeWorldMap`。
-- 陪伴互动闭环（照料语气 / 日常深链 / 去聊天）：`docs/dev/ai-companion-interaction-loop.md`。
+- 陪伴互动闭环（照料语气 / 日常深链 / 去聊天）：`docs/dev/ai-companion-architecture.md`。
 - `LifeWorldMap` / `LifeWorldCanvas`：多 `AnimationController` 必须用 `TickerProviderStateMixin`；改地图后进页冒烟（analyze 不够）。
 - Preserve the current REST + WebSocket boundary: `LifeProvider` owns state, `LifeService` wraps REST, `LifeWsService` handles realtime updates.
 - Prefer read-only UX improvements before protocol changes: care insight, world pulse, event grouping, resident selection, empty/offline states.

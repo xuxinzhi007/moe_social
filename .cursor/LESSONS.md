@@ -22,7 +22,7 @@
 | 用户记忆 | `docs/dev/用户记忆系统-OpenClaw式演进设计.md` |
 | 产品定位 | `docs/product/product-positioning.md` |
 | AI 陪伴正式化决策 | `docs/dev/ai-companion-formal-decisions.md` |
-| AI 互动闭环迭代 | `docs/dev/ai-companion-interaction-loop.md` |
+| AI 陪伴架构（含互动闭环迭代记录） | `docs/dev/ai-companion-architecture.md` |
 | Flame 小世界引擎 | `.cursor/skills/flame-life-world/SKILL.md` |
 | 养成 Pet Life Sim | `docs/dev/pet-life-sim-roadmap.md` |
 | 星辉远征 Arena | `docs/dev/aurora-arena-ssot.md` |

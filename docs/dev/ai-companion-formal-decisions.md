@@ -2,9 +2,9 @@
 
 > **日期**：2026-07-31  
 > **状态**：已确认 · 一期已落地 · 二期-A 已落地 · **互动闭环 Slice-1/2 已落地**（2026-07-31）  
-> **迭代方案**：`docs/dev/ai-companion-interaction-loop.md`
+> **迭代与架构**：`docs/dev/ai-companion-architecture.md`
 
-> **相关**：`docs/product/product-positioning.md` · `docs/dev/ai-companion-backend-boundary.md` · `lib/constants/feature_flags.dart`
+> **相关**：`docs/product/product-positioning.md` · `lib/constants/feature_flags.dart`
 
 新会话接续时：**先读本文**，再改 Companion / Life / 酒馆相关代码。
 
