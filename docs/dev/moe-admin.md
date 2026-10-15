@@ -51,7 +51,48 @@ gin-vue-admin 是一整套 **Gin + GORM + Vue3 + Element Plus** 工程，自带�
 
 👉 **[moe-admin-platform-design.md](./moe-admin-platform-design.md)**
 
-按 P0 → P1 分期实现；当前仓库已完成工作台、官网反馈、环境切换与跨平台启动脚本。
+按 P0 → P1 分期实现；当前仓库已完成工作台、用户管理、环境切换与跨平台启动脚本（官网反馈查询端点已于 2026-10 删除，仅保留落地页提交）。
+
+## 工作区与导航
+
+管理台按「一个壳 + 三个工作区」组织（2026-07 第一期实施，Sprint A–E 已于 2026-08 全部完成），顶栏三段切换、点击固定落区首页，默认落运营区：
+
+| 工作区 | URL 前缀 | 区首页 | 内容 |
+|--------|----------|--------|------|
+| 运营 | `/ops/biz/...` | `/ops/biz` | 用户 · 内容 · 触达 |
+| AI | `/ops/ai/...` | `/ops/ai/moe-brain` | Bot · 大脑 · 工具 |
+| 运维 | `/ops/infra/...` | `/ops/infra/deploy` | 后端发布 · 配置 · 审计（App 版本在运营 `/biz/update`） |
+
+- **菜单 / 归属 / 旧链重定向的唯一 SSOT 是 `moe-admin/src/config/workspaceNav.ts`**，禁止第二份手写菜单；占位说明在 `moe-admin/src/config/placeholders.ts`。
+- 旧 path 由前端重定向兜底（`LEGACY_REDIRECTS`，标注 `remove after 2026-12`）。
+- 角色可见性：`super_admin` 见全部三区；`admin` 仅运营+AI（`lib/adminAccess.ts` + `RequireWorkspace`）。
+- 后端菜单表驱动方案已废弃：`admin_menu` 模型与 `/api/admin/menus` 接口 2026-10 已删除（见 [cleanup-2026-10-15.md](./cleanup-2026-10-15.md)），侧栏为前端静态配置。
+
+## 模块索引（与 App 业务域对照）
+
+实时菜单结构以 `workspaceNav.ts` 为准；下表按工作区给出模块与 App 域（`lib/pages`）的对应关系。新增模块：先改域 proto + `/api/admin/*` 路由，再在对应工作区挂列表页。
+
+| 工作区 · 分组 | 菜单项 | App 域 |
+|---------------|--------|--------|
+| 运营 · 工作台 | 工作台 | — |
+| 运营 · App 用户 | 用户列表 · 会员与套餐 · 钱包与订单 · 签到/等级/成就 · 好友与关注 | profile, auth, commerce, wallet, checkin, discover |
+| 运营 · 养成内容 | 内容总览 · 序列帧工作台 · 家具 · 装饰（规划） | pet（见 [moe-avatar-admin.md](./moe-avatar-admin.md)） |
+| 运营 · 内容运营 | 动态审核 · 评论管理 · 兴趣社区 · 举报处理 · 公告管理 · App 版本更新 · 通知推送 | feed, community, report, notification |
+| 运营 · 商业与数据 | 礼物与扭蛋 · 统一标签中心 · 数据分析看板 · 云图库 | gifts, gacha |
+| AI | AI 大脑 · AI 角色酒馆 · 社区 AI Bot · Bot 编排画布 · Moe 工具与 Bot · AI 对话日志 | ai, moe |
+| 运维 · 平台治理 | 平台治理 · 管理员账号 · 操作日志 | admin_account, audit |
+| 运维 · 构建与发布 | 云 Docker · 构建流水线 · GitHub APK 构建 · 任务审计 | Deploy Agent |
+| 运维 · 开发工具 | CodeGraph | — |
+
+登录注册、个人设置、扫码、演示页、AutoGLM 工具等属用户端或开发工具，不进管理台菜单。
+
+## 功能文档索引
+
+| 文档 | 内容 | 状态 |
+|------|------|------|
+| [moe-admin-platform-design.md](./moe-admin-platform-design.md) | 完整后台设计方案（鉴权、数据模型、API 规范） | 历史设计稿，产品定位部分仍有效（见文首横幅） |
+| [moe-avatar-admin.md](./moe-avatar-admin.md) | 角色装扮 / 序列帧生产力工具（sprite-studio） | ✅ 已落地（`/ops/biz/pet/avatar`） |
+| [moe-admin-memory-center-design.md](./moe-admin-memory-center-design.md) | 记忆中心（全站 / 按 Agent 双 Tab） | ⚠️ 未实施，后端前提已失效（见文首横幅） |
 
 ## 数据库迁移 vs 运营数据初始化
 

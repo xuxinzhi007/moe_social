@@ -58,7 +58,7 @@ npm run deploy:lan
 | AI | `/ops/ai/...` | 酒馆、Bot、大脑、编排、工具… |
 | 运维 | `/ops/infra/...` | 平台治理、发布、Docker、审计… |
 
-菜单 SSOT：`src/config/workspaceNav.ts` · 方案：`docs/dev/moe-admin-workspaces.md`
+菜单 SSOT：`src/config/workspaceNav.ts` · 结构说明：`docs/dev/moe-admin.md`（工作区与导航 / 模块索引）
 
 文档：
 

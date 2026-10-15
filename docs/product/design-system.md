@@ -1,6 +1,7 @@
 # Moe Social 设计系统规范
 
-> 本文档是萌社交（Moe Social）视觉与交互的唯一事实来源（SSOT），覆盖 CSS 设计稿、Flutter Token 及组件使用规范。
+> 本文档是萌社交（Moe Social）视觉与交互的事实来源，侧重 **CSS 变量 ↔ Flutter Token 映射、组件规格表与暗色模式**。
+> **分工**：Flutter 侧的执行规范（组件写法、页面模板、开发清单）以 [`docs/DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md) 与 `lib/theme/moe_tokens.dart` 为准；早期视觉词汇（历史基线）见 [`UI设计规范.md`](./UI设计规范.md)。
 
 ---
 

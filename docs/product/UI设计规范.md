@@ -1,6 +1,6 @@
 # Moe Social UI Design Guide
 
-> **文档状态（2026-08-29）**：历史基础规范。当前视觉执行以 [`docs/DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md)、[`docs/dev/ui-upgrade-iteration-2026-08-29.md`](../dev/ui-upgrade-iteration-2026-08-29.md)、`lib/theme/moe_tokens.dart` 和 `.cursor/skills/moe-ui-design/SKILL.md` 为准。
+> **文档状态（2026-08-29，2026-10 复核）**：历史基线。当前执行以 [`docs/DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md)（Flutter 执行规范）与 [`design-system.md`](./design-system.md)（CSS ↔ Flutter Token 映射）为准，另有 [`docs/dev/ui-upgrade-iteration-2026-08-29.md`](../dev/ui-upgrade-iteration-2026-08-29.md)、`lib/theme/moe_tokens.dart` 和 `.cursor/skills/moe-ui-design/SKILL.md`。
 > 本文保留早期风格词汇与页面经验；新增或改造页面不要直接复制其中的硬编码颜色、间距、阴影和装饰背景示例。
 
 本指南记录 **Moe Social** 早期的萌系视觉基础，主要用于理解历史页面的设计来源。

@@ -22,20 +22,14 @@
 | [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) | 配置分层 |
 | [打包流程.md](./打包流程.md) | 构建发布 |
 
-## Kratos 后端（运行时 ✅ · D2 ~83%）
+## Kratos 后端（迁移 ✅ 已完成）
 
 | 文档 | 用途 |
 |------|------|
-| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（状态板 SSOT） |
-| [kratos-architecture-audit.md](./kratos-architecture-audit.md) | P0/P1 100%、路由实测、P2 余量 |
-| [kratos-migration.md](./kratos-migration.md) | 架构 SSOT、`make gen` |
-| [kratos-directory-ssot.md](./kratos-directory-ssot.md) | 官方目录对齐 |
-| [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（域 proto） |
+| [new-api-kratos.md](./new-api-kratos.md) | **当前路由架构 SSOT / 新接口开发**（域 proto） |
+| [kratos-migration-history.md](./kratos-migration-history.md) | 迁移历史归档（阶段、审计结论、目录决策、P6 过程） |
 | [openapi-apifox.md](./openapi-apifox.md) | OpenAPI 3.0 / Apifox |
-| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 历史清单（§2） |
-| [kratos-server-layout-migration.md](./kratos-server-layout-migration.md) | `internal/server` 目录收敛 |
 | [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) | 管理台启动、运行时内存指标（⚠️ RPC 监控链路已断，见文内 §0） |
-| [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) | P6 契约迁移 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 
 ## 记忆与智能栈
@@ -54,7 +48,10 @@
 | 文档 | 用途 |
 |------|------|
 | [../../moe-admin/README.md](../../moe-admin/README.md) | Moe Admin |
-| [moe-admin.md](./moe-admin.md) | 管理台与 API 分工 |
+| [moe-admin.md](./moe-admin.md) | 管理台总览：选型分工、工作区与导航、模块索引 |
+| [moe-admin-platform-design.md](./moe-admin-platform-design.md) | 完整后台设计方案（⚠️ 历史设计稿，见文首横幅） |
+| [moe-avatar-admin.md](./moe-avatar-admin.md) | 角色装扮 / 序列帧生产力工具（已落地 `/ops/biz/pet/avatar`） |
+| [moe-admin-memory-center-design.md](./moe-admin-memory-center-design.md) | 记忆中心设计稿（⚠️ 未实施，后端前提已失效） |
 | [deploy-platform.md](./deploy-platform.md) | 云平台部署 |
 
 ## 集成与专项

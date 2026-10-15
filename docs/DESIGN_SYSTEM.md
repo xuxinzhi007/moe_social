@@ -3,6 +3,7 @@
 > **当前执行方向**：内容优先 + Airy Moe（清透、柔和、轻萌）。所有视觉参数统一引用 `lib/theme/moe_tokens.dart`（SSOT）。
 > 本轮 UI 升级的范围与验收见 [`docs/dev/ui-upgrade-iteration-2026-08-29.md`](dev/ui-upgrade-iteration-2026-08-29.md)。
 > 若本文历史示例与当前迭代文档冲突，以当前迭代文档和代码中的 `MoeTokens` 为准。
+> **相关文档**：CSS 变量 ↔ Flutter Token 映射与暗色规范见 [`product/design-system.md`](product/design-system.md)；早期视觉词汇（历史基线）见 [`product/UI设计规范.md`](product/UI设计规范.md)。
 
 ---
 

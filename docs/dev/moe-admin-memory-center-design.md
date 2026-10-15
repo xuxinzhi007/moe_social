@@ -1,8 +1,12 @@
 # Moe Admin · 记忆中心设计方案（方案 C）
 
-> **状态**：设计稿（待实现）  
-> **范围**：仅 `moe-admin` 前端信息架构与页面合并；**后端 API 保持两套，不合并**  
-> **参考**：[`TagsCenterPage`](../../moe-admin/src/pages/TagsCenterPage.tsx)（Tab 工作台）、[`PlatformPage` 记忆 Tab](../../moe-admin/src/pages/PlatformPage.tsx)、[`MoeBrainPage`](../../moe-admin/src/pages/MoeBrainPage.tsx)
+> **状态**：⚠️ **未实施（2026-10 核实），请勿按本文直接开工**
+>
+> - 前端无 `MemoryCenterPage`，`moe-admin/src/config/workspaceNav.ts` 无「记忆中心」入口；`PlatformPage` 的「记忆治理」Tab 已不存在。
+> - 后端 `/api/admin/memories*` 端点现已不存在（`AdminListMemories`/`AdminDeleteMemory` 在 proto 中零命中，`AdminGetMemoryStats` RPC 已在 #42 死接口清理中删除）——本文「零后端契约变更」的前提已失效。若重启此设计，需先补后端 Admin Memory API。
+>
+> **范围**：仅 `moe-admin` 前端信息架构与页面合并；**后端 API 保持两套，不合并**（⚠️ 前提已失效，见上）
+> **参考**：[`TagsCenterPage`](../../moe-admin/src/pages/TagsCenterPage.tsx)（Tab 工作台）、[`MoeBrainPage`](../../moe-admin/src/pages/MoeBrainPage.tsx)（记忆库面板仍在）
 
 ---
 
@@ -293,7 +297,7 @@ moe-admin/src/
 |------|------|
 | [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | 记忆架构 SSOT |
 | [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | AI 大脑 / Bot episode |
-| [moe-admin-menu-map.md](./moe-admin-menu-map.md) | 菜单对照（实现后更新） |
+| [moe-admin.md](./moe-admin.md) | 管理台总览与模块索引（菜单 SSOT：`workspaceNav.ts`） |
 | [page-layout-rules.md](../../moe-admin/docs/page-layout-rules.md) | 页面模板 |
 
 ---

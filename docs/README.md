@@ -16,10 +16,10 @@
 | 验收记忆 / 混合检索 | [dev/用户级记忆统一改造验收脚本.md](./dev/用户级记忆统一改造验收脚本.md) · [memory-system-dashboard.html](./dev/memory-system-dashboard.html) |
 | 本地跑起来 | 后端唯一入口 `cd backend && make moe-social`（:8888 单进程）· 管理台 `cd moe-admin && npm run dev`（:5173/ops/）→ [dev/ports.md](./dev/ports.md) · [dev/moe-social-runtime.md](./dev/moe-social-runtime.md) · [dev/环境配置说明.md](./dev/环境配置说明.md) · [dev/快速调试步骤.md](./dev/快速调试步骤.md)（Flutter 向） |
 | **OpenAPI / Apifox 同步** | [dev/openapi-apifox.md](./dev/openapi-apifox.md) |
-| 管理台（React） | [../moe-admin/README.md](../moe-admin/README.md) · [dev/moe-admin.md](./dev/moe-admin.md) |
+| 管理台（React） | [../moe-admin/README.md](../moe-admin/README.md) · [dev/moe-admin.md](./dev/moe-admin.md)（总览 + 工作区/模块索引） |
 | 产品定位与边界 | [product/product-positioning.md](./product/product-positioning.md) · [product/IA首屏与空状态设计.md](./product/IA首屏与空状态设计.md) |
 | 开发规范 | [../AGENTS.md](../AGENTS.md) · [.cursor/rules/moe-social-unified.mdc](../.cursor/rules/moe-social-unified.mdc) · [../code_review.md](../code_review.md) |
-| **Kratos 后端** | [dev/kratos-migration-status.md](./dev/kratos-migration-status.md) · [dev/kratos-architecture-audit.md](./dev/kratos-architecture-audit.md) · [dev/kratos-migration.md](./dev/kratos-migration.md) · [dev/new-api-kratos.md](./dev/new-api-kratos.md) |
+| **Kratos 后端** | [dev/new-api-kratos.md](./dev/new-api-kratos.md)（当前架构 SSOT）· [dev/kratos-migration-history.md](./dev/kratos-migration-history.md)（迁移历史归档） |
 | Agent 踩坑 / Session | [.cursor/LESSONS.md](../.cursor/LESSONS.md) · [guidelines/sessions/](./guidelines/sessions/) |
 
 ---

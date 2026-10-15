@@ -5,6 +5,7 @@
 > 文中 3 处 `@server(group: ...)` 是 go-zero IDL 语法，现路由一律走域 proto 的 `google.api.http`；
 > 提到的 `GET /api/admin/captcha` 在 proto 中**零命中**（未实现）。
 > **产品定位、权限模型、功能清单部分仍有参考价值；技术栈与接口细节请以 [moe-admin/README.md](../../moe-admin/README.md) 与 [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) 为准。**
+> 已落地功能的专项文档与当前模块索引见 [moe-admin.md](./moe-admin.md)（如角色装扮编辑器 [moe-avatar-admin.md](./moe-avatar-admin.md)）。
 
 > 目标：做出与 **gin-vue-admin 同级能力** 的专用管理后台，但技术栈固定为 **go-zero + RPC + React（ops-console）**，只服务 Moe Social 本项目。  
 > 原则：**登录进后台即可用**；业务管理接口走 `/api/admin/*`，**不要求 App 用户 JWT**，也不做 Casbin 级复杂鉴权（v1）。
