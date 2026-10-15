@@ -55,7 +55,7 @@ cd ../backend && make deploy-agent   # :19010
 
 ## 仅 Windows 的脚本（与 Moe Admin 无关）
 
-- `tool/setup_sqlite3_amalgamation.ps1`
+- `scripts/setup_sqlite3_amalgamation.ps1`
 - `website/official/scripts/generate_wechat_icons.ps1`（另有 `gen_wechat_icons.py 可跨平台）
 
 ## 相关文档

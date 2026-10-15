@@ -1,5 +1,5 @@
 # Download SQLite amalgamation for hooks (avoids GitHub .so download timeout).
-# Usage: powershell -ExecutionPolicy Bypass -File tool/setup_sqlite3_amalgamation.ps1
+# Usage: powershell -ExecutionPolicy Bypass -File scripts/setup_sqlite3_amalgamation.ps1
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path $PSScriptRoot -Parent
