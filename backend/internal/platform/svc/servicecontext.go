@@ -21,7 +21,6 @@ import (
 	mediaapp "backend/internal/service/media"
 	moeadmin "backend/internal/service/moe"
 	notifyapp "backend/internal/service/notify"
-	petapp "backend/internal/service/pet"
 	postapp "backend/internal/service/post"
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
@@ -99,7 +98,6 @@ type ServiceContext struct {
 	GameApp        *gameapp.AppService
 	LifeApp        *lifeapp.AppService
 	CompanionApp   *companionapp.AppService
-	PetApp         *petapp.AppService
 	ArenaApp       *arenaapp.AppService
 	LLMApp         *llmapp.AppService
 	MediaApp       *mediaapp.AppService

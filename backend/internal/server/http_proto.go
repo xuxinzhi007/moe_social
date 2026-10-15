@@ -45,7 +45,6 @@ import (
 	llmhttp "backend/internal/server/protohttp/llm"
 	mediahttp "backend/internal/server/protohttp/media"
 	notifyhttp "backend/internal/server/protohttp/notify"
-	pethttp "backend/internal/server/protohttp/pet"
 	platformhttp "backend/internal/server/protohttp/platform"
 	posthttp "backend/internal/server/protohttp/post"
 	userhttp "backend/internal/server/protohttp/user"
@@ -72,7 +71,6 @@ import (
 	mediaapp "backend/internal/service/media"
 	moeadmin "backend/internal/service/moe"
 	notifyapp "backend/internal/service/notify"
-	petapp "backend/internal/service/pet"
 	postapp "backend/internal/service/post"
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
@@ -91,7 +89,6 @@ type ProtoHTTPDeps struct {
 	GameApp            *gameapp.AppService
 	LifeApp            *lifeapp.AppService
 	CompanionApp       *companionapp.AppService
-	PetApp             *petapp.AppService
 	ArenaApp           *arenaapp.AppService
 	UserApp            *userapp.AppService
 	CommentApp         *commentapp.AppService
@@ -146,9 +143,6 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		companionhttp.RegisterHeroChatRoute(srv, d.CompanionApp)
 		companionhttp.RegisterHeroSummaryRoute(srv, d.CompanionApp)
 		companionhttp.RegisterIntimacyBumpRoute(srv, d.CompanionApp)
-	}
-	if d.PetApp != nil {
-		pethttp.RegisterRoutes(srv, d.PetApp)
 	}
 	if d.ArenaApp != nil {
 		arenahttp.RegisterRoutes(srv, d.ArenaApp)
