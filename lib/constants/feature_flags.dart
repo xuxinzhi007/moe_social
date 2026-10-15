@@ -11,9 +11,6 @@ class FeatureFlags {
   /// 旧 Pet 竖屏主路径视为弃用入口（代码可留作回滚）。
   static const bool arenaGamePrototype = true;
 
-  /// 抽卡 / gacha 演示页。
-  static const bool showGachaFeatures = false;
-
   // ── 实验 / 开发者向 ───────────────────────────────────────────────────
 
   static const bool showExperimentalFeatures = false;

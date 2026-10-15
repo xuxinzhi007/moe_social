@@ -6100,96 +6100,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/game.v1.InitGameSessionReply'
-    /api/user/{userId}/game/load:
-        post:
-            tags:
-                - Game
-            operationId: Game_LoadGame
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/game.v1.LoadGameRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/game.v1.LoadGameReply'
-    /api/user/{userId}/game/save:
-        post:
-            tags:
-                - Game
-            operationId: Game_SaveGame
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/game.v1.SaveGameRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/game.v1.SaveGameReply'
-    /api/user/{userId}/game/slots:
-        get:
-            tags:
-                - Game
-            operationId: Game_ListSaveSlots
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/game.v1.ListSaveSlotsReply'
-    /api/user/{userId}/game/slots/{slotIndex}:
-        delete:
-            tags:
-                - Game
-            operationId: Game_DeleteSaveSlot
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: slotIndex
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: uint32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/game.v1.DeleteSaveSlotReply'
     /api/user/{userId}/game/state:
         get:
             tags:
@@ -10129,11 +10039,6 @@ components:
                     type: string
                 action:
                     type: string
-        game.v1.DeleteSaveSlotReply:
-            type: object
-            properties:
-                success:
-                    type: boolean
         game.v1.GameItem:
             type: object
             properties:
@@ -10254,67 +10159,6 @@ components:
                     type: string
                 forceNew:
                     type: boolean
-        game.v1.ListSaveSlotsReply:
-            type: object
-            properties:
-                slots:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/game.v1.SaveSlotInfo'
-        game.v1.LoadGameReply:
-            type: object
-            properties:
-                sessionId:
-                    type: string
-                sceneName:
-                    type: string
-                turnCount:
-                    type: integer
-                    format: int32
-                label:
-                    type: string
-        game.v1.LoadGameRequest:
-            type: object
-            properties:
-                userId:
-                    type: string
-                slotIndex:
-                    type: integer
-                    format: uint32
-        game.v1.SaveGameReply:
-            type: object
-            properties:
-                success:
-                    type: boolean
-                slot:
-                    $ref: '#/components/schemas/game.v1.SaveSlotInfo'
-        game.v1.SaveGameRequest:
-            type: object
-            properties:
-                userId:
-                    type: string
-                sessionId:
-                    type: string
-                slotIndex:
-                    type: integer
-                    format: uint32
-                label:
-                    type: string
-        game.v1.SaveSlotInfo:
-            type: object
-            properties:
-                slotIndex:
-                    type: integer
-                    format: uint32
-                label:
-                    type: string
-                turnCount:
-                    type: integer
-                    format: int32
-                sceneName:
-                    type: string
-                updatedAt:
-                    type: string
         gift.v1.AchievementUnlock:
             type: object
             properties:

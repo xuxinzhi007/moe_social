@@ -283,32 +283,6 @@ func (s *store) UpsertNpcTemplate(ctx context.Context, tpl *model.GameNpcTemplat
 	}).Error
 }
 
-// --- 存档系统 ---
-
-func (s *store) ListSaveSlots(ctx context.Context, userID uint) ([]model.GameSaveSlot, error) {
-	var rows []model.GameSaveSlot
-	err := s.db.WithContext(ctx).
-		Where("user_id = ?", userID).
-		Order("slot_index ASC").
-		Find(&rows).Error
-	return rows, err
-}
-
-func (s *store) SaveGame(ctx context.Context, slot *model.GameSaveSlot) error {
-	return s.db.WithContext(ctx).
-		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "user_id"}, {Name: "slot_index"}},
-			DoUpdates: clause.AssignmentColumns([]string{"session_id", "label", "snapshot_json", "turn_count", "scene_name", "updated_at"}),
-		}).
-		Create(slot).Error
-}
-
-func (s *store) DeleteSaveSlot(ctx context.Context, userID uint, slotIndex uint8) error {
-	return s.db.WithContext(ctx).
-		Where("user_id = ? AND slot_index = ?", userID, slotIndex).
-		Delete(&model.GameSaveSlot{}).Error
-}
-
 // --- 条件对话模板 ---
 
 func (s *store) FindMatchingDialogueTemplates(ctx context.Context, npcKey string, limit int) ([]model.GameDialogueTemplate, error) {

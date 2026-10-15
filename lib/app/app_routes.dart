@@ -19,7 +19,6 @@ import '../pages/chat/direct_chat_page.dart';
 import '../pages/battle/live_pk_room_page.dart';
 import '../pages/battle/live_pk_lobby_page.dart';
 import '../pages/checkin/checkin_page.dart';
-import '../pages/commerce/gacha_page.dart' deferred as gacha;
 import '../pages/commerce/recharge_page.dart' deferred as recharge;
 import '../pages/commerce/vip_center_page.dart' deferred as vip_center;
 import '../pages/commerce/vip_history_page.dart' deferred as vip_history;
@@ -221,18 +220,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           recharge.loadLibrary,
           () => recharge.RechargePage(),
         ),
-    '/gacha': (context) {
-      if (!FeatureFlags.showGachaFeatures) {
-        return const Scaffold(
-          body: Center(child: Text('该功能已下线')),
-        );
-      }
-      return _deferred(
-        gacha.loadLibrary,
-        () => gacha.GachaPage(),
-        message: '正在加载扭蛋…',
-      );
-    },
     '/user-profile': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! Map<String, dynamic>) {

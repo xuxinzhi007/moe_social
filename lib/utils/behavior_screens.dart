@@ -36,7 +36,6 @@ class BehaviorScreens {
       '/wallet': 'wallet',
       '/recharge': 'recharge',
       '/order-center': 'order_center',
-      '/gacha': 'gacha',
       '/forgot-password': 'forgot_password',
       '/reset-password': 'reset_password',
       '/verify-code': 'verify_code',

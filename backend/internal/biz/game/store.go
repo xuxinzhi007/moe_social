@@ -60,11 +60,6 @@ type Store interface {
 	FindNpcTemplateByName(ctx context.Context, displayName string) (*model.GameNpcTemplate, error)
 	UpsertNpcTemplate(ctx context.Context, tpl *model.GameNpcTemplate) error
 
-	// 存档相关
-	ListSaveSlots(ctx context.Context, userID uint) ([]model.GameSaveSlot, error)
-	SaveGame(ctx context.Context, slot *model.GameSaveSlot) error
-	DeleteSaveSlot(ctx context.Context, userID uint, slotIndex uint8) error
-
 	// 条件对话模板
 	FindMatchingDialogueTemplates(ctx context.Context, npcKey string, limit int) ([]model.GameDialogueTemplate, error)
 

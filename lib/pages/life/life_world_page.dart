@@ -8,14 +8,12 @@ import '../../constants/feature_flags.dart';
 import '../../game/life/life_flame_game.dart';
 import '../../models/life_state.dart';
 import '../../providers/life_provider.dart';
-import '../../services/game_service.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/life/life_event_tile.dart';
 import '../../widgets/life/life_world_map.dart';
 import '../../widgets/moe_toast.dart';
-import '../ai/game_play_page.dart';
 import 'life_entity_detail.dart';
 import 'life_inventory_page.dart';
 import 'life_relationship_page.dart';
@@ -42,7 +40,6 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
   LifeFlameGame? _flameGame;
   int? _selectedEntityId;
   bool _isActing = false;
-  bool _isOpeningStory = false;
   bool _isBindingCompanion = false;
   bool _bindingLoaded = false;
   bool _didInitialFocus = false;
@@ -439,31 +436,7 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
   }
 
   Future<void> _openStory(LifeEntity entity) async {
-    if (!FeatureFlags.showGameFeatures) {
-      MoeToast.info(context, '互动故事暂未开放');
-      return;
-    }
-    if (_isOpeningStory) return;
-    setState(() => _isOpeningStory = true);
-    try {
-      final state = await GameService().initSession();
-      if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => GamePlayPage(
-            initialState: state,
-            companionName: entity.name,
-            companionEmoji: entity.emoji,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _isOpeningStory = false);
-    }
+    MoeToast.info(context, '互动故事暂未开放');
   }
 
   @override
@@ -794,7 +767,6 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
                     unawaited(_openStory(selected));
                   }
                 : null,
-            isOpeningStory: _isOpeningStory,
           ),
           const SizedBox(height: 12),
           _CareInsightCard(entity: selected),

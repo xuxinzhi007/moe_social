@@ -86,7 +86,6 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "game_turn_logs", Model: &model.GameTurnLog{}},
 		{Key: "game_world_items", Model: &model.GameWorldItem{}},
 		{Key: "game_npc_templates", Model: &model.GameNpcTemplate{}},
-		{Key: "game_save_slots", Model: &model.GameSaveSlot{}},
 		{Key: "game_dialogue_templates", Model: &model.GameDialogueTemplate{}},
 		{Key: "game_story_arcs", Model: &model.GameStoryArc{}},
 		{Key: "game_world_states", Model: &model.GameWorldState{}},
