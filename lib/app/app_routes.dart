@@ -18,10 +18,8 @@ import '../pages/auth/verify_code_page.dart';
 import '../pages/chat/direct_chat_page.dart';
 import '../pages/battle/live_pk_room_page.dart';
 import '../pages/battle/live_pk_lobby_page.dart';
-import '../pages/chat/message_center_page.dart' deferred as message_center;
 import '../pages/checkin/checkin_page.dart';
 import '../pages/commerce/gacha_page.dart' deferred as gacha;
-import '../pages/commerce/order_center_page.dart' deferred as order_center;
 import '../pages/commerce/recharge_page.dart' deferred as recharge;
 import '../pages/commerce/vip_center_page.dart' deferred as vip_center;
 import '../pages/commerce/vip_history_page.dart' deferred as vip_history;
@@ -194,10 +192,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           vip_orders.loadLibrary,
           () => vip_orders.VipOrdersPage(),
         ),
-    '/orders': (context) => _deferred(
-          order_center.loadLibrary,
-          () => order_center.OrderCenterPage(),
-        ),
     '/vip-history': (context) => _deferred(
           vip_history.loadLibrary,
           () => vip_history.VipHistoryPage(),
@@ -301,10 +295,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       final initial = args['post'] is Post ? args['post'] as Post : null;
       return CommunityPostDetailPage(postId: postId, initialPost: initial);
     },
-    '/messages': (context) => _deferred(
-          message_center.loadLibrary,
-          () => message_center.MessageCenterPage(),
-        ),
     '/character-card-plaza': (context) => _deferred(
           character_card_plaza.loadLibrary,
           () => character_card_plaza.CharacterCardPlazaPage(),
