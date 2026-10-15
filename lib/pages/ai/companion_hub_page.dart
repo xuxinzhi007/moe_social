@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../constants/feature_flags.dart';
 import '../../models/post.dart';
-import '../../pages/life/life_world_page.dart';
 import '../../providers/companion_presence_provider.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
@@ -103,9 +102,8 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
             : item.body.trim();
         await _openChat(draft: '我们接着聊聊这件事：$topic');
         return;
-      case 'world':
       case 'moment':
-        await _openLifeWorld();
+        await _openArenaGame();
         return;
       case 'memory':
         await _openMemories(focusMemoryId: item.memoryId);
@@ -146,22 +144,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
       createdAt: item.at ?? DateTime.now(),
     );
     await openPostDetail(context, stub);
-    if (mounted) unawaited(_hub.loadDashboard());
-  }
-
-  Future<void> _openLifeWorld() async {
-    if (!FeatureFlags.showLifeEngine) {
-      MoeToast.info(context, '数字生命暂未开放');
-      return;
-    }
-    final focusId = _hub.profile.lifeEntityId;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LifeWorldPage(
-          focusEntityId: focusId > 0 ? focusId : null,
-        ),
-      ),
-    );
     if (mounted) unawaited(_hub.loadDashboard());
   }
 
@@ -253,23 +235,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                     tint: MoeTokens.pastelPink,
                     onTap: _openJourney,
                   ),
-                  if (FeatureFlags.showLifeEngine) ...[
-                    const SizedBox(height: 12),
-                    _CompanionQuickActions(onLife: _openLifeWorld),
-                    const SizedBox(height: 14),
-                    _WorldStrip(
-                      summaryLine: _hub.worldSummaryLine.isNotEmpty
-                          ? _hub.worldSummaryLine
-                          : '打开 2D 小世界，看看居民在做什么',
-                      bound: _hub.worldBound,
-                      bindMissing: _hub.worldBindMissing,
-                      onOpen: _openLifeWorld,
-                    ),
-                    if (_hub.worldBindMissing) ...[
-                      const SizedBox(height: 10),
-                      _BindMissingBanner(onOpenWorld: _openLifeWorld),
-                    ],
-                  ],
                   if (shouldShowCompanionDailyPanels(
                     arenaGamePrototype: FeatureFlags.arenaGamePrototype,
                   )) ...[
@@ -812,22 +777,6 @@ class _CompanionSummaryBlock extends StatelessWidget {
   }
 }
 
-class _CompanionQuickActions extends StatelessWidget {
-  const _CompanionQuickActions({required this.onLife});
-
-  final VoidCallback onLife;
-
-  @override
-  Widget build(BuildContext context) {
-    return _QuickAction(
-      icon: Icons.public_rounded,
-      label: '世界',
-      tint: MoeTokens.pastelTeal,
-      onTap: onLife,
-    );
-  }
-}
-
 class _QuickAction extends StatelessWidget {
   const _QuickAction({
     required this.icon,
@@ -876,126 +825,6 @@ class _QuickAction extends StatelessWidget {
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   color: tint,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WorldStrip extends StatelessWidget {
-  const _WorldStrip({
-    required this.summaryLine,
-    required this.onOpen,
-    this.bound = false,
-    this.bindMissing = false,
-  });
-
-  final String summaryLine;
-  final VoidCallback onOpen;
-  final bool bound;
-  final bool bindMissing;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = !bound
-        ? 'TA 的世界 · 未绑定'
-        : (bindMissing ? 'TA 的世界 · 绑定异常' : 'TA 的世界 · 已绑定');
-    final accent = !bound
-        ? const Color(0xFFE2A54A)
-        : (bindMissing ? const Color(0xFFE97891) : AiBrandTokens.primary);
-    final border = !bound
-        ? const Color(0xFFFFD89C)
-        : (bindMissing ? const Color(0xFFF5C0CB) : const Color(0xFFE8E0F2));
-    final icon = !bound
-        ? Icons.link_off_rounded
-        : (bindMissing ? Icons.warning_amber_rounded : Icons.public_rounded);
-
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: border),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: accent, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      summaryLine.isNotEmpty
-                          ? summaryLine
-                          : (bound ? '点进世界看看 TA' : '进世界选一位居民设为伙伴'),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AiBrandTokens.titleColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0A4C0)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BindMissingBanner extends StatelessWidget {
-  const _BindMissingBanner({required this.onOpenWorld});
-
-  final VoidCallback onOpenWorld;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFFFF1F4),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onOpenWorld,
-        borderRadius: BorderRadius.circular(14),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 18, color: Color(0xFFE97891)),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '绑定没有丢，但居民暂时不在舞台上。点这里进世界改绑或看看近况。',
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.35,
-                    color: Color(0xFF6B4A52),
-                    fontWeight: FontWeight.w600,
-                  ),
                 ),
               ),
             ],

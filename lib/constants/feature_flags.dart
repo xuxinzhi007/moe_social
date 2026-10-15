@@ -4,9 +4,6 @@ class FeatureFlags {
 
   // ── 产品定性（2026-06）：社交为主 ─────────────────────────────────────
 
-  /// 小游戏、互动故事（GamePlay）等玩法入口。默认关闭。
-  static const bool showGameFeatures = false;
-
   /// 星辉远征主游戏（横屏卡牌 PvE）。为 true 时 Companion「小家」进入 Arena；
   /// 旧 Pet 竖屏主路径视为弃用入口（代码可留作回滚）。
   static const bool arenaGamePrototype = true;
@@ -20,15 +17,6 @@ class FeatureFlags {
 
   /// AutoGLM 自动化（自用）；入口在「设置 → 高级选项」。
   static const bool showAutoGlm = showExperimentalFeatures;
-
-  /// AI 伙伴 — 数字生命个人小世界（「TA 的世界」多居民地图）。
-  /// 养成主路径为 [arenaGamePrototype] 星辉；本开关只控制世界入口，不隐藏 Companion 聊天。
-  static const bool showLifeEngine = false;
-
-  /// Flame 小世界实验渲染（「TA 的世界」全屏 GameWidget）。
-  /// true = 走 Flame；false = 回退 CustomPaint [LifeWorldMap]。
-  /// 见 `.cursor/skills/flame-life-world/SKILL.md`。
-  static const bool useFlameLifeWorld = true;
 
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
 

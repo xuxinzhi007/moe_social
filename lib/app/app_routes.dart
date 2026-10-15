@@ -4,7 +4,6 @@ import '../constants/feature_flags.dart';
 import '../app/deferred_route.dart';
 import '../auth_service.dart';
 import '../models/community_group.dart';
-import '../models/life_state.dart';
 import '../models/post.dart';
 import '../models/user.dart';
 import '../models/topic_tag.dart';
@@ -44,8 +43,6 @@ import '../pages/ai/character_card_plaza_page.dart'
     deferred as character_card_plaza;
 import '../pages/companion/companion_memories_page.dart'
     deferred as companion_memories;
-import '../pages/life/life_entity_detail.dart';
-import '../pages/life/life_world_page.dart';
 import '../pages/notifications/notification_center_page.dart'
     deferred as notification_center;
 import '../pages/onboarding/interest_onboarding_page.dart';
@@ -334,14 +331,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           message: '正在加载扫码模块…',
         ),
     '/user-qr-code': (context) => const UserQrCodePage(),
-    '/life/world': (context) {
-      if (!FeatureFlags.showLifeEngine) {
-        return const Scaffold(
-          body: Center(child: Text('该功能已下线')),
-        );
-      }
-      return const LifeWorldPage();
-    },
     '/pet/home': (context) {
       // 兼容旧深链：恒进星辉小家。
       if (!FeatureFlags.arenaGamePrototype) {
@@ -368,20 +357,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         return const Scaffold(body: Center(child: Text('该实验未开启')));
       }
       return const GameNetworkLabPage();
-    },
-    '/life/detail': (context) {
-      if (!FeatureFlags.showLifeEngine) {
-        return const Scaffold(
-          body: Center(child: Text('该功能已下线')),
-        );
-      }
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is! LifeEntity) {
-        return const Scaffold(
-          body: Center(child: Text('缺少实体参数')),
-        );
-      }
-      return LifeEntityDetailPage(entity: args);
     },
   };
 }

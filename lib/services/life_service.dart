@@ -40,7 +40,7 @@ class LifeInitialState {
   });
 }
 
-/// 数字生命 REST 操作（WebSocket 仍由 [LifeWsService] 负责）。
+/// 数字生命 REST 操作（Arena 营地页世界快照来源）。
 class LifeService {
   static Future<Map<String, dynamic>> postLifeAction(
     String action,

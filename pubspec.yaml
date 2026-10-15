@@ -130,9 +130,6 @@ flutter:
     - assets/arena/heroes/
     - assets/lottie/chat/
     - assets/lottie/gifts/
-    - assets/farm/crops/
-    - assets/farm/tiles/
-    - assets/farm/ui/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

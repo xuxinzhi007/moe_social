@@ -51,7 +51,7 @@ class CompanionWsEvent {
   final DateTime? occurredAt;
 }
 
-/// 伙伴 WebSocket：连接 / 心跳 / 指数退避重连（模式对齐 [LifeWsService]）。
+/// 伙伴 WebSocket：连接 / 心跳 / 指数退避重连。
 class CompanionWsService {
   static const String _wsPath = '/ws/companion';
   static const int _baseReconnectDelay = 3;
