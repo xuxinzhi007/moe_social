@@ -99,12 +99,3 @@ func (s *Server) ListIncomingFriendRequests(ctx context.Context, in *userv1.List
 	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
 	return app.ListIncomingFriendRequests(ctx, in)
 }
-
-func (s *Server) ListOutgoingFriendRequests(ctx context.Context, in *userv1.ListOutgoingFriendRequestsReq) (*userv1.ListOutgoingFriendRequestsResp, error) {
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
-	return app.ListOutgoingFriendRequests(ctx, in)
-}

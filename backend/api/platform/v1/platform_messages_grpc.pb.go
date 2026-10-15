@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Platform_GetPublicClientConfig_FullMethodName    = "/platform.v1.Platform/GetPublicClientConfig"
-	Platform_ListUserContent_FullMethodName          = "/platform.v1.Platform/ListUserContent"
 	Platform_GetLlmConfig_FullMethodName             = "/platform.v1.Platform/GetLlmConfig"
 	Platform_MoeExecuteTool_FullMethodName           = "/platform.v1.Platform/MoeExecuteTool"
 	Platform_MoeToolsSchema_FullMethodName           = "/platform.v1.Platform/MoeToolsSchema"
@@ -45,7 +44,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PlatformClient interface {
 	GetPublicClientConfig(ctx context.Context, in *GetPublicClientConfigReq, opts ...grpc.CallOption) (*GetPublicClientConfigResp, error)
-	ListUserContent(ctx context.Context, in *ListUserContentReq, opts ...grpc.CallOption) (*ListUserContentResp, error)
 	GetLlmConfig(ctx context.Context, in *GetLlmConfigReq, opts ...grpc.CallOption) (*GetLlmConfigResp, error)
 	MoeExecuteTool(ctx context.Context, in *MoeToolExecuteReq, opts ...grpc.CallOption) (*MoeToolExecuteResp, error)
 	MoeToolsSchema(ctx context.Context, in *MoeToolSchemaReq, opts ...grpc.CallOption) (*MoeToolSchemaResp, error)
@@ -77,16 +75,6 @@ func (c *platformClient) GetPublicClientConfig(ctx context.Context, in *GetPubli
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetPublicClientConfigResp)
 	err := c.cc.Invoke(ctx, Platform_GetPublicClientConfig_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *platformClient) ListUserContent(ctx context.Context, in *ListUserContentReq, opts ...grpc.CallOption) (*ListUserContentResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListUserContentResp)
-	err := c.cc.Invoke(ctx, Platform_ListUserContent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +256,6 @@ func (c *platformClient) GetLatestAppRelease(ctx context.Context, in *GetLatestA
 // for forward compatibility.
 type PlatformServer interface {
 	GetPublicClientConfig(context.Context, *GetPublicClientConfigReq) (*GetPublicClientConfigResp, error)
-	ListUserContent(context.Context, *ListUserContentReq) (*ListUserContentResp, error)
 	GetLlmConfig(context.Context, *GetLlmConfigReq) (*GetLlmConfigResp, error)
 	MoeExecuteTool(context.Context, *MoeToolExecuteReq) (*MoeToolExecuteResp, error)
 	MoeToolsSchema(context.Context, *MoeToolSchemaReq) (*MoeToolSchemaResp, error)
@@ -298,9 +285,6 @@ type UnimplementedPlatformServer struct{}
 
 func (UnimplementedPlatformServer) GetPublicClientConfig(context.Context, *GetPublicClientConfigReq) (*GetPublicClientConfigResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPublicClientConfig not implemented")
-}
-func (UnimplementedPlatformServer) ListUserContent(context.Context, *ListUserContentReq) (*ListUserContentResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListUserContent not implemented")
 }
 func (UnimplementedPlatformServer) GetLlmConfig(context.Context, *GetLlmConfigReq) (*GetLlmConfigResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetLlmConfig not implemented")
@@ -388,24 +372,6 @@ func _Platform_GetPublicClientConfig_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PlatformServer).GetPublicClientConfig(ctx, req.(*GetPublicClientConfigReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Platform_ListUserContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListUserContentReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlatformServer).ListUserContent(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Platform_ListUserContent_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlatformServer).ListUserContent(ctx, req.(*ListUserContentReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -726,10 +692,6 @@ var Platform_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPublicClientConfig",
 			Handler:    _Platform_GetPublicClientConfig_Handler,
-		},
-		{
-			MethodName: "ListUserContent",
-			Handler:    _Platform_ListUserContent_Handler,
 		},
 		{
 			MethodName: "GetLlmConfig",

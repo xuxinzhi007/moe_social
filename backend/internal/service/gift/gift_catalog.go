@@ -13,7 +13,3 @@ func (s *AppService) GetGifts(ctx context.Context, in *giftv1.GetGiftsRequest) (
 	}
 	return &giftv1.GetGiftsReply{Gifts: gifts, Total: total}, nil
 }
-
-func (s *AppService) GetGift(ctx context.Context, in *giftv1.GetGiftRequest) (*giftv1.GetGiftReply, error) {
-	return giftbiz.GetGift(ctx, s.store, in.GetGiftId())
-}

@@ -71,14 +71,6 @@ func (s *AppService) GenerateContent(ctx context.Context, in contentbiz.Generate
 	}, nil
 }
 
-// ListContent 分页查询用户内容列表。
-func (s *AppService) ListContent(_ context.Context, in contentbiz.ListInput) contentbiz.ListResult {
-	if s == nil {
-		return contentbiz.ListResult{}
-	}
-	return contentbiz.ListContent(in)
-}
-
 // ErrUnsupportedContentType 不支持的内容类型。
 var ErrUnsupportedContentType = contentbiz.ErrUnsupportedContentType
 

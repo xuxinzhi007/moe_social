@@ -29,12 +29,6 @@ type AdminStore interface {
 	UpdateUserFields(ctx context.Context, userID uint, updates map[string]interface{}) error
 	ReloadUser(ctx context.Context, userID uint) (model.User, error)
 
-	ListMenus(ctx context.Context) ([]model.AdminMenu, error)
-	FindMenuByKey(ctx context.Context, key string) (model.AdminMenu, error)
-	CreateMenu(ctx context.Context, row *model.AdminMenu) error
-	SaveMenu(ctx context.Context, row *model.AdminMenu) error
-	DeleteMenuByKey(ctx context.Context, key string) error
-
 	ListAnnouncements(ctx context.Context, keyword, status string, offset, limit int) ([]model.AdminAnnouncement, int64, error)
 	GetAnnouncementByID(ctx context.Context, id uint64) (model.AdminAnnouncement, error)
 	CreateAnnouncement(ctx context.Context, row *model.AdminAnnouncement) error

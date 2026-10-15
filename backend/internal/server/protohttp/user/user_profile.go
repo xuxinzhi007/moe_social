@@ -14,14 +14,6 @@ func (s *Server) GetUserInfo(ctx context.Context, in *userv1.GetUserInfoReq) (*u
 	return app.GetUserInfo(ctx, in)
 }
 
-func (s *Server) GetUser(ctx context.Context, in *userv1.GetUserReq) (*userv1.GetUserResp, error) {
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.GetUser(ctx, in)
-}
-
 func (s *Server) UpdateUserInfo(ctx context.Context, in *userv1.UpdateUserInfoReq) (*userv1.UpdateUserInfoResp, error) {
 	app, err := s.requireApp()
 	if err != nil {

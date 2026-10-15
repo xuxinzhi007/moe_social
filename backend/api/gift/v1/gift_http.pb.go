@@ -19,17 +19,13 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationGiftServiceGetGift = "/gift.v1.GiftService/GetGift"
 const OperationGiftServiceGetGiftPurchaseOrders = "/gift.v1.GiftService/GetGiftPurchaseOrders"
-const OperationGiftServiceGetGiftRecords = "/gift.v1.GiftService/GetGiftRecords"
 const OperationGiftServiceGetGifts = "/gift.v1.GiftService/GetGifts"
 const OperationGiftServicePurchaseGift = "/gift.v1.GiftService/PurchaseGift"
 const OperationGiftServiceSendGift = "/gift.v1.GiftService/SendGift"
 
 type GiftServiceHTTPServer interface {
-	GetGift(context.Context, *GetGiftRequest) (*GetGiftReply, error)
 	GetGiftPurchaseOrders(context.Context, *GetGiftPurchaseOrdersRequest) (*GetGiftPurchaseOrdersReply, error)
-	GetGiftRecords(context.Context, *GetGiftRecordsRequest) (*GetGiftRecordsReply, error)
 	GetGifts(context.Context, *GetGiftsRequest) (*GetGiftsReply, error)
 	PurchaseGift(context.Context, *PurchaseGiftRequest) (*PurchaseGiftReply, error)
 	SendGift(context.Context, *SendGiftRequest) (*SendGiftReply, error)
@@ -38,10 +34,8 @@ type GiftServiceHTTPServer interface {
 func RegisterGiftServiceHTTPServer(s *http.Server, srv GiftServiceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/gifts", _GiftService_GetGifts0_HTTP_Handler(srv))
-	r.GET("/api/gifts/{gift_id}", _GiftService_GetGift0_HTTP_Handler(srv))
 	r.POST("/api/user/{from_user_id}/gifts/send", _GiftService_SendGift0_HTTP_Handler(srv))
 	r.POST("/api/user/{user_id}/gifts/purchase", _GiftService_PurchaseGift0_HTTP_Handler(srv))
-	r.GET("/api/user/{user_id}/gifts/records", _GiftService_GetGiftRecords0_HTTP_Handler(srv))
 	r.GET("/api/user/{user_id}/gifts/purchase-orders", _GiftService_GetGiftPurchaseOrders0_HTTP_Handler(srv))
 }
 
@@ -60,28 +54,6 @@ func _GiftService_GetGifts0_HTTP_Handler(srv GiftServiceHTTPServer) func(ctx htt
 			return err
 		}
 		reply := out.(*GetGiftsReply)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _GiftService_GetGift0_HTTP_Handler(srv GiftServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in GetGiftRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationGiftServiceGetGift)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetGift(ctx, req.(*GetGiftRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*GetGiftReply)
 		return ctx.Result(200, reply)
 	}
 }
@@ -136,28 +108,6 @@ func _GiftService_PurchaseGift0_HTTP_Handler(srv GiftServiceHTTPServer) func(ctx
 	}
 }
 
-func _GiftService_GetGiftRecords0_HTTP_Handler(srv GiftServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in GetGiftRecordsRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationGiftServiceGetGiftRecords)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetGiftRecords(ctx, req.(*GetGiftRecordsRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*GetGiftRecordsReply)
-		return ctx.Result(200, reply)
-	}
-}
-
 func _GiftService_GetGiftPurchaseOrders0_HTTP_Handler(srv GiftServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in GetGiftPurchaseOrdersRequest
@@ -181,9 +131,7 @@ func _GiftService_GetGiftPurchaseOrders0_HTTP_Handler(srv GiftServiceHTTPServer)
 }
 
 type GiftServiceHTTPClient interface {
-	GetGift(ctx context.Context, req *GetGiftRequest, opts ...http.CallOption) (rsp *GetGiftReply, err error)
 	GetGiftPurchaseOrders(ctx context.Context, req *GetGiftPurchaseOrdersRequest, opts ...http.CallOption) (rsp *GetGiftPurchaseOrdersReply, err error)
-	GetGiftRecords(ctx context.Context, req *GetGiftRecordsRequest, opts ...http.CallOption) (rsp *GetGiftRecordsReply, err error)
 	GetGifts(ctx context.Context, req *GetGiftsRequest, opts ...http.CallOption) (rsp *GetGiftsReply, err error)
 	PurchaseGift(ctx context.Context, req *PurchaseGiftRequest, opts ...http.CallOption) (rsp *PurchaseGiftReply, err error)
 	SendGift(ctx context.Context, req *SendGiftRequest, opts ...http.CallOption) (rsp *SendGiftReply, err error)
@@ -197,37 +145,11 @@ func NewGiftServiceHTTPClient(client *http.Client) GiftServiceHTTPClient {
 	return &GiftServiceHTTPClientImpl{client}
 }
 
-func (c *GiftServiceHTTPClientImpl) GetGift(ctx context.Context, in *GetGiftRequest, opts ...http.CallOption) (*GetGiftReply, error) {
-	var out GetGiftReply
-	pattern := "/api/gifts/{gift_id}"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationGiftServiceGetGift))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 func (c *GiftServiceHTTPClientImpl) GetGiftPurchaseOrders(ctx context.Context, in *GetGiftPurchaseOrdersRequest, opts ...http.CallOption) (*GetGiftPurchaseOrdersReply, error) {
 	var out GetGiftPurchaseOrdersReply
 	pattern := "/api/user/{user_id}/gifts/purchase-orders"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationGiftServiceGetGiftPurchaseOrders))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *GiftServiceHTTPClientImpl) GetGiftRecords(ctx context.Context, in *GetGiftRecordsRequest, opts ...http.CallOption) (*GetGiftRecordsReply, error) {
-	var out GetGiftRecordsReply
-	pattern := "/api/user/{user_id}/gifts/records"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationGiftServiceGetGiftRecords))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

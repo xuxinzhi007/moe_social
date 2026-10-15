@@ -158,15 +158,6 @@ type AdminBootstrapLevelsResp struct {
 	Data AdminBootstrapLevelsData `json:"data"`
 }
 
-type AdminBootstrapMenusData struct {
-	Created int `json:"created"`
-}
-
-type AdminBootstrapMenusResp struct {
-	BaseResp
-	Data AdminBootstrapMenusData `json:"data"`
-}
-
 type AdminBootstrapTopicTagsData struct {
 	Created int `json:"created"`
 }
@@ -386,14 +377,6 @@ type AdminDeleteMediaImageReq struct {
 }
 
 type AdminDeleteMediaImageResp struct {
-	BaseResp
-}
-
-type AdminDeleteMenuReq struct {
-	MenuKey string `path:"menu_key"`
-}
-
-type AdminDeleteMenuResp struct {
 	BaseResp
 }
 
@@ -924,11 +907,6 @@ type AdminListMediaImagesResp struct {
 	Data AdminListMediaImagesData `json:"data"`
 }
 
-type AdminListMenusResp struct {
-	BaseResp
-	Data []AdminMenuItem `json:"data"`
-}
-
 type AdminListMoeRuntimesData struct {
 	Items []MoeAgentRuntimeItem `json:"items"`
 }
@@ -1132,24 +1110,6 @@ type AdminMediaOwnerSummary struct {
 type AdminMemoryTypeStat struct {
 	MemoryType string `json:"memory_type"`
 	Count      int    `json:"count"`
-}
-
-type AdminMenuItem struct {
-	Id           string `json:"id"`
-	Key          string `json:"key"`
-	Kind         string `json:"kind"`
-	ParentKey    string `json:"parent_key"`
-	Path         string `json:"path"`
-	Label        string `json:"label"`
-	Icon         string `json:"icon"`
-	Caption      string `json:"caption"`
-	Status       string `json:"status"`
-	AppDomain    string `json:"app_domain"`
-	SortOrder    int    `json:"sort_order"`
-	DefaultOpen  bool   `json:"default_open"`
-	End          bool   `json:"end"`
-	ExternalHref string `json:"external_href"`
-	Enabled      bool   `json:"enabled"`
 }
 
 type AdminMoeToolCallItem struct {
@@ -1545,28 +1505,6 @@ type AdminUpdateVipPlanReq struct {
 type AdminUpdateVipPlanResp struct {
 	BaseResp
 	Data VipPlan `json:"data"`
-}
-
-type AdminUpsertMenuReq struct {
-	Key          string `json:"key"`
-	Kind         string `json:"kind"`
-	ParentKey    string `json:"parent_key,optional"`
-	Path         string `json:"path,optional"`
-	Label        string `json:"label"`
-	Icon         string `json:"icon,optional"`
-	Caption      string `json:"caption,optional"`
-	Status       string `json:"status,optional"`
-	AppDomain    string `json:"app_domain,optional"`
-	SortOrder    int    `json:"sort_order,optional"`
-	DefaultOpen  bool   `json:"default_open,optional"`
-	End          bool   `json:"end,optional"`
-	ExternalHref string `json:"external_href,optional"`
-	Enabled      bool   `json:"enabled,optional"`
-}
-
-type AdminUpsertMenuResp struct {
-	BaseResp
-	Data AdminMenuItem `json:"data"`
 }
 
 type AdminUpsertMoeBotFlowReq struct {

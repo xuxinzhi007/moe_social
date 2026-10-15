@@ -23,7 +23,6 @@ const (
 	BattleService_GetRoom_FullMethodName        = "/battle.v1.BattleService/GetRoom"
 	BattleService_StartRoom_FullMethodName      = "/battle.v1.BattleService/StartRoom"
 	BattleService_SendBattleGift_FullMethodName = "/battle.v1.BattleService/SendBattleGift"
-	BattleService_FinishRoom_FullMethodName     = "/battle.v1.BattleService/FinishRoom"
 )
 
 // BattleServiceClient is the client API for BattleService service.
@@ -34,7 +33,6 @@ type BattleServiceClient interface {
 	GetRoom(ctx context.Context, in *GetRoomRequest, opts ...grpc.CallOption) (*BattleRoomReply, error)
 	StartRoom(ctx context.Context, in *StartRoomRequest, opts ...grpc.CallOption) (*BattleRoomReply, error)
 	SendBattleGift(ctx context.Context, in *SendBattleGiftRequest, opts ...grpc.CallOption) (*SendBattleGiftReply, error)
-	FinishRoom(ctx context.Context, in *FinishRoomRequest, opts ...grpc.CallOption) (*BattleRoomReply, error)
 }
 
 type battleServiceClient struct {
@@ -85,16 +83,6 @@ func (c *battleServiceClient) SendBattleGift(ctx context.Context, in *SendBattle
 	return out, nil
 }
 
-func (c *battleServiceClient) FinishRoom(ctx context.Context, in *FinishRoomRequest, opts ...grpc.CallOption) (*BattleRoomReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BattleRoomReply)
-	err := c.cc.Invoke(ctx, BattleService_FinishRoom_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // BattleServiceServer is the server API for BattleService service.
 // All implementations must embed UnimplementedBattleServiceServer
 // for forward compatibility.
@@ -103,7 +91,6 @@ type BattleServiceServer interface {
 	GetRoom(context.Context, *GetRoomRequest) (*BattleRoomReply, error)
 	StartRoom(context.Context, *StartRoomRequest) (*BattleRoomReply, error)
 	SendBattleGift(context.Context, *SendBattleGiftRequest) (*SendBattleGiftReply, error)
-	FinishRoom(context.Context, *FinishRoomRequest) (*BattleRoomReply, error)
 	mustEmbedUnimplementedBattleServiceServer()
 }
 
@@ -125,9 +112,6 @@ func (UnimplementedBattleServiceServer) StartRoom(context.Context, *StartRoomReq
 }
 func (UnimplementedBattleServiceServer) SendBattleGift(context.Context, *SendBattleGiftRequest) (*SendBattleGiftReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendBattleGift not implemented")
-}
-func (UnimplementedBattleServiceServer) FinishRoom(context.Context, *FinishRoomRequest) (*BattleRoomReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method FinishRoom not implemented")
 }
 func (UnimplementedBattleServiceServer) mustEmbedUnimplementedBattleServiceServer() {}
 func (UnimplementedBattleServiceServer) testEmbeddedByValue()                       {}
@@ -222,24 +206,6 @@ func _BattleService_SendBattleGift_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BattleService_FinishRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FinishRoomRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BattleServiceServer).FinishRoom(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BattleService_FinishRoom_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BattleServiceServer).FinishRoom(ctx, req.(*FinishRoomRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // BattleService_ServiceDesc is the grpc.ServiceDesc for BattleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -262,10 +228,6 @@ var BattleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendBattleGift",
 			Handler:    _BattleService_SendBattleGift_Handler,
-		},
-		{
-			MethodName: "FinishRoom",
-			Handler:    _BattleService_FinishRoom_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

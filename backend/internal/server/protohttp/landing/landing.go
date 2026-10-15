@@ -32,11 +32,3 @@ func (s *Server) SubmitLandingFeedback(ctx context.Context, in *landingv1.Submit
 	}
 	return app.Submit(ctx, in)
 }
-
-func (s *Server) ListLandingFeedback(ctx context.Context, in *landingv1.ListLandingFeedbackRequest) (*landingv1.ListLandingFeedbackReply, error) {
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.List(ctx, in)
-}

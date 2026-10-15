@@ -141,22 +141,6 @@ func ListIncomingFriendRequests(ctx context.Context, store UserStore, actorID ui
 	return out, nil
 }
 
-// ListOutgoingFriendRequests 发出的待处理申请。
-func ListOutgoingFriendRequests(ctx context.Context, store UserStore, actorID uint) ([]*userv1.FriendRequestView, error) {
-	if actorID == 0 {
-		return nil, ErrUnauthorized
-	}
-	list, err := store.ListOutgoingFriendRequests(ctx, actorID)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]*userv1.FriendRequestView, 0, len(list))
-	for i := range list {
-		out = append(out, friendRequestView(ctx, store, list[i]))
-	}
-	return out, nil
-}
-
 func loadOwnedPendingRequest(ctx context.Context, store UserStore, me uint, requestID string) (*model.FriendRequest, error) {
 	rid, err := parseUserIDString(requestID)
 	if err != nil {

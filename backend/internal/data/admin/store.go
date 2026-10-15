@@ -108,30 +108,6 @@ func (s *store) ReloadUser(ctx context.Context, userID uint) (model.User, error)
 	return user, err
 }
 
-func (s *store) ListMenus(ctx context.Context) ([]model.AdminMenu, error) {
-	var rows []model.AdminMenu
-	err := s.db.WithContext(ctx).Order("sort_order ASC, id ASC").Find(&rows).Error
-	return rows, err
-}
-
-func (s *store) FindMenuByKey(ctx context.Context, key string) (model.AdminMenu, error) {
-	var row model.AdminMenu
-	err := s.db.WithContext(ctx).Where("`key` = ?", key).First(&row).Error
-	return row, err
-}
-
-func (s *store) CreateMenu(ctx context.Context, row *model.AdminMenu) error {
-	return s.db.WithContext(ctx).Create(row).Error
-}
-
-func (s *store) SaveMenu(ctx context.Context, row *model.AdminMenu) error {
-	return s.db.WithContext(ctx).Save(row).Error
-}
-
-func (s *store) DeleteMenuByKey(ctx context.Context, key string) error {
-	return s.db.WithContext(ctx).Where("`key` = ?", key).Delete(&model.AdminMenu{}).Error
-}
-
 func (s *store) ListAnnouncements(ctx context.Context, keyword, status string, offset, limit int) ([]model.AdminAnnouncement, int64, error) {
 	q := s.db.WithContext(ctx).Model(&model.AdminAnnouncement{})
 	if kw := strings.TrimSpace(keyword); kw != "" {

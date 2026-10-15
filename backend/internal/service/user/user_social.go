@@ -132,19 +132,6 @@ func (s *AppService) ListIncomingFriendRequests(ctx context.Context, in *userv1.
 	return userbiz.ListIncomingFriendRequestsRespV1(data), nil
 }
 
-// ListOutgoingFriendRequests 发出的申请。
-func (s *AppService) ListOutgoingFriendRequests(ctx context.Context, in *userv1.ListOutgoingFriendRequestsReq) (*userv1.ListOutgoingFriendRequestsResp, error) {
-	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
-	if err != nil {
-		return nil, err
-	}
-	data, err := userbiz.ListOutgoingFriendRequests(ctx, s.store, me)
-	if err != nil {
-		return nil, err
-	}
-	return userbiz.ListOutgoingFriendRequestsRespV1(data), nil
-}
-
 // AcceptFriendRequest 同意申请。
 func (s *AppService) AcceptFriendRequest(ctx context.Context, in *userv1.AcceptFriendRequestReq) (*userv1.AcceptFriendRequestResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())

@@ -41,7 +41,6 @@ const OperationUserServiceGetFriendRelation = "/user.v1.UserService/GetFriendRel
 const OperationUserServiceGetTempEmailLatestCode = "/user.v1.UserService/GetTempEmailLatestCode"
 const OperationUserServiceGetTransaction = "/user.v1.UserService/GetTransaction"
 const OperationUserServiceGetTransactions = "/user.v1.UserService/GetTransactions"
-const OperationUserServiceGetUser = "/user.v1.UserService/GetUser"
 const OperationUserServiceGetUserAvatar = "/user.v1.UserService/GetUserAvatar"
 const OperationUserServiceGetUserByEmail = "/user.v1.UserService/GetUserByEmail"
 const OperationUserServiceGetUserCount = "/user.v1.UserService/GetUserCount"
@@ -50,7 +49,6 @@ const OperationUserServiceGetUserInfo = "/user.v1.UserService/GetUserInfo"
 const OperationUserServiceGetUsers = "/user.v1.UserService/GetUsers"
 const OperationUserServiceListFriends = "/user.v1.UserService/ListFriends"
 const OperationUserServiceListIncomingFriendRequests = "/user.v1.UserService/ListIncomingFriendRequests"
-const OperationUserServiceListOutgoingFriendRequests = "/user.v1.UserService/ListOutgoingFriendRequests"
 const OperationUserServiceListUserDevices = "/user.v1.UserService/ListUserDevices"
 const OperationUserServiceLogin = "/user.v1.UserService/Login"
 const OperationUserServicePurchaseAvatarOutfit = "/user.v1.UserService/PurchaseAvatarOutfit"
@@ -93,7 +91,6 @@ type UserServiceHTTPServer interface {
 	GetTempEmailLatestCode(context.Context, *GetTempEmailLatestCodeReq) (*GetTempEmailLatestCodeResp, error)
 	GetTransaction(context.Context, *GetTransactionReq) (*GetTransactionResp, error)
 	GetTransactions(context.Context, *GetTransactionsReq) (*GetTransactionsResp, error)
-	GetUser(context.Context, *GetUserReq) (*GetUserResp, error)
 	GetUserAvatar(context.Context, *GetUserAvatarReq) (*GetUserAvatarResp, error)
 	GetUserByEmail(context.Context, *GetUserByEmailReq) (*GetUserByEmailResp, error)
 	GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error)
@@ -102,7 +99,6 @@ type UserServiceHTTPServer interface {
 	GetUsers(context.Context, *GetUsersReq) (*GetUsersResp, error)
 	ListFriends(context.Context, *ListFriendsReq) (*ListFriendsResp, error)
 	ListIncomingFriendRequests(context.Context, *ListIncomingFriendRequestsReq) (*ListIncomingFriendRequestsResp, error)
-	ListOutgoingFriendRequests(context.Context, *ListOutgoingFriendRequestsReq) (*ListOutgoingFriendRequestsResp, error)
 	ListUserDevices(context.Context, *ListUserDevicesReq) (*ListUserDevicesResp, error)
 	Login(context.Context, *LoginReq) (*LoginResp, error)
 	PurchaseAvatarOutfit(context.Context, *PurchaseAvatarOutfitReq) (*PurchaseAvatarOutfitResp, error)
@@ -129,7 +125,6 @@ func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
 	r.POST("/api/user/login", _UserService_Login0_HTTP_Handler(srv))
 	r.POST("/api/user/register", _UserService_Register0_HTTP_Handler(srv))
 	r.GET("/api/user/{user_id}", _UserService_GetUserInfo0_HTTP_Handler(srv))
-	r.GET("/api/user/{user_id}/detail", _UserService_GetUser0_HTTP_Handler(srv))
 	r.PUT("/api/user/{user_id}", _UserService_UpdateUserInfo0_HTTP_Handler(srv))
 	r.POST("/api/user/{user_id}/devices/sync", _UserService_SyncUserDevice0_HTTP_Handler(srv))
 	r.GET("/api/user/{user_id}/devices", _UserService_ListUserDevices0_HTTP_Handler(srv))
@@ -139,7 +134,6 @@ func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
 	r.POST("/api/user/{user_id}/friend-requests/{request_id}/accept", _UserService_AcceptFriendRequest0_HTTP_Handler(srv))
 	r.POST("/api/user/{user_id}/friend-requests/{request_id}/reject", _UserService_RejectFriendRequest0_HTTP_Handler(srv))
 	r.GET("/api/user/{user_id}/friend-requests/incoming", _UserService_ListIncomingFriendRequests0_HTTP_Handler(srv))
-	r.GET("/api/user/{user_id}/friend-requests/outgoing", _UserService_ListOutgoingFriendRequests0_HTTP_Handler(srv))
 	r.GET("/api/auth/feishu/authorize-url", _UserService_FeishuAuthorizeURL0_HTTP_Handler(srv))
 	r.POST("/api/auth/feishu/login", _UserService_FeishuLogin0_HTTP_Handler(srv))
 	r.GET("/api/auth/feishu/public-config", _UserService_FeishuPublicConfig0_HTTP_Handler(srv))
@@ -240,28 +234,6 @@ func _UserService_GetUserInfo0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx 
 			return err
 		}
 		reply := out.(*GetUserInfoResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _UserService_GetUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in GetUserReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationUserServiceGetUser)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetUser(ctx, req.(*GetUserReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*GetUserResp)
 		return ctx.Result(200, reply)
 	}
 }
@@ -475,28 +447,6 @@ func _UserService_ListIncomingFriendRequests0_HTTP_Handler(srv UserServiceHTTPSe
 			return err
 		}
 		reply := out.(*ListIncomingFriendRequestsResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _UserService_ListOutgoingFriendRequests0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ListOutgoingFriendRequestsReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationUserServiceListOutgoingFriendRequests)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.ListOutgoingFriendRequests(ctx, req.(*ListOutgoingFriendRequestsReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*ListOutgoingFriendRequestsResp)
 		return ctx.Result(200, reply)
 	}
 }
@@ -1309,7 +1259,6 @@ type UserServiceHTTPClient interface {
 	GetTempEmailLatestCode(ctx context.Context, req *GetTempEmailLatestCodeReq, opts ...http.CallOption) (rsp *GetTempEmailLatestCodeResp, err error)
 	GetTransaction(ctx context.Context, req *GetTransactionReq, opts ...http.CallOption) (rsp *GetTransactionResp, err error)
 	GetTransactions(ctx context.Context, req *GetTransactionsReq, opts ...http.CallOption) (rsp *GetTransactionsResp, err error)
-	GetUser(ctx context.Context, req *GetUserReq, opts ...http.CallOption) (rsp *GetUserResp, err error)
 	GetUserAvatar(ctx context.Context, req *GetUserAvatarReq, opts ...http.CallOption) (rsp *GetUserAvatarResp, err error)
 	GetUserByEmail(ctx context.Context, req *GetUserByEmailReq, opts ...http.CallOption) (rsp *GetUserByEmailResp, err error)
 	GetUserCount(ctx context.Context, req *GetUserCountReq, opts ...http.CallOption) (rsp *GetUserCountResp, err error)
@@ -1318,7 +1267,6 @@ type UserServiceHTTPClient interface {
 	GetUsers(ctx context.Context, req *GetUsersReq, opts ...http.CallOption) (rsp *GetUsersResp, err error)
 	ListFriends(ctx context.Context, req *ListFriendsReq, opts ...http.CallOption) (rsp *ListFriendsResp, err error)
 	ListIncomingFriendRequests(ctx context.Context, req *ListIncomingFriendRequestsReq, opts ...http.CallOption) (rsp *ListIncomingFriendRequestsResp, err error)
-	ListOutgoingFriendRequests(ctx context.Context, req *ListOutgoingFriendRequestsReq, opts ...http.CallOption) (rsp *ListOutgoingFriendRequestsResp, err error)
 	ListUserDevices(ctx context.Context, req *ListUserDevicesReq, opts ...http.CallOption) (rsp *ListUserDevicesResp, err error)
 	Login(ctx context.Context, req *LoginReq, opts ...http.CallOption) (rsp *LoginResp, err error)
 	PurchaseAvatarOutfit(ctx context.Context, req *PurchaseAvatarOutfitReq, opts ...http.CallOption) (rsp *PurchaseAvatarOutfitResp, err error)
@@ -1621,19 +1569,6 @@ func (c *UserServiceHTTPClientImpl) GetTransactions(ctx context.Context, in *Get
 	return &out, nil
 }
 
-func (c *UserServiceHTTPClientImpl) GetUser(ctx context.Context, in *GetUserReq, opts ...http.CallOption) (*GetUserResp, error) {
-	var out GetUserResp
-	pattern := "/api/user/{user_id}/detail"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationUserServiceGetUser))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 func (c *UserServiceHTTPClientImpl) GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...http.CallOption) (*GetUserAvatarResp, error) {
 	var out GetUserAvatarResp
 	pattern := "/api/avatar/{user_id}"
@@ -1730,19 +1665,6 @@ func (c *UserServiceHTTPClientImpl) ListIncomingFriendRequests(ctx context.Conte
 	pattern := "/api/user/{user_id}/friend-requests/incoming"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationUserServiceListIncomingFriendRequests))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *UserServiceHTTPClientImpl) ListOutgoingFriendRequests(ctx context.Context, in *ListOutgoingFriendRequestsReq, opts ...http.CallOption) (*ListOutgoingFriendRequestsResp, error) {
-	var out ListOutgoingFriendRequestsResp
-	pattern := "/api/user/{user_id}/friend-requests/outgoing"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationUserServiceListOutgoingFriendRequests))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

@@ -22,7 +22,6 @@ const _ = http.SupportPackageIsVersion1
 const OperationAdminAppAdminBootstrapAchievements = "/admin.v1.AdminApp/AdminBootstrapAchievements"
 const OperationAdminAppAdminBootstrapGifts = "/admin.v1.AdminApp/AdminBootstrapGifts"
 const OperationAdminAppAdminBootstrapLevels = "/admin.v1.AdminApp/AdminBootstrapLevels"
-const OperationAdminAppAdminBootstrapMenus = "/admin.v1.AdminApp/AdminBootstrapMenus"
 const OperationAdminAppAdminBootstrapTopicTags = "/admin.v1.AdminApp/AdminBootstrapTopicTags"
 const OperationAdminAppAdminBootstrapVipPlans = "/admin.v1.AdminApp/AdminBootstrapVipPlans"
 const OperationAdminAppAdminBroadcastNotification = "/admin.v1.AdminApp/AdminBroadcastNotification"
@@ -39,7 +38,6 @@ const OperationAdminAppAdminDeleteFollow = "/admin.v1.AdminApp/AdminDeleteFollow
 const OperationAdminAppAdminDeleteGift = "/admin.v1.AdminApp/AdminDeleteGift"
 const OperationAdminAppAdminDeleteGroup = "/admin.v1.AdminApp/AdminDeleteGroup"
 const OperationAdminAppAdminDeleteMediaImage = "/admin.v1.AdminApp/AdminDeleteMediaImage"
-const OperationAdminAppAdminDeleteMenu = "/admin.v1.AdminApp/AdminDeleteMenu"
 const OperationAdminAppAdminDeletePost = "/admin.v1.AdminApp/AdminDeletePost"
 const OperationAdminAppAdminDeleteTagDictionary = "/admin.v1.AdminApp/AdminDeleteTagDictionary"
 const OperationAdminAppAdminDeleteTopicTag = "/admin.v1.AdminApp/AdminDeleteTopicTag"
@@ -65,7 +63,6 @@ const OperationAdminAppAdminListGifts = "/admin.v1.AdminApp/AdminListGifts"
 const OperationAdminAppAdminListGroups = "/admin.v1.AdminApp/AdminListGroups"
 const OperationAdminAppAdminListLevelConfigs = "/admin.v1.AdminApp/AdminListLevelConfigs"
 const OperationAdminAppAdminListMediaImages = "/admin.v1.AdminApp/AdminListMediaImages"
-const OperationAdminAppAdminListMenus = "/admin.v1.AdminApp/AdminListMenus"
 const OperationAdminAppAdminListPostReports = "/admin.v1.AdminApp/AdminListPostReports"
 const OperationAdminAppAdminListPosts = "/admin.v1.AdminApp/AdminListPosts"
 const OperationAdminAppAdminListTagDictionary = "/admin.v1.AdminApp/AdminListTagDictionary"
@@ -89,13 +86,11 @@ const OperationAdminAppAdminUpdateTopicTag = "/admin.v1.AdminApp/AdminUpdateTopi
 const OperationAdminAppAdminUpdateUser = "/admin.v1.AdminApp/AdminUpdateUser"
 const OperationAdminAppAdminUpdateVipPlan = "/admin.v1.AdminApp/AdminUpdateVipPlan"
 const OperationAdminAppAdminUpsertAppRelease = "/admin.v1.AdminApp/AdminUpsertAppRelease"
-const OperationAdminAppAdminUpsertMenu = "/admin.v1.AdminApp/AdminUpsertMenu"
 
 type AdminAppHTTPServer interface {
 	AdminBootstrapAchievements(context.Context, *AdminBootstrapAchievementsReq) (*AdminBootstrapAchievementsResp, error)
 	AdminBootstrapGifts(context.Context, *AdminBootstrapGiftsReq) (*AdminBootstrapGiftsResp, error)
 	AdminBootstrapLevels(context.Context, *AdminBootstrapLevelsReq) (*AdminBootstrapLevelsResp, error)
-	AdminBootstrapMenus(context.Context, *AdminBootstrapMenusReq) (*AdminBootstrapMenusResp, error)
 	AdminBootstrapTopicTags(context.Context, *AdminBootstrapTopicTagsReq) (*AdminBootstrapTopicTagsResp, error)
 	AdminBootstrapVipPlans(context.Context, *AdminBootstrapVipPlansReq) (*AdminBootstrapVipPlansResp, error)
 	AdminBroadcastNotification(context.Context, *AdminBroadcastNotificationReq) (*AdminBroadcastNotificationResp, error)
@@ -112,7 +107,6 @@ type AdminAppHTTPServer interface {
 	AdminDeleteGift(context.Context, *AdminDeleteGiftReq) (*AdminDeleteGiftResp, error)
 	AdminDeleteGroup(context.Context, *AdminDeleteGroupReq) (*AdminDeleteGroupResp, error)
 	AdminDeleteMediaImage(context.Context, *AdminDeleteMediaImageReq) (*AdminDeleteMediaImageResp, error)
-	AdminDeleteMenu(context.Context, *AdminDeleteMenuReq) (*AdminDeleteMenuResp, error)
 	AdminDeletePost(context.Context, *AdminDeletePostReq) (*AdminDeletePostResp, error)
 	AdminDeleteTagDictionary(context.Context, *AdminDeleteTagDictionaryReq) (*AdminDeleteTagDictionaryResp, error)
 	AdminDeleteTopicTag(context.Context, *AdminDeleteTopicTagReq) (*AdminDeleteTopicTagResp, error)
@@ -138,7 +132,6 @@ type AdminAppHTTPServer interface {
 	AdminListGroups(context.Context, *AdminListGroupsReq) (*AdminListGroupsResp, error)
 	AdminListLevelConfigs(context.Context, *AdminListLevelConfigsReq) (*AdminListLevelConfigsResp, error)
 	AdminListMediaImages(context.Context, *AdminListMediaImagesReq) (*AdminListMediaImagesResp, error)
-	AdminListMenus(context.Context, *AdminListMenusReq) (*AdminListMenusResp, error)
 	AdminListPostReports(context.Context, *AdminListPostReportsReq) (*AdminListPostReportsResp, error)
 	AdminListPosts(context.Context, *AdminListPostsReq) (*AdminListPostsResp, error)
 	AdminListTagDictionary(context.Context, *AdminListTagDictionaryReq) (*AdminListTagDictionaryResp, error)
@@ -162,7 +155,6 @@ type AdminAppHTTPServer interface {
 	AdminUpdateUser(context.Context, *AdminUpdateUserReq) (*AdminUpdateUserResp, error)
 	AdminUpdateVipPlan(context.Context, *AdminUpdateVipPlanReq) (*AdminUpdateVipPlanResp, error)
 	AdminUpsertAppRelease(context.Context, *AdminUpsertAppReleaseReq) (*AdminUpsertAppReleaseResp, error)
-	AdminUpsertMenu(context.Context, *AdminUpsertMenuReq) (*AdminUpsertMenuResp, error)
 }
 
 func RegisterAdminAppHTTPServer(s *http.Server, srv AdminAppHTTPServer) {
@@ -229,10 +221,6 @@ func RegisterAdminAppHTTPServer(s *http.Server, srv AdminAppHTTPServer) {
 	r.GET("/api/admin/me", _AdminApp_AdminMe0_HTTP_Handler(srv))
 	r.GET("/api/admin/media/images", _AdminApp_AdminListMediaImages0_HTTP_Handler(srv))
 	r.DELETE("/api/admin/media/images/{filename}", _AdminApp_AdminDeleteMediaImage0_HTTP_Handler(srv))
-	r.GET("/api/admin/menus", _AdminApp_AdminListMenus0_HTTP_Handler(srv))
-	r.PUT("/api/admin/menus", _AdminApp_AdminUpsertMenu0_HTTP_Handler(srv))
-	r.DELETE("/api/admin/menus/{menu_key}", _AdminApp_AdminDeleteMenu0_HTTP_Handler(srv))
-	r.POST("/api/admin/menus/bootstrap", _AdminApp_AdminBootstrapMenus0_HTTP_Handler(srv))
 	r.GET("/api/admin/runtime-config", _AdminApp_AdminGetRuntimeConfig0_HTTP_Handler(srv))
 	r.PUT("/api/admin/runtime-config", _AdminApp_AdminUpdateRuntimeConfig0_HTTP_Handler(srv))
 	r.GET("/api/admin/runtime/overview", _AdminApp_AdminRuntimeOverview0_HTTP_Handler(srv))
@@ -1574,91 +1562,6 @@ func _AdminApp_AdminDeleteMediaImage0_HTTP_Handler(srv AdminAppHTTPServer) func(
 	}
 }
 
-func _AdminApp_AdminListMenus0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminListMenusReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminListMenus)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminListMenus(ctx, req.(*AdminListMenusReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminListMenusResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminUpsertMenu0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminUpsertMenuReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminUpsertMenu)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminUpsertMenu(ctx, req.(*AdminUpsertMenuReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminUpsertMenuResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminDeleteMenu0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminDeleteMenuReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminDeleteMenu)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminDeleteMenu(ctx, req.(*AdminDeleteMenuReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminDeleteMenuResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminBootstrapMenus0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminBootstrapMenusReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminBootstrapMenus)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminBootstrapMenus(ctx, req.(*AdminBootstrapMenusReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminBootstrapMenusResp)
-		return ctx.Result(200, reply)
-	}
-}
-
 func _AdminApp_AdminGetRuntimeConfig0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in AdminGetRuntimeConfigReq
@@ -1764,7 +1667,6 @@ type AdminAppHTTPClient interface {
 	AdminBootstrapAchievements(ctx context.Context, req *AdminBootstrapAchievementsReq, opts ...http.CallOption) (rsp *AdminBootstrapAchievementsResp, err error)
 	AdminBootstrapGifts(ctx context.Context, req *AdminBootstrapGiftsReq, opts ...http.CallOption) (rsp *AdminBootstrapGiftsResp, err error)
 	AdminBootstrapLevels(ctx context.Context, req *AdminBootstrapLevelsReq, opts ...http.CallOption) (rsp *AdminBootstrapLevelsResp, err error)
-	AdminBootstrapMenus(ctx context.Context, req *AdminBootstrapMenusReq, opts ...http.CallOption) (rsp *AdminBootstrapMenusResp, err error)
 	AdminBootstrapTopicTags(ctx context.Context, req *AdminBootstrapTopicTagsReq, opts ...http.CallOption) (rsp *AdminBootstrapTopicTagsResp, err error)
 	AdminBootstrapVipPlans(ctx context.Context, req *AdminBootstrapVipPlansReq, opts ...http.CallOption) (rsp *AdminBootstrapVipPlansResp, err error)
 	AdminBroadcastNotification(ctx context.Context, req *AdminBroadcastNotificationReq, opts ...http.CallOption) (rsp *AdminBroadcastNotificationResp, err error)
@@ -1781,7 +1683,6 @@ type AdminAppHTTPClient interface {
 	AdminDeleteGift(ctx context.Context, req *AdminDeleteGiftReq, opts ...http.CallOption) (rsp *AdminDeleteGiftResp, err error)
 	AdminDeleteGroup(ctx context.Context, req *AdminDeleteGroupReq, opts ...http.CallOption) (rsp *AdminDeleteGroupResp, err error)
 	AdminDeleteMediaImage(ctx context.Context, req *AdminDeleteMediaImageReq, opts ...http.CallOption) (rsp *AdminDeleteMediaImageResp, err error)
-	AdminDeleteMenu(ctx context.Context, req *AdminDeleteMenuReq, opts ...http.CallOption) (rsp *AdminDeleteMenuResp, err error)
 	AdminDeletePost(ctx context.Context, req *AdminDeletePostReq, opts ...http.CallOption) (rsp *AdminDeletePostResp, err error)
 	AdminDeleteTagDictionary(ctx context.Context, req *AdminDeleteTagDictionaryReq, opts ...http.CallOption) (rsp *AdminDeleteTagDictionaryResp, err error)
 	AdminDeleteTopicTag(ctx context.Context, req *AdminDeleteTopicTagReq, opts ...http.CallOption) (rsp *AdminDeleteTopicTagResp, err error)
@@ -1807,7 +1708,6 @@ type AdminAppHTTPClient interface {
 	AdminListGroups(ctx context.Context, req *AdminListGroupsReq, opts ...http.CallOption) (rsp *AdminListGroupsResp, err error)
 	AdminListLevelConfigs(ctx context.Context, req *AdminListLevelConfigsReq, opts ...http.CallOption) (rsp *AdminListLevelConfigsResp, err error)
 	AdminListMediaImages(ctx context.Context, req *AdminListMediaImagesReq, opts ...http.CallOption) (rsp *AdminListMediaImagesResp, err error)
-	AdminListMenus(ctx context.Context, req *AdminListMenusReq, opts ...http.CallOption) (rsp *AdminListMenusResp, err error)
 	AdminListPostReports(ctx context.Context, req *AdminListPostReportsReq, opts ...http.CallOption) (rsp *AdminListPostReportsResp, err error)
 	AdminListPosts(ctx context.Context, req *AdminListPostsReq, opts ...http.CallOption) (rsp *AdminListPostsResp, err error)
 	AdminListTagDictionary(ctx context.Context, req *AdminListTagDictionaryReq, opts ...http.CallOption) (rsp *AdminListTagDictionaryResp, err error)
@@ -1831,7 +1731,6 @@ type AdminAppHTTPClient interface {
 	AdminUpdateUser(ctx context.Context, req *AdminUpdateUserReq, opts ...http.CallOption) (rsp *AdminUpdateUserResp, err error)
 	AdminUpdateVipPlan(ctx context.Context, req *AdminUpdateVipPlanReq, opts ...http.CallOption) (rsp *AdminUpdateVipPlanResp, err error)
 	AdminUpsertAppRelease(ctx context.Context, req *AdminUpsertAppReleaseReq, opts ...http.CallOption) (rsp *AdminUpsertAppReleaseResp, err error)
-	AdminUpsertMenu(ctx context.Context, req *AdminUpsertMenuReq, opts ...http.CallOption) (rsp *AdminUpsertMenuResp, err error)
 }
 
 type AdminAppHTTPClientImpl struct {
@@ -1873,19 +1772,6 @@ func (c *AdminAppHTTPClientImpl) AdminBootstrapLevels(ctx context.Context, in *A
 	pattern := "/api/admin/growth/levels/bootstrap"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapLevels))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *AdminAppHTTPClientImpl) AdminBootstrapMenus(ctx context.Context, in *AdminBootstrapMenusReq, opts ...http.CallOption) (*AdminBootstrapMenusResp, error) {
-	var out AdminBootstrapMenusResp
-	pattern := "/api/admin/menus/bootstrap"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapMenus))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
@@ -2094,19 +1980,6 @@ func (c *AdminAppHTTPClientImpl) AdminDeleteMediaImage(ctx context.Context, in *
 	pattern := "/api/admin/media/images/{filename}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteMediaImage))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *AdminAppHTTPClientImpl) AdminDeleteMenu(ctx context.Context, in *AdminDeleteMenuReq, opts ...http.CallOption) (*AdminDeleteMenuResp, error) {
-	var out AdminDeleteMenuResp
-	pattern := "/api/admin/menus/{menu_key}"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteMenu))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
@@ -2440,19 +2313,6 @@ func (c *AdminAppHTTPClientImpl) AdminListMediaImages(ctx context.Context, in *A
 	return &out, nil
 }
 
-func (c *AdminAppHTTPClientImpl) AdminListMenus(ctx context.Context, in *AdminListMenusReq, opts ...http.CallOption) (*AdminListMenusResp, error) {
-	var out AdminListMenusResp
-	pattern := "/api/admin/menus"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationAdminAppAdminListMenus))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 func (c *AdminAppHTTPClientImpl) AdminListPostReports(ctx context.Context, in *AdminListPostReportsReq, opts ...http.CallOption) (*AdminListPostReportsResp, error) {
 	var out AdminListPostReportsResp
 	pattern := "/api/admin/post-reports"
@@ -2744,19 +2604,6 @@ func (c *AdminAppHTTPClientImpl) AdminUpsertAppRelease(ctx context.Context, in *
 	pattern := "/api/admin/app-release"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAdminAppAdminUpsertAppRelease))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *AdminAppHTTPClientImpl) AdminUpsertMenu(ctx context.Context, in *AdminUpsertMenuReq, opts ...http.CallOption) (*AdminUpsertMenuResp, error) {
-	var out AdminUpsertMenuResp
-	pattern := "/api/admin/menus"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationAdminAppAdminUpsertMenu))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {

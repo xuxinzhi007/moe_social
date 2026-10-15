@@ -64,20 +64,6 @@ func (s *store) GetGiftByID(ctx context.Context, id uint) (model.Gift, error) {
 	return gift, err
 }
 
-func (s *store) CountGiftRecords(ctx context.Context, userID uint) (int64, error) {
-	var total int64
-	err := s.db.WithContext(ctx).Model(&model.GiftRecord{}).
-		Where("from_user_id = ? OR to_user_id = ?", userID, userID).Count(&total).Error
-	return total, err
-}
-
-func (s *store) ListGiftRecords(ctx context.Context, userID uint, offset, limit int) ([]model.GiftRecord, error) {
-	var rows []model.GiftRecord
-	err := s.db.WithContext(ctx).Where("from_user_id = ? OR to_user_id = ?", userID, userID).
-		Preload("Gift").Order("created_at DESC").Offset(offset).Limit(limit).Find(&rows).Error
-	return rows, err
-}
-
 func (s *store) UserExists(ctx context.Context, userID uint) error {
 	return s.db.WithContext(ctx).First(&model.User{}, userID).Error
 }

@@ -82,10 +82,6 @@ const (
 	AdminApp_AdminMe_FullMethodName                     = "/admin.v1.AdminApp/AdminMe"
 	AdminApp_AdminListMediaImages_FullMethodName        = "/admin.v1.AdminApp/AdminListMediaImages"
 	AdminApp_AdminDeleteMediaImage_FullMethodName       = "/admin.v1.AdminApp/AdminDeleteMediaImage"
-	AdminApp_AdminListMenus_FullMethodName              = "/admin.v1.AdminApp/AdminListMenus"
-	AdminApp_AdminUpsertMenu_FullMethodName             = "/admin.v1.AdminApp/AdminUpsertMenu"
-	AdminApp_AdminDeleteMenu_FullMethodName             = "/admin.v1.AdminApp/AdminDeleteMenu"
-	AdminApp_AdminBootstrapMenus_FullMethodName         = "/admin.v1.AdminApp/AdminBootstrapMenus"
 	AdminApp_AdminGetRuntimeConfig_FullMethodName       = "/admin.v1.AdminApp/AdminGetRuntimeConfig"
 	AdminApp_AdminUpdateRuntimeConfig_FullMethodName    = "/admin.v1.AdminApp/AdminUpdateRuntimeConfig"
 	AdminApp_AdminRuntimeOverview_FullMethodName        = "/admin.v1.AdminApp/AdminRuntimeOverview"
@@ -160,10 +156,6 @@ type AdminAppClient interface {
 	AdminMe(ctx context.Context, in *AdminMeReq, opts ...grpc.CallOption) (*AdminMeResp, error)
 	AdminListMediaImages(ctx context.Context, in *AdminListMediaImagesReq, opts ...grpc.CallOption) (*AdminListMediaImagesResp, error)
 	AdminDeleteMediaImage(ctx context.Context, in *AdminDeleteMediaImageReq, opts ...grpc.CallOption) (*AdminDeleteMediaImageResp, error)
-	AdminListMenus(ctx context.Context, in *AdminListMenusReq, opts ...grpc.CallOption) (*AdminListMenusResp, error)
-	AdminUpsertMenu(ctx context.Context, in *AdminUpsertMenuReq, opts ...grpc.CallOption) (*AdminUpsertMenuResp, error)
-	AdminDeleteMenu(ctx context.Context, in *AdminDeleteMenuReq, opts ...grpc.CallOption) (*AdminDeleteMenuResp, error)
-	AdminBootstrapMenus(ctx context.Context, in *AdminBootstrapMenusReq, opts ...grpc.CallOption) (*AdminBootstrapMenusResp, error)
 	AdminGetRuntimeConfig(ctx context.Context, in *AdminGetRuntimeConfigReq, opts ...grpc.CallOption) (*AdminGetRuntimeConfigResp, error)
 	AdminUpdateRuntimeConfig(ctx context.Context, in *AdminUpdateRuntimeConfigReq, opts ...grpc.CallOption) (*AdminUpdateRuntimeConfigResp, error)
 	AdminRuntimeOverview(ctx context.Context, in *AdminGetRuntimeOverviewReq, opts ...grpc.CallOption) (*AdminGetRuntimeOverviewResp, error)
@@ -809,46 +801,6 @@ func (c *adminAppClient) AdminDeleteMediaImage(ctx context.Context, in *AdminDel
 	return out, nil
 }
 
-func (c *adminAppClient) AdminListMenus(ctx context.Context, in *AdminListMenusReq, opts ...grpc.CallOption) (*AdminListMenusResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminListMenusResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminListMenus_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminUpsertMenu(ctx context.Context, in *AdminUpsertMenuReq, opts ...grpc.CallOption) (*AdminUpsertMenuResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminUpsertMenuResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminUpsertMenu_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminDeleteMenu(ctx context.Context, in *AdminDeleteMenuReq, opts ...grpc.CallOption) (*AdminDeleteMenuResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminDeleteMenuResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminDeleteMenu_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminBootstrapMenus(ctx context.Context, in *AdminBootstrapMenusReq, opts ...grpc.CallOption) (*AdminBootstrapMenusResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminBootstrapMenusResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminBootstrapMenus_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminAppClient) AdminGetRuntimeConfig(ctx context.Context, in *AdminGetRuntimeConfigReq, opts ...grpc.CallOption) (*AdminGetRuntimeConfigResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AdminGetRuntimeConfigResp)
@@ -966,10 +918,6 @@ type AdminAppServer interface {
 	AdminMe(context.Context, *AdminMeReq) (*AdminMeResp, error)
 	AdminListMediaImages(context.Context, *AdminListMediaImagesReq) (*AdminListMediaImagesResp, error)
 	AdminDeleteMediaImage(context.Context, *AdminDeleteMediaImageReq) (*AdminDeleteMediaImageResp, error)
-	AdminListMenus(context.Context, *AdminListMenusReq) (*AdminListMenusResp, error)
-	AdminUpsertMenu(context.Context, *AdminUpsertMenuReq) (*AdminUpsertMenuResp, error)
-	AdminDeleteMenu(context.Context, *AdminDeleteMenuReq) (*AdminDeleteMenuResp, error)
-	AdminBootstrapMenus(context.Context, *AdminBootstrapMenusReq) (*AdminBootstrapMenusResp, error)
 	AdminGetRuntimeConfig(context.Context, *AdminGetRuntimeConfigReq) (*AdminGetRuntimeConfigResp, error)
 	AdminUpdateRuntimeConfig(context.Context, *AdminUpdateRuntimeConfigReq) (*AdminUpdateRuntimeConfigResp, error)
 	AdminRuntimeOverview(context.Context, *AdminGetRuntimeOverviewReq) (*AdminGetRuntimeOverviewResp, error)
@@ -1173,18 +1121,6 @@ func (UnimplementedAdminAppServer) AdminListMediaImages(context.Context, *AdminL
 }
 func (UnimplementedAdminAppServer) AdminDeleteMediaImage(context.Context, *AdminDeleteMediaImageReq) (*AdminDeleteMediaImageResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminDeleteMediaImage not implemented")
-}
-func (UnimplementedAdminAppServer) AdminListMenus(context.Context, *AdminListMenusReq) (*AdminListMenusResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminListMenus not implemented")
-}
-func (UnimplementedAdminAppServer) AdminUpsertMenu(context.Context, *AdminUpsertMenuReq) (*AdminUpsertMenuResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminUpsertMenu not implemented")
-}
-func (UnimplementedAdminAppServer) AdminDeleteMenu(context.Context, *AdminDeleteMenuReq) (*AdminDeleteMenuResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminDeleteMenu not implemented")
-}
-func (UnimplementedAdminAppServer) AdminBootstrapMenus(context.Context, *AdminBootstrapMenusReq) (*AdminBootstrapMenusResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminBootstrapMenus not implemented")
 }
 func (UnimplementedAdminAppServer) AdminGetRuntimeConfig(context.Context, *AdminGetRuntimeConfigReq) (*AdminGetRuntimeConfigResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminGetRuntimeConfig not implemented")
@@ -2356,78 +2292,6 @@ func _AdminApp_AdminDeleteMediaImage_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminApp_AdminListMenus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminListMenusReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminListMenus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminListMenus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminListMenus(ctx, req.(*AdminListMenusReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminUpsertMenu_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminUpsertMenuReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminUpsertMenu(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminUpsertMenu_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminUpsertMenu(ctx, req.(*AdminUpsertMenuReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminDeleteMenu_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminDeleteMenuReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminDeleteMenu(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminDeleteMenu_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminDeleteMenu(ctx, req.(*AdminDeleteMenuReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminBootstrapMenus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminBootstrapMenusReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminBootstrapMenus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminBootstrapMenus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminBootstrapMenus(ctx, req.(*AdminBootstrapMenusReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminApp_AdminGetRuntimeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AdminGetRuntimeConfigReq)
 	if err := dec(in); err != nil {
@@ -2776,22 +2640,6 @@ var AdminApp_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminDeleteMediaImage",
 			Handler:    _AdminApp_AdminDeleteMediaImage_Handler,
-		},
-		{
-			MethodName: "AdminListMenus",
-			Handler:    _AdminApp_AdminListMenus_Handler,
-		},
-		{
-			MethodName: "AdminUpsertMenu",
-			Handler:    _AdminApp_AdminUpsertMenu_Handler,
-		},
-		{
-			MethodName: "AdminDeleteMenu",
-			Handler:    _AdminApp_AdminDeleteMenu_Handler,
-		},
-		{
-			MethodName: "AdminBootstrapMenus",
-			Handler:    _AdminApp_AdminBootstrapMenus_Handler,
 		},
 		{
 			MethodName: "AdminGetRuntimeConfig",

@@ -24,7 +24,6 @@ func registerWebSocket(r *khttp.Router, deps Deps) {
 	r.GET("/ws/presence", chatPresenceWSHandler())
 	r.GET("/ws/remote", chatRemoteWS())
 	r.GET("/ws/game-network", gameNetworkWS())
-	r.GET("/ws/world", chatWorldWSHandler())
 	r.GET("/ws/admin/moe/brain/pipeline", brainPipelineWSHandler(deps.MoeAdmin))
 	r.GET("/ws/life", lifeWSHandler(deps.LifeApp))
 	r.GET("/ws/companion", companionWSHandler(deps.CompanionApp))
@@ -82,13 +81,6 @@ func chatWSHandler(deps chatbiz.ChatWSDeps) func(khttp.Context) error {
 func chatPresenceWSHandler() func(khttp.Context) error {
 	return func(kctx khttp.Context) error {
 		chatbiz.ServePresenceWS(kctx.Response(), kctx.Request())
-		return nil
-	}
-}
-
-func chatWorldWSHandler() func(khttp.Context) error {
-	return func(kctx khttp.Context) error {
-		chatbiz.ServeWorldWS(kctx.Response(), kctx.Request())
 		return nil
 	}
 }

@@ -21,31 +21,6 @@ message GetPublicClientConfigResp {
   string api_base_url = 1;
 }
 
-message ContentItem {
-  string id = 1;
-  string user_id = 2;
-  string type = 3;
-  string prompt = 4;
-  string url = 5;
-  string content = 6;
-  string created_at = 7;
-}
-
-message ListUserContentReq {
-  string user_id = 1;
-  string type = 2;
-  int32 page = 3;
-  int32 page_size = 4;
-}
-
-message ListUserContentResp {
-  int32 code = 1;
-  string message = 2;
-  bool success = 3;
-  repeated ContentItem data = 4;
-  int32 total = 5;
-}
-
 message GetLlmConfigReq {}
 
 message GetLlmConfigResp {
@@ -259,9 +234,6 @@ message GetAnnouncementResp {
 service Platform {
   rpc GetPublicClientConfig(GetPublicClientConfigReq) returns (GetPublicClientConfigResp) {
     option (google.api.http) = { get: "/api/public/client-config" };
-  }
-  rpc ListUserContent(ListUserContentReq) returns (ListUserContentResp) {
-    option (google.api.http) = { get: "/api/user/{user_id}/content" };
   }
   rpc GetLlmConfig(GetLlmConfigReq) returns (GetLlmConfigResp) {
     option (google.api.http) = { get: "/api/llm/config" };

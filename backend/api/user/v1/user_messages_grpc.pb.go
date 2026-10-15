@@ -23,7 +23,6 @@ const (
 	UserService_Login_FullMethodName                      = "/user.v1.UserService/Login"
 	UserService_Register_FullMethodName                   = "/user.v1.UserService/Register"
 	UserService_GetUserInfo_FullMethodName                = "/user.v1.UserService/GetUserInfo"
-	UserService_GetUser_FullMethodName                    = "/user.v1.UserService/GetUser"
 	UserService_UpdateUserInfo_FullMethodName             = "/user.v1.UserService/UpdateUserInfo"
 	UserService_SyncUserDevice_FullMethodName             = "/user.v1.UserService/SyncUserDevice"
 	UserService_ListUserDevices_FullMethodName            = "/user.v1.UserService/ListUserDevices"
@@ -33,7 +32,6 @@ const (
 	UserService_AcceptFriendRequest_FullMethodName        = "/user.v1.UserService/AcceptFriendRequest"
 	UserService_RejectFriendRequest_FullMethodName        = "/user.v1.UserService/RejectFriendRequest"
 	UserService_ListIncomingFriendRequests_FullMethodName = "/user.v1.UserService/ListIncomingFriendRequests"
-	UserService_ListOutgoingFriendRequests_FullMethodName = "/user.v1.UserService/ListOutgoingFriendRequests"
 	UserService_FeishuAuthorizeURL_FullMethodName         = "/user.v1.UserService/FeishuAuthorizeURL"
 	UserService_FeishuLogin_FullMethodName                = "/user.v1.UserService/FeishuLogin"
 	UserService_FeishuPublicConfig_FullMethodName         = "/user.v1.UserService/FeishuPublicConfig"
@@ -79,7 +77,6 @@ type UserServiceClient interface {
 	Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error)
 	Register(ctx context.Context, in *RegisterReq, opts ...grpc.CallOption) (*RegisterResp, error)
 	GetUserInfo(ctx context.Context, in *GetUserInfoReq, opts ...grpc.CallOption) (*GetUserInfoResp, error)
-	GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error)
 	UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error)
 	SyncUserDevice(ctx context.Context, in *SyncUserDeviceReq, opts ...grpc.CallOption) (*SyncUserDeviceResp, error)
 	ListUserDevices(ctx context.Context, in *ListUserDevicesReq, opts ...grpc.CallOption) (*ListUserDevicesResp, error)
@@ -89,7 +86,6 @@ type UserServiceClient interface {
 	AcceptFriendRequest(ctx context.Context, in *AcceptFriendRequestReq, opts ...grpc.CallOption) (*AcceptFriendRequestResp, error)
 	RejectFriendRequest(ctx context.Context, in *RejectFriendRequestReq, opts ...grpc.CallOption) (*RejectFriendRequestResp, error)
 	ListIncomingFriendRequests(ctx context.Context, in *ListIncomingFriendRequestsReq, opts ...grpc.CallOption) (*ListIncomingFriendRequestsResp, error)
-	ListOutgoingFriendRequests(ctx context.Context, in *ListOutgoingFriendRequestsReq, opts ...grpc.CallOption) (*ListOutgoingFriendRequestsResp, error)
 	FeishuAuthorizeURL(ctx context.Context, in *FeishuAuthorizeURLReq, opts ...grpc.CallOption) (*FeishuAuthorizeURLResp, error)
 	FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...grpc.CallOption) (*FeishuLoginResp, error)
 	FeishuPublicConfig(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FeishuPublicConfigResp, error)
@@ -160,16 +156,6 @@ func (c *userServiceClient) GetUserInfo(ctx context.Context, in *GetUserInfoReq,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserInfoResp)
 	err := c.cc.Invoke(ctx, UserService_GetUserInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetUserResp)
-	err := c.cc.Invoke(ctx, UserService_GetUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -260,16 +246,6 @@ func (c *userServiceClient) ListIncomingFriendRequests(ctx context.Context, in *
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListIncomingFriendRequestsResp)
 	err := c.cc.Invoke(ctx, UserService_ListIncomingFriendRequests_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userServiceClient) ListOutgoingFriendRequests(ctx context.Context, in *ListOutgoingFriendRequestsReq, opts ...grpc.CallOption) (*ListOutgoingFriendRequestsResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListOutgoingFriendRequestsResp)
-	err := c.cc.Invoke(ctx, UserService_ListOutgoingFriendRequests_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -643,7 +619,6 @@ type UserServiceServer interface {
 	Login(context.Context, *LoginReq) (*LoginResp, error)
 	Register(context.Context, *RegisterReq) (*RegisterResp, error)
 	GetUserInfo(context.Context, *GetUserInfoReq) (*GetUserInfoResp, error)
-	GetUser(context.Context, *GetUserReq) (*GetUserResp, error)
 	UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error)
 	SyncUserDevice(context.Context, *SyncUserDeviceReq) (*SyncUserDeviceResp, error)
 	ListUserDevices(context.Context, *ListUserDevicesReq) (*ListUserDevicesResp, error)
@@ -653,7 +628,6 @@ type UserServiceServer interface {
 	AcceptFriendRequest(context.Context, *AcceptFriendRequestReq) (*AcceptFriendRequestResp, error)
 	RejectFriendRequest(context.Context, *RejectFriendRequestReq) (*RejectFriendRequestResp, error)
 	ListIncomingFriendRequests(context.Context, *ListIncomingFriendRequestsReq) (*ListIncomingFriendRequestsResp, error)
-	ListOutgoingFriendRequests(context.Context, *ListOutgoingFriendRequestsReq) (*ListOutgoingFriendRequestsResp, error)
 	FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error)
 	FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error)
 	FeishuPublicConfig(context.Context, *emptypb.Empty) (*FeishuPublicConfigResp, error)
@@ -709,9 +683,6 @@ func (UnimplementedUserServiceServer) Register(context.Context, *RegisterReq) (*
 func (UnimplementedUserServiceServer) GetUserInfo(context.Context, *GetUserInfoReq) (*GetUserInfoResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserInfo not implemented")
 }
-func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserReq) (*GetUserResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
-}
 func (UnimplementedUserServiceServer) UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUserInfo not implemented")
 }
@@ -738,9 +709,6 @@ func (UnimplementedUserServiceServer) RejectFriendRequest(context.Context, *Reje
 }
 func (UnimplementedUserServiceServer) ListIncomingFriendRequests(context.Context, *ListIncomingFriendRequestsReq) (*ListIncomingFriendRequestsResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListIncomingFriendRequests not implemented")
-}
-func (UnimplementedUserServiceServer) ListOutgoingFriendRequests(context.Context, *ListOutgoingFriendRequestsReq) (*ListOutgoingFriendRequestsResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListOutgoingFriendRequests not implemented")
 }
 func (UnimplementedUserServiceServer) FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method FeishuAuthorizeURL not implemented")
@@ -925,24 +893,6 @@ func _UserService_GetUserInfo_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).GetUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_GetUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).GetUser(ctx, req.(*GetUserReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _UserService_UpdateUserInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateUserInfoReq)
 	if err := dec(in); err != nil {
@@ -1101,24 +1051,6 @@ func _UserService_ListIncomingFriendRequests_Handler(srv interface{}, ctx contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).ListIncomingFriendRequests(ctx, req.(*ListIncomingFriendRequestsReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserService_ListOutgoingFriendRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListOutgoingFriendRequestsReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).ListOutgoingFriendRequests(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_ListOutgoingFriendRequests_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).ListOutgoingFriendRequests(ctx, req.(*ListOutgoingFriendRequestsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1791,10 +1723,6 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_GetUserInfo_Handler,
 		},
 		{
-			MethodName: "GetUser",
-			Handler:    _UserService_GetUser_Handler,
-		},
-		{
 			MethodName: "UpdateUserInfo",
 			Handler:    _UserService_UpdateUserInfo_Handler,
 		},
@@ -1829,10 +1757,6 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListIncomingFriendRequests",
 			Handler:    _UserService_ListIncomingFriendRequests_Handler,
-		},
-		{
-			MethodName: "ListOutgoingFriendRequests",
-			Handler:    _UserService_ListOutgoingFriendRequests_Handler,
 		},
 		{
 			MethodName: "FeishuAuthorizeURL",

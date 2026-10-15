@@ -28,7 +28,6 @@ const OperationPlatformGetPublicClientConfig = "/platform.v1.Platform/GetPublicC
 const OperationPlatformGetVoiceToken = "/platform.v1.Platform/GetVoiceToken"
 const OperationPlatformListAnnouncements = "/platform.v1.Platform/ListAnnouncements"
 const OperationPlatformListLlmManagedModels = "/platform.v1.Platform/ListLlmManagedModels"
-const OperationPlatformListUserContent = "/platform.v1.Platform/ListUserContent"
 const OperationPlatformLlmChat = "/platform.v1.Platform/LlmChat"
 const OperationPlatformLlmCreateAgent = "/platform.v1.Platform/LlmCreateAgent"
 const OperationPlatformMoeExecuteTool = "/platform.v1.Platform/MoeExecuteTool"
@@ -49,7 +48,6 @@ type PlatformHTTPServer interface {
 	GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error)
 	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
 	ListLlmManagedModels(context.Context, *ListLlmManagedModelsReq) (*ListLlmManagedModelsResp, error)
-	ListUserContent(context.Context, *ListUserContentReq) (*ListUserContentResp, error)
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
 	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*LlmManagedModelResp, error)
 	MoeExecuteTool(context.Context, *MoeToolExecuteReq) (*MoeToolExecuteResp, error)
@@ -64,7 +62,6 @@ type PlatformHTTPServer interface {
 func RegisterPlatformHTTPServer(s *http.Server, srv PlatformHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/public/client-config", _Platform_GetPublicClientConfig0_HTTP_Handler(srv))
-	r.GET("/api/user/{user_id}/content", _Platform_ListUserContent0_HTTP_Handler(srv))
 	r.GET("/api/llm/config", _Platform_GetLlmConfig0_HTTP_Handler(srv))
 	r.POST("/api/moe/tools/execute", _Platform_MoeExecuteTool0_HTTP_Handler(srv))
 	r.GET("/api/moe/tools/schema", _Platform_MoeToolsSchema0_HTTP_Handler(srv))
@@ -99,28 +96,6 @@ func _Platform_GetPublicClientConfig0_HTTP_Handler(srv PlatformHTTPServer) func(
 			return err
 		}
 		reply := out.(*GetPublicClientConfigResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Platform_ListUserContent0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ListUserContentReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationPlatformListUserContent)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.ListUserContent(ctx, req.(*ListUserContentReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*ListUserContentResp)
 		return ctx.Result(200, reply)
 	}
 }
@@ -497,7 +472,6 @@ type PlatformHTTPClient interface {
 	GetVoiceToken(ctx context.Context, req *GetVoiceTokenReq, opts ...http.CallOption) (rsp *GetVoiceTokenResp, err error)
 	ListAnnouncements(ctx context.Context, req *ListAnnouncementsReq, opts ...http.CallOption) (rsp *ListAnnouncementsResp, err error)
 	ListLlmManagedModels(ctx context.Context, req *ListLlmManagedModelsReq, opts ...http.CallOption) (rsp *ListLlmManagedModelsResp, err error)
-	ListUserContent(ctx context.Context, req *ListUserContentReq, opts ...http.CallOption) (rsp *ListUserContentResp, err error)
 	LlmChat(ctx context.Context, req *LlmChatReq, opts ...http.CallOption) (rsp *LlmChatResp, err error)
 	LlmCreateAgent(ctx context.Context, req *LlmCreateAgentReq, opts ...http.CallOption) (rsp *LlmManagedModelResp, err error)
 	MoeExecuteTool(ctx context.Context, req *MoeToolExecuteReq, opts ...http.CallOption) (rsp *MoeToolExecuteResp, err error)
@@ -626,19 +600,6 @@ func (c *PlatformHTTPClientImpl) ListLlmManagedModels(ctx context.Context, in *L
 	pattern := "/api/llm/managed-models"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationPlatformListLlmManagedModels))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *PlatformHTTPClientImpl) ListUserContent(ctx context.Context, in *ListUserContentReq, opts ...http.CallOption) (*ListUserContentResp, error) {
-	var out ListUserContentResp
-	pattern := "/api/user/{user_id}/content"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationPlatformListUserContent))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

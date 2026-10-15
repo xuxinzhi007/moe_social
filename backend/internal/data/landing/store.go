@@ -29,11 +29,3 @@ func (s feedbackStore) CountRecentByEmail(ctx context.Context, email string, sin
 func (s feedbackStore) Create(ctx context.Context, row *model.LandingFeedback) error {
 	return s.repo.Create(ctx, row)
 }
-
-func (s feedbackStore) List(ctx context.Context, category string, page, pageSize int32) (landingbiz.FeedbackListResult, error) {
-	r, err := s.repo.List(ctx, category, page, pageSize)
-	if err != nil {
-		return landingbiz.FeedbackListResult{}, err
-	}
-	return landingbiz.FeedbackListResult{Rows: r.Rows, Total: r.Total}, nil
-}

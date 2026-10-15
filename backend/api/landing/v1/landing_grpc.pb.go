@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Landing_SubmitLandingFeedback_FullMethodName = "/landing.v1.Landing/SubmitLandingFeedback"
-	Landing_ListLandingFeedback_FullMethodName   = "/landing.v1.Landing/ListLandingFeedback"
 )
 
 // LandingClient is the client API for Landing service.
@@ -28,7 +27,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LandingClient interface {
 	SubmitLandingFeedback(ctx context.Context, in *SubmitLandingFeedbackRequest, opts ...grpc.CallOption) (*SubmitLandingFeedbackReply, error)
-	ListLandingFeedback(ctx context.Context, in *ListLandingFeedbackRequest, opts ...grpc.CallOption) (*ListLandingFeedbackReply, error)
 }
 
 type landingClient struct {
@@ -49,22 +47,11 @@ func (c *landingClient) SubmitLandingFeedback(ctx context.Context, in *SubmitLan
 	return out, nil
 }
 
-func (c *landingClient) ListLandingFeedback(ctx context.Context, in *ListLandingFeedbackRequest, opts ...grpc.CallOption) (*ListLandingFeedbackReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListLandingFeedbackReply)
-	err := c.cc.Invoke(ctx, Landing_ListLandingFeedback_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // LandingServer is the server API for Landing service.
 // All implementations must embed UnimplementedLandingServer
 // for forward compatibility.
 type LandingServer interface {
 	SubmitLandingFeedback(context.Context, *SubmitLandingFeedbackRequest) (*SubmitLandingFeedbackReply, error)
-	ListLandingFeedback(context.Context, *ListLandingFeedbackRequest) (*ListLandingFeedbackReply, error)
 	mustEmbedUnimplementedLandingServer()
 }
 
@@ -77,9 +64,6 @@ type UnimplementedLandingServer struct{}
 
 func (UnimplementedLandingServer) SubmitLandingFeedback(context.Context, *SubmitLandingFeedbackRequest) (*SubmitLandingFeedbackReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitLandingFeedback not implemented")
-}
-func (UnimplementedLandingServer) ListLandingFeedback(context.Context, *ListLandingFeedbackRequest) (*ListLandingFeedbackReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListLandingFeedback not implemented")
 }
 func (UnimplementedLandingServer) mustEmbedUnimplementedLandingServer() {}
 func (UnimplementedLandingServer) testEmbeddedByValue()                 {}
@@ -120,24 +104,6 @@ func _Landing_SubmitLandingFeedback_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Landing_ListLandingFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListLandingFeedbackRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LandingServer).ListLandingFeedback(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Landing_ListLandingFeedback_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LandingServer).ListLandingFeedback(ctx, req.(*ListLandingFeedbackRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Landing_ServiceDesc is the grpc.ServiceDesc for Landing service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -148,10 +114,6 @@ var Landing_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SubmitLandingFeedback",
 			Handler:    _Landing_SubmitLandingFeedback_Handler,
-		},
-		{
-			MethodName: "ListLandingFeedback",
-			Handler:    _Landing_ListLandingFeedback_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

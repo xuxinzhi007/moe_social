@@ -62,20 +62,12 @@ func ListAchievementsV1(items []*adminv1.AdminAchievementItem, total int32) *adm
 	return &adminv1.AdminListAchievementsResp{Items: items, Total: total}
 }
 
-func ListMenusV1(items []*adminv1.AdminMenuItem) *adminv1.AdminListMenusResp {
-	return &adminv1.AdminListMenusResp{Items: items}
-}
-
 func UpdateUserV1(user *adminv1.User) *adminv1.AdminUpdateUserResp {
 	return &adminv1.AdminUpdateUserResp{User: user}
 }
 
 func UpdateAchievementV1(item *adminv1.AdminAchievementItem) *adminv1.AdminUpdateAchievementResp {
 	return &adminv1.AdminUpdateAchievementResp{Item: item}
-}
-
-func UpsertMenuV1(item *adminv1.AdminMenuItem) *adminv1.AdminUpsertMenuResp {
-	return &adminv1.AdminUpsertMenuResp{Menu: item}
 }
 
 func SendNotificationV1(id uint) *adminv1.AdminSendNotificationResp {

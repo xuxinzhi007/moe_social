@@ -27,20 +27,3 @@ func TestUpdateUserRole(t *testing.T) {
 		t.Fatalf("expected admin role, got %q", out.GetRole())
 	}
 }
-
-func TestUpsertAndDeleteMenu(t *testing.T) {
-	db := openAdminListDB(t)
-	store := admindata.NewStore(db)
-	item, err := adminbiz.UpsertMenu(context.Background(), store, adminbiz.UpsertMenuInput{
-		Key: "ops.test", Kind: "item", Label: "Test", SortOrder: 1, Enabled: true,
-	})
-	if err != nil {
-		t.Fatalf("upsert: %v", err)
-	}
-	if item.GetKey() != "ops.test" {
-		t.Fatalf("unexpected key %q", item.GetKey())
-	}
-	if err := adminbiz.DeleteMenu(context.Background(), store, "ops.test"); err != nil {
-		t.Fatalf("delete: %v", err)
-	}
-}

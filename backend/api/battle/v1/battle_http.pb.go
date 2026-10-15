@@ -20,14 +20,12 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationBattleServiceCreateRoom = "/battle.v1.BattleService/CreateRoom"
-const OperationBattleServiceFinishRoom = "/battle.v1.BattleService/FinishRoom"
 const OperationBattleServiceGetRoom = "/battle.v1.BattleService/GetRoom"
 const OperationBattleServiceSendBattleGift = "/battle.v1.BattleService/SendBattleGift"
 const OperationBattleServiceStartRoom = "/battle.v1.BattleService/StartRoom"
 
 type BattleServiceHTTPServer interface {
 	CreateRoom(context.Context, *CreateRoomRequest) (*BattleRoomReply, error)
-	FinishRoom(context.Context, *FinishRoomRequest) (*BattleRoomReply, error)
 	GetRoom(context.Context, *GetRoomRequest) (*BattleRoomReply, error)
 	SendBattleGift(context.Context, *SendBattleGiftRequest) (*SendBattleGiftReply, error)
 	StartRoom(context.Context, *StartRoomRequest) (*BattleRoomReply, error)
@@ -39,7 +37,6 @@ func RegisterBattleServiceHTTPServer(s *http.Server, srv BattleServiceHTTPServer
 	r.GET("/api/battles/{room_id}", _BattleService_GetRoom0_HTTP_Handler(srv))
 	r.POST("/api/battles/{room_id}/start", _BattleService_StartRoom0_HTTP_Handler(srv))
 	r.POST("/api/battles/{room_id}/gifts", _BattleService_SendBattleGift0_HTTP_Handler(srv))
-	r.POST("/api/battles/{room_id}/finish", _BattleService_FinishRoom0_HTTP_Handler(srv))
 }
 
 func _BattleService_CreateRoom0_HTTP_Handler(srv BattleServiceHTTPServer) func(ctx http.Context) error {
@@ -136,34 +133,8 @@ func _BattleService_SendBattleGift0_HTTP_Handler(srv BattleServiceHTTPServer) fu
 	}
 }
 
-func _BattleService_FinishRoom0_HTTP_Handler(srv BattleServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in FinishRoomRequest
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationBattleServiceFinishRoom)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.FinishRoom(ctx, req.(*FinishRoomRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*BattleRoomReply)
-		return ctx.Result(200, reply)
-	}
-}
-
 type BattleServiceHTTPClient interface {
 	CreateRoom(ctx context.Context, req *CreateRoomRequest, opts ...http.CallOption) (rsp *BattleRoomReply, err error)
-	FinishRoom(ctx context.Context, req *FinishRoomRequest, opts ...http.CallOption) (rsp *BattleRoomReply, err error)
 	GetRoom(ctx context.Context, req *GetRoomRequest, opts ...http.CallOption) (rsp *BattleRoomReply, err error)
 	SendBattleGift(ctx context.Context, req *SendBattleGiftRequest, opts ...http.CallOption) (rsp *SendBattleGiftReply, err error)
 	StartRoom(ctx context.Context, req *StartRoomRequest, opts ...http.CallOption) (rsp *BattleRoomReply, err error)
@@ -182,19 +153,6 @@ func (c *BattleServiceHTTPClientImpl) CreateRoom(ctx context.Context, in *Create
 	pattern := "/api/battles"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationBattleServiceCreateRoom))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *BattleServiceHTTPClientImpl) FinishRoom(ctx context.Context, in *FinishRoomRequest, opts ...http.CallOption) (*BattleRoomReply, error) {
-	var out BattleRoomReply
-	pattern := "/api/battles/{room_id}/finish"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationBattleServiceFinishRoom))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

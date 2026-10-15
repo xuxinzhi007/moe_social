@@ -16,14 +16,8 @@ import (
 type FeedbackStore interface {
 	CountRecentByEmail(ctx context.Context, email string, since time.Time) (int64, error)
 	Create(ctx context.Context, row *model.LandingFeedback) error
-	List(ctx context.Context, category string, page, pageSize int32) (FeedbackListResult, error)
 }
 
-// FeedbackListResult 分页列表（biz 层视图）。
-type FeedbackListResult struct {
-	Rows  []model.LandingFeedback
-	Total int64
-}
 type SubmitInput struct {
 	Email     string
 	Category  string
@@ -91,35 +85,4 @@ func Submit(ctx context.Context, store FeedbackStore, in SubmitInput) (uint64, e
 	})
 
 	return uint64(row.ID), nil
-}
-
-// ListFilter 列表筛选。
-type ListFilter struct {
-	Page     int32
-	PageSize int32
-	Category string
-}
-
-// ListResult 分页列表。
-type ListResult struct {
-	Rows  []model.LandingFeedback
-	Total int64
-}
-
-// List 分页查询落地页反馈。
-func List(ctx context.Context, store FeedbackStore, f ListFilter) (ListResult, error) {
-	if store == nil {
-		return ListResult{}, gorm.ErrInvalidDB
-	}
-	category := strings.TrimSpace(f.Category)
-	if category != "" && category != "all" {
-		category = NormalizeCategory(category)
-	} else {
-		category = ""
-	}
-	raw, err := store.List(ctx, category, f.Page, f.PageSize)
-	if err != nil {
-		return ListResult{}, err
-	}
-	return ListResult{Rows: raw.Rows, Total: raw.Total}, nil
 }

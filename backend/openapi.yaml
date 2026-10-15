@@ -920,33 +920,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/admin.v1.AdminGetGrowthStatsResp'
-    /api/admin/landing/feedback:
-        get:
-            tags:
-                - Landing
-            operationId: Landing_ListLandingFeedback
-            parameters:
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: category
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/landing.v1.ListLandingFeedbackReply'
     /api/admin/login:
         post:
             tags:
@@ -1030,71 +1003,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/admin.v1.AdminDeleteMediaImageResp'
-    /api/admin/menus:
-        get:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminListMenus
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminListMenusResp'
-        put:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminUpsertMenu
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/admin.v1.AdminUpsertMenuReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminUpsertMenuResp'
-    /api/admin/menus/bootstrap:
-        post:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminBootstrapMenus
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/admin.v1.AdminBootstrapMenusReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminBootstrapMenusResp'
-    /api/admin/menus/{menuKey}:
-        delete:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminDeleteMenu
-            parameters:
-                - name: menuKey
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminDeleteMenuResp'
     /api/admin/moe/brain/episodes/{id}:
         delete:
             tags:
@@ -3004,30 +2912,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/battle.v1.BattleRoomReply'
-    /api/battles/{roomId}/finish:
-        post:
-            tags:
-                - BattleService
-            operationId: BattleService_FinishRoom
-            parameters:
-                - name: roomId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/battle.v1.FinishRoomRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/battle.v1.BattleRoomReply'
     /api/battles/{roomId}/gifts:
         post:
             tags:
@@ -3906,24 +3790,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gift.v1.GetGiftsReply'
-    /api/gifts/{giftId}:
-        get:
-            tags:
-                - GiftService
-            operationId: GiftService_GetGift
-            parameters:
-                - name: giftId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/gift.v1.GetGiftReply'
     /api/images:
         get:
             tags:
@@ -4399,33 +4265,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/notify.v1.ReadNotificationReply'
-    /api/ops/landing/feedback:
-        get:
-            tags:
-                - Landing
-            operationId: Landing_ListLandingFeedback
-            parameters:
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: category
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/landing.v1.ListLandingFeedbackReply'
     /api/posts:
         get:
             tags:
@@ -5339,38 +5178,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/community.v1.GetUserGroupsReply'
-    /api/user/{userId}/content:
-        get:
-            tags:
-                - Platform
-            operationId: Platform_ListUserContent
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: type
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/platform.v1.ListUserContentResp'
     /api/user/{userId}/daily-exp:
         post:
             tags:
@@ -5395,24 +5202,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/checkin.v1.ClaimDailyExpReply'
-    /api/user/{userId}/detail:
-        get:
-            tags:
-                - UserService
-            operationId: UserService_GetUser
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/user.v1.GetUserResp'
     /api/user/{userId}/devices:
         get:
             tags:
@@ -5658,28 +5447,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1.ListIncomingFriendRequestsResp'
-    /api/user/{userId}/friend-requests/outgoing:
-        get:
-            tags:
-                - UserService
-            operationId: UserService_ListOutgoingFriendRequests
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: actorUserId
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/user.v1.ListOutgoingFriendRequestsResp'
     /api/user/{userId}/friend-requests/{requestId}/accept:
         post:
             tags:
@@ -5910,34 +5677,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gift.v1.GetGiftPurchaseOrdersReply'
-    /api/user/{userId}/gifts/records:
-        get:
-            tags:
-                - GiftService
-            operationId: GiftService_GetGiftRecords
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/gift.v1.GetGiftRecordsReply'
     /api/user/{userId}/level:
         get:
             tags:
@@ -6742,15 +6481,6 @@ components:
                 checkInRewardsCreated:
                     type: integer
                     format: int32
-        admin.v1.AdminBootstrapMenusReq:
-            type: object
-            properties: {}
-        admin.v1.AdminBootstrapMenusResp:
-            type: object
-            properties:
-                created:
-                    type: integer
-                    format: int32
         admin.v1.AdminBootstrapTopicTagsReq:
             type: object
             properties: {}
@@ -6921,9 +6651,6 @@ components:
             type: object
             properties: {}
         admin.v1.AdminDeleteMediaImageResp:
-            type: object
-            properties: {}
-        admin.v1.AdminDeleteMenuResp:
             type: object
             properties: {}
         admin.v1.AdminDeletePostResp:
@@ -7261,13 +6988,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/admin.v1.AdminMediaOwnerSummary'
-        admin.v1.AdminListMenusResp:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/admin.v1.AdminMenuItem'
         admin.v1.AdminListPostReportsResp:
             type: object
             properties:
@@ -7402,40 +7122,6 @@ components:
                 AdminMemoryTypeStat 仍在用：AdminAnalyticsOverviewData.memory_by_type 引它，
                  apicomm/admin_insights.go 在活路径上转换它。#42 删掉的是 AdminMemoryItem 与
                  AdminMemoryStats（只服务于那批已删的记忆 RPC），别顺手把这个也删了。
-        admin.v1.AdminMenuItem:
-            type: object
-            properties:
-                id:
-                    type: string
-                key:
-                    type: string
-                kind:
-                    type: string
-                parentKey:
-                    type: string
-                path:
-                    type: string
-                label:
-                    type: string
-                icon:
-                    type: string
-                caption:
-                    type: string
-                status:
-                    type: string
-                appDomain:
-                    type: string
-                sortOrder:
-                    type: integer
-                    format: int32
-                defaultOpen:
-                    type: boolean
-                end:
-                    type: boolean
-                externalHref:
-                    type: string
-                enabled:
-                    type: boolean
         admin.v1.AdminPostReportItem:
             type: object
             properties:
@@ -7930,43 +7616,6 @@ components:
             properties:
                 release:
                     $ref: '#/components/schemas/admin.v1.AdminAppRelease'
-        admin.v1.AdminUpsertMenuReq:
-            type: object
-            properties:
-                key:
-                    type: string
-                kind:
-                    type: string
-                parentKey:
-                    type: string
-                path:
-                    type: string
-                label:
-                    type: string
-                icon:
-                    type: string
-                caption:
-                    type: string
-                status:
-                    type: string
-                appDomain:
-                    type: string
-                sortOrder:
-                    type: integer
-                    format: int32
-                defaultOpen:
-                    type: boolean
-                end:
-                    type: boolean
-                externalHref:
-                    type: string
-                enabled:
-                    type: boolean
-        admin.v1.AdminUpsertMenuResp:
-            type: object
-            properties:
-                menu:
-                    $ref: '#/components/schemas/admin.v1.AdminMenuItem'
         admin.v1.AdminUserBehaviorScreenStat:
             type: object
             properties:
@@ -8619,11 +8268,6 @@ components:
                 leftUserId:
                     type: string
                 rightUserId:
-                    type: string
-        battle.v1.FinishRoomRequest:
-            type: object
-            properties:
-                roomId:
                     type: string
         battle.v1.SendBattleGiftReply:
             type: object
@@ -9920,25 +9564,6 @@ components:
                 total:
                     type: integer
                     format: int32
-        gift.v1.GetGiftRecordsReply:
-            type: object
-            properties:
-                records:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/gift.v1.GiftRecord'
-                total:
-                    type: integer
-                    format: int32
-        gift.v1.GetGiftReply:
-            type: object
-            properties:
-                success:
-                    type: boolean
-                message:
-                    type: string
-                gift:
-                    $ref: '#/components/schemas/gift.v1.Gift'
         gift.v1.GetGiftsReply:
             type: object
             properties:
@@ -10089,35 +9714,6 @@ components:
                  The JSON representation for `ListValue` is JSON array.
         google.protobuf.Value:
             description: Represents a dynamically typed value which can be either null, a number, a string, a boolean, a recursive struct value, or a list of values.
-        landing.v1.LandingFeedbackItem:
-            type: object
-            properties:
-                id:
-                    type: string
-                email:
-                    type: string
-                category:
-                    type: string
-                content:
-                    type: string
-                source:
-                    type: string
-                clientIp:
-                    type: string
-                userAgent:
-                    type: string
-                createdAt:
-                    type: string
-        landing.v1.ListLandingFeedbackReply:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/landing.v1.LandingFeedbackItem'
-                total:
-                    type: integer
-                    format: int32
         landing.v1.SubmitLandingFeedbackReply:
             type: object
             properties:
@@ -11464,23 +11060,6 @@ components:
                 publishedAt:
                     type: string
             description: 用户侧公告（仅 published）。
-        platform.v1.ContentItem:
-            type: object
-            properties:
-                id:
-                    type: string
-                userId:
-                    type: string
-                type:
-                    type: string
-                prompt:
-                    type: string
-                url:
-                    type: string
-                content:
-                    type: string
-                createdAt:
-                    type: string
         platform.v1.DeleteLlmManagedModelReq:
             type: object
             properties:
@@ -11570,23 +11149,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/platform.v1.LlmManagedModelResp'
-        platform.v1.ListUserContentResp:
-            type: object
-            properties:
-                code:
-                    type: integer
-                    format: int32
-                message:
-                    type: string
-                success:
-                    type: boolean
-                data:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/platform.v1.ContentItem'
-                total:
-                    type: integer
-                    format: int32
         platform.v1.LlmChatReq:
             type: object
             properties:
@@ -12349,11 +11911,6 @@ components:
             properties:
                 user:
                     $ref: '#/components/schemas/user.v1.User'
-        user.v1.GetUserResp:
-            type: object
-            properties:
-                user:
-                    $ref: '#/components/schemas/user.v1.User'
         user.v1.GetUsersResp:
             type: object
             properties:
@@ -12372,13 +11929,6 @@ components:
                     items:
                         $ref: '#/components/schemas/user.v1.User'
         user.v1.ListIncomingFriendRequestsResp:
-            type: object
-            properties:
-                data:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/user.v1.FriendRequestView'
-        user.v1.ListOutgoingFriendRequestsResp:
             type: object
             properties:
                 data:

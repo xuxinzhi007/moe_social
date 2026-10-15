@@ -67,7 +67,7 @@ func UserInfoRespV1(user model.User) *userv1.GetUserInfoResp {
 	return &userv1.GetUserInfoResp{User: ModelToUserV1(&user)}
 }
 
-// GetUserRespV1 用户详情响应。
+// GetUserRespV1 用户详情响应（仅内部：WS 私信投递链解析发送者资料）。
 func GetUserRespV1(user model.User) *userv1.GetUserResp {
 	return &userv1.GetUserResp{User: ModelToUserV1(&user)}
 }
@@ -134,11 +134,6 @@ func SendFriendRequestRespV1(view *userv1.FriendRequestView) *userv1.SendFriendR
 // ListIncomingFriendRequestsRespV1 收到的好友申请列表。
 func ListIncomingFriendRequestsRespV1(data []*userv1.FriendRequestView) *userv1.ListIncomingFriendRequestsResp {
 	return &userv1.ListIncomingFriendRequestsResp{Data: data}
-}
-
-// ListOutgoingFriendRequestsRespV1 发出的好友申请列表。
-func ListOutgoingFriendRequestsRespV1(data []*userv1.FriendRequestView) *userv1.ListOutgoingFriendRequestsResp {
-	return &userv1.ListOutgoingFriendRequestsResp{Data: data}
 }
 
 // ListFriendsRespV1 好友列表响应。

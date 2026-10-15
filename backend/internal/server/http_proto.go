@@ -149,7 +149,6 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))
-		userhttp.RegisterAvatarPackRoutes(srv, d.UserApp)
 	}
 	if d.CommentApp != nil {
 		commentv1.RegisterCommentServiceHTTPServer(srv, commenthttp.New(d.CommentApp))

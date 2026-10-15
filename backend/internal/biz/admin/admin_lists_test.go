@@ -18,7 +18,7 @@ func openAdminListDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Skip("sqlite in-memory test requires CGO")
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.AchievementDefinition{}, &model.AdminMenu{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.AchievementDefinition{}); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 	return db
@@ -68,25 +68,5 @@ func TestListAchievementsCategory(t *testing.T) {
 	}
 	if total != 1 || len(items) != 1 || items[0].GetId() != "ach_a" {
 		t.Fatalf("unexpected achievements total=%d len=%d", total, len(items))
-	}
-}
-
-func TestListMenusOrder(t *testing.T) {
-	db := openAdminListDB(t)
-	rows := []model.AdminMenu{
-		{Key: "b", Label: "B", SortOrder: 20, Enabled: true},
-		{Key: "a", Label: "A", SortOrder: 10, Enabled: true},
-	}
-	for i := range rows {
-		if err := db.Create(&rows[i]).Error; err != nil {
-			t.Fatal(err)
-		}
-	}
-	items, err := adminbiz.ListMenus(context.Background(), admindata.NewStore(db))
-	if err != nil {
-		t.Fatalf("list menus: %v", err)
-	}
-	if len(items) != 2 || items[0].GetKey() != "a" {
-		t.Fatalf("expected menu a first, got %v", items)
 	}
 }

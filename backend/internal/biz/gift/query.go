@@ -51,68 +51,6 @@ func ListGifts(ctx context.Context, store GiftStore, page, pageSize int32, viewe
 	return out, int32(total), nil
 }
 
-// GetGift 单个礼物详情。
-func GetGift(ctx context.Context, store GiftStore, giftIDRaw string) (*giftv1.GetGiftReply, error) {
-	if store == nil {
-		return nil, gorm.ErrInvalidDB
-	}
-	giftID, err := ParseGiftID(giftIDRaw)
-	if err != nil {
-		return &giftv1.GetGiftReply{Success: false, Message: "invalid gift id"}, nil
-	}
-	gift, err := store.GetGiftByID(ctx, giftID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &giftv1.GetGiftReply{Success: false, Message: "gift not found"}, nil
-		}
-		return nil, err
-	}
-	return &giftv1.GetGiftReply{
-		Success: true, Message: "success", Gift: GiftToProto(gift, 0),
-	}, nil
-}
-
-// ListRecords 用户礼物赠送记录。
-func ListRecords(ctx context.Context, store GiftStore, userIDRaw string, page, pageSize int32) ([]*giftv1.GiftRecord, int32, error) {
-	if store == nil {
-		return nil, 0, gorm.ErrInvalidDB
-	}
-	userID, err := strconv.ParseUint(strings.TrimSpace(userIDRaw), 10, 64)
-	if err != nil || userID == 0 {
-		return nil, 0, nil
-	}
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 10
-	}
-	total, err := store.CountGiftRecords(ctx, uint(userID))
-	if err != nil {
-		return nil, 0, err
-	}
-	offset := int((page - 1) * pageSize)
-	rows, err := store.ListGiftRecords(ctx, uint(userID), offset, int(pageSize))
-	if err != nil {
-		return nil, 0, err
-	}
-	out := make([]*giftv1.GiftRecord, len(rows))
-	for i, record := range rows {
-		fromUser, _ := store.GetUserByID(ctx, record.FromUserID)
-		toUser, _ := store.GetUserByID(ctx, record.ToUserID)
-		var giftProto *giftv1.Gift
-		if record.Gift.ID != 0 {
-			giftProto = &giftv1.Gift{
-				Id: uint64(record.Gift.ID), Name: record.Gift.Name,
-				Price: int32(record.Gift.Price), Icon: record.Gift.Icon,
-				Description: record.Gift.Description,
-			}
-		}
-		out[i] = RecordToProto(record, fromUser, toUser, giftProto)
-	}
-	return out, int32(total), nil
-}
-
 // ListPurchaseOrders 用户礼物购买订单。
 func ListPurchaseOrders(ctx context.Context, store GiftStore, userIDRaw string, page, pageSize int32) ([]*giftv1.GiftPurchaseOrder, int32, error) {
 	if store == nil {

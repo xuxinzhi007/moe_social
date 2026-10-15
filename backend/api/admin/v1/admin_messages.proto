@@ -156,12 +156,6 @@ message AdminBootstrapLevelsResp {
   int32 check_in_rewards_created = 2;
 }
 
-message AdminBootstrapMenusReq {}
-
-message AdminBootstrapMenusResp {
-  int32 created = 1;
-}
-
 message AdminBootstrapTopicTagsReq {}
 
 message AdminBootstrapTopicTagsResp {
@@ -323,12 +317,6 @@ message AdminDeleteGroupReq {
 }
 
 message AdminDeleteGroupResp {}
-
-message AdminDeleteMenuReq {
-  string menu_key = 1;
-}
-
-message AdminDeleteMenuResp {}
 
 message AdminDeleteMoeBrainEpisodeReq {
   uint64 id = 1;
@@ -702,12 +690,6 @@ message AdminListLevelConfigsResp {
   repeated AdminLevelConfigItem items = 1;
 }
 
-message AdminListMenusReq {}
-
-message AdminListMenusResp {
-  repeated AdminMenuItem items = 1;
-}
-
 message AdminListMoeRuntimesReq {}
 
 message AdminListMoeRuntimesResp {
@@ -833,24 +815,6 @@ message AdminLoginResp {
 message AdminMemoryTypeStat {
   string memory_type = 1;
   int32 count = 2;
-}
-
-message AdminMenuItem {
-  string id = 1;
-  string key = 2;
-  string kind = 3;
-  string parent_key = 4;
-  string path = 5;
-  string label = 6;
-  string icon = 7;
-  string caption = 8;
-  string status = 9;
-  string app_domain = 10;
-  int32 sort_order = 11;
-  bool default_open = 12;
-  bool end = 13;
-  string external_href = 14;
-  bool enabled = 15;
 }
 
 message AdminMoeToolCallItem {
@@ -1142,27 +1106,6 @@ message AdminUpdateVipPlanReq {
 
 message AdminUpdateVipPlanResp {
   VipPlan plan = 1;
-}
-
-message AdminUpsertMenuReq {
-  string key = 1;
-  string kind = 2;
-  string parent_key = 3;
-  string path = 4;
-  string label = 5;
-  string icon = 6;
-  string caption = 7;
-  string status = 8;
-  string app_domain = 9;
-  int32 sort_order = 10;
-  bool default_open = 11;
-  bool end = 12;
-  string external_href = 13;
-  bool enabled = 14;
-}
-
-message AdminUpsertMenuResp {
-  AdminMenuItem menu = 1;
 }
 
 message AdminUpsertMoeRuntimeReq {
@@ -1826,18 +1769,6 @@ service AdminApp {
   }
   rpc AdminDeleteMediaImage(AdminDeleteMediaImageReq) returns (AdminDeleteMediaImageResp) {
     option (google.api.http) = { delete: "/api/admin/media/images/{filename}" };
-  }
-  rpc AdminListMenus(AdminListMenusReq) returns (AdminListMenusResp) {
-    option (google.api.http) = { get: "/api/admin/menus" };
-  }
-  rpc AdminUpsertMenu(AdminUpsertMenuReq) returns (AdminUpsertMenuResp) {
-    option (google.api.http) = { put: "/api/admin/menus" body: "*" };
-  }
-  rpc AdminDeleteMenu(AdminDeleteMenuReq) returns (AdminDeleteMenuResp) {
-    option (google.api.http) = { delete: "/api/admin/menus/{menu_key}" };
-  }
-  rpc AdminBootstrapMenus(AdminBootstrapMenusReq) returns (AdminBootstrapMenusResp) {
-    option (google.api.http) = { post: "/api/admin/menus/bootstrap" body: "*" };
   }
   rpc AdminGetRuntimeConfig(AdminGetRuntimeConfigReq) returns (AdminGetRuntimeConfigResp) {
     option (google.api.http) = { get: "/api/admin/runtime-config" };

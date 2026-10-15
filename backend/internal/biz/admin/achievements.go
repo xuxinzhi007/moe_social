@@ -2,7 +2,6 @@ package adminbiz
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	adminv1 "backend/api/admin/v1"
@@ -82,25 +81,5 @@ func achievementItemToProto(row model.AchievementDefinition) *adminv1.AdminAchie
 		Enabled:       row.Enabled,
 		SortOrder:     int32(row.SortOrder),
 		CreatedAt:     row.CreatedAt.Format("2006-01-02 15:04:05"),
-	}
-}
-
-func menuItemToProto(row model.AdminMenu) *adminv1.AdminMenuItem {
-	return &adminv1.AdminMenuItem{
-		Id:           strconv.FormatUint(uint64(row.ID), 10),
-		Key:          row.Key,
-		Kind:         row.Kind,
-		ParentKey:    row.ParentKey,
-		Path:         row.Path,
-		Label:        row.Label,
-		Icon:         row.Icon,
-		Caption:      row.Caption,
-		Status:       row.Status,
-		AppDomain:    row.AppDomain,
-		SortOrder:    int32(row.SortOrder),
-		DefaultOpen:  row.DefaultOpen,
-		End:          row.End,
-		ExternalHref: row.ExternalHref,
-		Enabled:      row.Enabled,
 	}
 }

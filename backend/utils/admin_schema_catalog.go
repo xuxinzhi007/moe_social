@@ -79,7 +79,6 @@ func AdminSchemaCatalog() []AdminSchemaEntry {
 
 		// 系统管理
 		{Key: "admin_accounts", Label: "管理员账号", Domain: "系统管理", Capabilities: []string{"list", "create", "update", "delete"}, AdminRoute: "/system/admins", Model: &model.AdminAccount{}},
-		{Key: "admin_menus", Label: "侧栏菜单", Domain: "系统管理", Capabilities: []string{"list", "update", "bootstrap"}, AdminRoute: "/system/menus", BootstrapKey: "menus", Model: &model.AdminMenu{}},
 		{Key: "admin_audit_logs", Label: "操作审计", Domain: "系统管理", Capabilities: []string{"list"}, AdminRoute: "/system/audit", Model: &model.AdminAuditLog{}},
 		{Key: "user_behavior_events", Label: "用户行为事件", Domain: "用户画像", Capabilities: nil, Note: "App 埋点原始事件", Model: &model.UserBehaviorEvent{}},
 		{Key: "user_behavior_daily", Label: "用户行为日聚合", Domain: "用户画像", Capabilities: nil, Note: "按页面维度聚合", Model: &model.UserBehaviorDaily{}},

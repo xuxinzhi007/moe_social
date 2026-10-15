@@ -17,8 +17,6 @@ type GiftStore interface {
 	ListGifts(ctx context.Context, offset, limit int) ([]model.Gift, error)
 	FindUserGiftStock(ctx context.Context, userID uint, giftIDs []uint) ([]model.UserGiftStock, error)
 	GetGiftByID(ctx context.Context, id uint) (model.Gift, error)
-	CountGiftRecords(ctx context.Context, userID uint) (int64, error)
-	ListGiftRecords(ctx context.Context, userID uint, offset, limit int) ([]model.GiftRecord, error)
 	UserExists(ctx context.Context, userID uint) error
 	CountPurchaseOrders(ctx context.Context, userID uint) (int64, error)
 	ListPurchaseOrders(ctx context.Context, userID uint, offset, limit int) ([]model.GiftPurchaseOrder, error)

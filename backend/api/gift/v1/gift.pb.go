@@ -434,110 +434,6 @@ func (x *GetGiftsReply) GetTotal() int32 {
 	return 0
 }
 
-type GetGiftRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	GiftId        string                 `protobuf:"bytes,1,opt,name=gift_id,json=giftId,proto3" json:"gift_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGiftRequest) Reset() {
-	*x = GetGiftRequest{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGiftRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGiftRequest) ProtoMessage() {}
-
-func (x *GetGiftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGiftRequest.ProtoReflect.Descriptor instead.
-func (*GetGiftRequest) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *GetGiftRequest) GetGiftId() string {
-	if x != nil {
-		return x.GiftId
-	}
-	return ""
-}
-
-type GetGiftReply struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Gift          *Gift                  `protobuf:"bytes,3,opt,name=gift,proto3" json:"gift,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGiftReply) Reset() {
-	*x = GetGiftReply{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGiftReply) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGiftReply) ProtoMessage() {}
-
-func (x *GetGiftReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGiftReply.ProtoReflect.Descriptor instead.
-func (*GetGiftReply) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *GetGiftReply) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *GetGiftReply) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *GetGiftReply) GetGift() *Gift {
-	if x != nil {
-		return x.Gift
-	}
-	return nil
-}
-
 type SendGiftRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FromUserId    string                 `protobuf:"bytes,1,opt,name=from_user_id,json=fromUserId,proto3" json:"from_user_id,omitempty"`
@@ -550,7 +446,7 @@ type SendGiftRequest struct {
 
 func (x *SendGiftRequest) Reset() {
 	*x = SendGiftRequest{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[7]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -562,7 +458,7 @@ func (x *SendGiftRequest) String() string {
 func (*SendGiftRequest) ProtoMessage() {}
 
 func (x *SendGiftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[7]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -575,7 +471,7 @@ func (x *SendGiftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendGiftRequest.ProtoReflect.Descriptor instead.
 func (*SendGiftRequest) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{7}
+	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SendGiftRequest) GetFromUserId() string {
@@ -618,7 +514,7 @@ type SendGiftReply struct {
 
 func (x *SendGiftReply) Reset() {
 	*x = SendGiftReply{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[8]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -630,7 +526,7 @@ func (x *SendGiftReply) String() string {
 func (*SendGiftReply) ProtoMessage() {}
 
 func (x *SendGiftReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[8]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -643,7 +539,7 @@ func (x *SendGiftReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendGiftReply.ProtoReflect.Descriptor instead.
 func (*SendGiftReply) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{8}
+	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SendGiftReply) GetSuccess() bool {
@@ -674,118 +570,6 @@ func (x *SendGiftReply) GetNewAchievements() []*AchievementUnlock {
 	return nil
 }
 
-type GetGiftRecordsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGiftRecordsRequest) Reset() {
-	*x = GetGiftRecordsRequest{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGiftRecordsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGiftRecordsRequest) ProtoMessage() {}
-
-func (x *GetGiftRecordsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGiftRecordsRequest.ProtoReflect.Descriptor instead.
-func (*GetGiftRecordsRequest) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *GetGiftRecordsRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *GetGiftRecordsRequest) GetPage() int32 {
-	if x != nil {
-		return x.Page
-	}
-	return 0
-}
-
-func (x *GetGiftRecordsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-type GetGiftRecordsReply struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Records       []*GiftRecord          `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty"`
-	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGiftRecordsReply) Reset() {
-	*x = GetGiftRecordsReply{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGiftRecordsReply) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGiftRecordsReply) ProtoMessage() {}
-
-func (x *GetGiftRecordsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGiftRecordsReply.ProtoReflect.Descriptor instead.
-func (*GetGiftRecordsReply) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *GetGiftRecordsReply) GetRecords() []*GiftRecord {
-	if x != nil {
-		return x.Records
-	}
-	return nil
-}
-
-func (x *GetGiftRecordsReply) GetTotal() int32 {
-	if x != nil {
-		return x.Total
-	}
-	return 0
-}
-
 type PurchaseGiftRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -797,7 +581,7 @@ type PurchaseGiftRequest struct {
 
 func (x *PurchaseGiftRequest) Reset() {
 	*x = PurchaseGiftRequest{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[11]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -809,7 +593,7 @@ func (x *PurchaseGiftRequest) String() string {
 func (*PurchaseGiftRequest) ProtoMessage() {}
 
 func (x *PurchaseGiftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[11]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -822,7 +606,7 @@ func (x *PurchaseGiftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchaseGiftRequest.ProtoReflect.Descriptor instead.
 func (*PurchaseGiftRequest) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{11}
+	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PurchaseGiftRequest) GetUserId() string {
@@ -859,7 +643,7 @@ type PurchaseGiftReply struct {
 
 func (x *PurchaseGiftReply) Reset() {
 	*x = PurchaseGiftReply{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[12]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -871,7 +655,7 @@ func (x *PurchaseGiftReply) String() string {
 func (*PurchaseGiftReply) ProtoMessage() {}
 
 func (x *PurchaseGiftReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[12]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -884,7 +668,7 @@ func (x *PurchaseGiftReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchaseGiftReply.ProtoReflect.Descriptor instead.
 func (*PurchaseGiftReply) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{12}
+	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *PurchaseGiftReply) GetSuccess() bool {
@@ -941,7 +725,7 @@ type GiftPurchaseOrder struct {
 
 func (x *GiftPurchaseOrder) Reset() {
 	*x = GiftPurchaseOrder{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[13]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -953,7 +737,7 @@ func (x *GiftPurchaseOrder) String() string {
 func (*GiftPurchaseOrder) ProtoMessage() {}
 
 func (x *GiftPurchaseOrder) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[13]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -966,7 +750,7 @@ func (x *GiftPurchaseOrder) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GiftPurchaseOrder.ProtoReflect.Descriptor instead.
 func (*GiftPurchaseOrder) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{13}
+	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GiftPurchaseOrder) GetId() string {
@@ -1057,7 +841,7 @@ type GetGiftPurchaseOrdersRequest struct {
 
 func (x *GetGiftPurchaseOrdersRequest) Reset() {
 	*x = GetGiftPurchaseOrdersRequest{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[14]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1069,7 +853,7 @@ func (x *GetGiftPurchaseOrdersRequest) String() string {
 func (*GetGiftPurchaseOrdersRequest) ProtoMessage() {}
 
 func (x *GetGiftPurchaseOrdersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[14]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1082,7 +866,7 @@ func (x *GetGiftPurchaseOrdersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftPurchaseOrdersRequest.ProtoReflect.Descriptor instead.
 func (*GetGiftPurchaseOrdersRequest) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{14}
+	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetGiftPurchaseOrdersRequest) GetUserId() string {
@@ -1116,7 +900,7 @@ type GetGiftPurchaseOrdersReply struct {
 
 func (x *GetGiftPurchaseOrdersReply) Reset() {
 	*x = GetGiftPurchaseOrdersReply{}
-	mi := &file_api_gift_v1_gift_proto_msgTypes[15]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1128,7 +912,7 @@ func (x *GetGiftPurchaseOrdersReply) String() string {
 func (*GetGiftPurchaseOrdersReply) ProtoMessage() {}
 
 func (x *GetGiftPurchaseOrdersReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gift_v1_gift_proto_msgTypes[15]
+	mi := &file_api_gift_v1_gift_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1141,7 +925,7 @@ func (x *GetGiftPurchaseOrdersReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGiftPurchaseOrdersReply.ProtoReflect.Descriptor instead.
 func (*GetGiftPurchaseOrdersReply) Descriptor() ([]byte, []int) {
-	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{15}
+	return file_api_gift_v1_gift_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetGiftPurchaseOrdersReply) GetOrders() []*GiftPurchaseOrder {
@@ -1206,13 +990,7 @@ const file_api_gift_v1_gift_proto_rawDesc = "" +
 	"\x0eviewer_user_id\x18\x03 \x01(\tR\fviewerUserId\"J\n" +
 	"\rGetGiftsReply\x12#\n" +
 	"\x05gifts\x18\x01 \x03(\v2\r.gift.v1.GiftR\x05gifts\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\")\n" +
-	"\x0eGetGiftRequest\x12\x17\n" +
-	"\agift_id\x18\x01 \x01(\tR\x06giftId\"e\n" +
-	"\fGetGiftReply\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12!\n" +
-	"\x04gift\x18\x03 \x01(\v2\r.gift.v1.GiftR\x04gift\"\x86\x01\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\x86\x01\n" +
 	"\x0fSendGiftRequest\x12 \n" +
 	"\ffrom_user_id\x18\x01 \x01(\tR\n" +
 	"fromUserId\x12\x1c\n" +
@@ -1224,14 +1002,7 @@ const file_api_gift_v1_gift_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12+\n" +
 	"\x06record\x18\x03 \x01(\v2\x13.gift.v1.GiftRecordR\x06record\x12E\n" +
-	"\x10new_achievements\x18\x04 \x03(\v2\x1a.gift.v1.AchievementUnlockR\x0fnewAchievements\"a\n" +
-	"\x15GetGiftRecordsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
-	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"Z\n" +
-	"\x13GetGiftRecordsReply\x12-\n" +
-	"\arecords\x18\x01 \x03(\v2\x13.gift.v1.GiftRecordR\arecords\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"c\n" +
+	"\x10new_achievements\x18\x04 \x03(\v2\x1a.gift.v1.AchievementUnlockR\x0fnewAchievements\"c\n" +
 	"\x13PurchaseGiftRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
 	"\agift_id\x18\x02 \x01(\tR\x06giftId\x12\x1a\n" +
@@ -1265,14 +1036,12 @@ const file_api_gift_v1_gift_proto_rawDesc = "" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"f\n" +
 	"\x1aGetGiftPurchaseOrdersReply\x122\n" +
 	"\x06orders\x18\x01 \x03(\v2\x1a.gift.v1.GiftPurchaseOrderR\x06orders\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total2\xb3\x05\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total2\xdf\x03\n" +
 	"\vGiftService\x12P\n" +
 	"\bGetGifts\x12\x18.gift.v1.GetGiftsRequest\x1a\x16.gift.v1.GetGiftsReply\"\x12\x82\xd3\xe4\x93\x02\f\x12\n" +
-	"/api/gifts\x12W\n" +
-	"\aGetGift\x12\x17.gift.v1.GetGiftRequest\x1a\x15.gift.v1.GetGiftReply\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/gifts/{gift_id}\x12l\n" +
+	"/api/gifts\x12l\n" +
 	"\bSendGift\x12\x18.gift.v1.SendGiftRequest\x1a\x16.gift.v1.SendGiftReply\".\x82\xd3\xe4\x93\x02(:\x01*\"#/api/user/{from_user_id}/gifts/send\x12w\n" +
-	"\fPurchaseGift\x12\x1c.gift.v1.PurchaseGiftRequest\x1a\x1a.gift.v1.PurchaseGiftReply\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/api/user/{user_id}/gifts/purchase\x12y\n" +
-	"\x0eGetGiftRecords\x12\x1e.gift.v1.GetGiftRecordsRequest\x1a\x1c.gift.v1.GetGiftRecordsReply\")\x82\xd3\xe4\x93\x02#\x12!/api/user/{user_id}/gifts/records\x12\x96\x01\n" +
+	"\fPurchaseGift\x12\x1c.gift.v1.PurchaseGiftRequest\x1a\x1a.gift.v1.PurchaseGiftReply\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/api/user/{user_id}/gifts/purchase\x12\x96\x01\n" +
 	"\x15GetGiftPurchaseOrders\x12%.gift.v1.GetGiftPurchaseOrdersRequest\x1a#.gift.v1.GetGiftPurchaseOrdersReply\"1\x82\xd3\xe4\x93\x02+\x12)/api/user/{user_id}/gifts/purchase-ordersB\x1cZ\x1abackend/api/gift/v1;giftv1b\x06proto3"
 
 var (
@@ -1287,50 +1056,40 @@ func file_api_gift_v1_gift_proto_rawDescGZIP() []byte {
 	return file_api_gift_v1_gift_proto_rawDescData
 }
 
-var file_api_gift_v1_gift_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_api_gift_v1_gift_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_api_gift_v1_gift_proto_goTypes = []any{
 	(*Gift)(nil),                         // 0: gift.v1.Gift
 	(*GiftRecord)(nil),                   // 1: gift.v1.GiftRecord
 	(*AchievementUnlock)(nil),            // 2: gift.v1.AchievementUnlock
 	(*GetGiftsRequest)(nil),              // 3: gift.v1.GetGiftsRequest
 	(*GetGiftsReply)(nil),                // 4: gift.v1.GetGiftsReply
-	(*GetGiftRequest)(nil),               // 5: gift.v1.GetGiftRequest
-	(*GetGiftReply)(nil),                 // 6: gift.v1.GetGiftReply
-	(*SendGiftRequest)(nil),              // 7: gift.v1.SendGiftRequest
-	(*SendGiftReply)(nil),                // 8: gift.v1.SendGiftReply
-	(*GetGiftRecordsRequest)(nil),        // 9: gift.v1.GetGiftRecordsRequest
-	(*GetGiftRecordsReply)(nil),          // 10: gift.v1.GetGiftRecordsReply
-	(*PurchaseGiftRequest)(nil),          // 11: gift.v1.PurchaseGiftRequest
-	(*PurchaseGiftReply)(nil),            // 12: gift.v1.PurchaseGiftReply
-	(*GiftPurchaseOrder)(nil),            // 13: gift.v1.GiftPurchaseOrder
-	(*GetGiftPurchaseOrdersRequest)(nil), // 14: gift.v1.GetGiftPurchaseOrdersRequest
-	(*GetGiftPurchaseOrdersReply)(nil),   // 15: gift.v1.GetGiftPurchaseOrdersReply
+	(*SendGiftRequest)(nil),              // 5: gift.v1.SendGiftRequest
+	(*SendGiftReply)(nil),                // 6: gift.v1.SendGiftReply
+	(*PurchaseGiftRequest)(nil),          // 7: gift.v1.PurchaseGiftRequest
+	(*PurchaseGiftReply)(nil),            // 8: gift.v1.PurchaseGiftReply
+	(*GiftPurchaseOrder)(nil),            // 9: gift.v1.GiftPurchaseOrder
+	(*GetGiftPurchaseOrdersRequest)(nil), // 10: gift.v1.GetGiftPurchaseOrdersRequest
+	(*GetGiftPurchaseOrdersReply)(nil),   // 11: gift.v1.GetGiftPurchaseOrdersReply
 }
 var file_api_gift_v1_gift_proto_depIdxs = []int32{
 	0,  // 0: gift.v1.GiftRecord.gift:type_name -> gift.v1.Gift
 	0,  // 1: gift.v1.GetGiftsReply.gifts:type_name -> gift.v1.Gift
-	0,  // 2: gift.v1.GetGiftReply.gift:type_name -> gift.v1.Gift
-	1,  // 3: gift.v1.SendGiftReply.record:type_name -> gift.v1.GiftRecord
-	2,  // 4: gift.v1.SendGiftReply.new_achievements:type_name -> gift.v1.AchievementUnlock
-	1,  // 5: gift.v1.GetGiftRecordsReply.records:type_name -> gift.v1.GiftRecord
-	13, // 6: gift.v1.GetGiftPurchaseOrdersReply.orders:type_name -> gift.v1.GiftPurchaseOrder
-	3,  // 7: gift.v1.GiftService.GetGifts:input_type -> gift.v1.GetGiftsRequest
-	5,  // 8: gift.v1.GiftService.GetGift:input_type -> gift.v1.GetGiftRequest
-	7,  // 9: gift.v1.GiftService.SendGift:input_type -> gift.v1.SendGiftRequest
-	11, // 10: gift.v1.GiftService.PurchaseGift:input_type -> gift.v1.PurchaseGiftRequest
-	9,  // 11: gift.v1.GiftService.GetGiftRecords:input_type -> gift.v1.GetGiftRecordsRequest
-	14, // 12: gift.v1.GiftService.GetGiftPurchaseOrders:input_type -> gift.v1.GetGiftPurchaseOrdersRequest
-	4,  // 13: gift.v1.GiftService.GetGifts:output_type -> gift.v1.GetGiftsReply
-	6,  // 14: gift.v1.GiftService.GetGift:output_type -> gift.v1.GetGiftReply
-	8,  // 15: gift.v1.GiftService.SendGift:output_type -> gift.v1.SendGiftReply
-	12, // 16: gift.v1.GiftService.PurchaseGift:output_type -> gift.v1.PurchaseGiftReply
-	10, // 17: gift.v1.GiftService.GetGiftRecords:output_type -> gift.v1.GetGiftRecordsReply
-	15, // 18: gift.v1.GiftService.GetGiftPurchaseOrders:output_type -> gift.v1.GetGiftPurchaseOrdersReply
-	13, // [13:19] is the sub-list for method output_type
-	7,  // [7:13] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	1,  // 2: gift.v1.SendGiftReply.record:type_name -> gift.v1.GiftRecord
+	2,  // 3: gift.v1.SendGiftReply.new_achievements:type_name -> gift.v1.AchievementUnlock
+	9,  // 4: gift.v1.GetGiftPurchaseOrdersReply.orders:type_name -> gift.v1.GiftPurchaseOrder
+	3,  // 5: gift.v1.GiftService.GetGifts:input_type -> gift.v1.GetGiftsRequest
+	5,  // 6: gift.v1.GiftService.SendGift:input_type -> gift.v1.SendGiftRequest
+	7,  // 7: gift.v1.GiftService.PurchaseGift:input_type -> gift.v1.PurchaseGiftRequest
+	10, // 8: gift.v1.GiftService.GetGiftPurchaseOrders:input_type -> gift.v1.GetGiftPurchaseOrdersRequest
+	4,  // 9: gift.v1.GiftService.GetGifts:output_type -> gift.v1.GetGiftsReply
+	6,  // 10: gift.v1.GiftService.SendGift:output_type -> gift.v1.SendGiftReply
+	8,  // 11: gift.v1.GiftService.PurchaseGift:output_type -> gift.v1.PurchaseGiftReply
+	11, // 12: gift.v1.GiftService.GetGiftPurchaseOrders:output_type -> gift.v1.GetGiftPurchaseOrdersReply
+	9,  // [9:13] is the sub-list for method output_type
+	5,  // [5:9] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_api_gift_v1_gift_proto_init() }
@@ -1344,7 +1103,7 @@ func file_api_gift_v1_gift_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_gift_v1_gift_proto_rawDesc), len(file_api_gift_v1_gift_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

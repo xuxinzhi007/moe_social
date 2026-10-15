@@ -66,7 +66,6 @@ message CreateRoomRequest {
 }
 message GetRoomRequest { uint64 room_id = 1; }
 message StartRoomRequest { uint64 room_id = 1; }
-message FinishRoomRequest { uint64 room_id = 1; }
 message SendBattleGiftRequest {
   uint64 room_id = 1;
   BattleSide side = 2;
@@ -93,8 +92,5 @@ service BattleService {
   }
   rpc SendBattleGift(SendBattleGiftRequest) returns (SendBattleGiftReply) {
     option (google.api.http) = { post: "/api/battles/{room_id}/gifts" body: "*" };
-  }
-  rpc FinishRoom(FinishRoomRequest) returns (BattleRoomReply) {
-    option (google.api.http) = { post: "/api/battles/{room_id}/finish" body: "*" };
   }
 }

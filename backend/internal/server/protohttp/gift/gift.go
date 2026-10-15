@@ -33,14 +33,6 @@ func (s *Server) GetGifts(ctx context.Context, in *giftv1.GetGiftsRequest) (*gif
 	return app.GetGifts(ctx, in)
 }
 
-func (s *Server) GetGift(ctx context.Context, in *giftv1.GetGiftRequest) (*giftv1.GetGiftReply, error) {
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.GetGift(ctx, in)
-}
-
 func (s *Server) SendGift(ctx context.Context, in *giftv1.SendGiftRequest) (*giftv1.SendGiftReply, error) {
 	app, err := s.requireApp()
 	if err != nil {
@@ -55,14 +47,6 @@ func (s *Server) PurchaseGift(ctx context.Context, in *giftv1.PurchaseGiftReques
 		return nil, err
 	}
 	return app.PurchaseGift(ctx, in)
-}
-
-func (s *Server) GetGiftRecords(ctx context.Context, in *giftv1.GetGiftRecordsRequest) (*giftv1.GetGiftRecordsReply, error) {
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.GetGiftRecords(ctx, in)
 }
 
 func (s *Server) GetGiftPurchaseOrders(ctx context.Context, in *giftv1.GetGiftPurchaseOrdersRequest) (*giftv1.GetGiftPurchaseOrdersReply, error) {

@@ -53,7 +53,6 @@ type UserStore interface {
 	CreateFriendRequest(ctx context.Context, fr *model.FriendRequest) error
 	ReloadFriendRequest(ctx context.Context, id uint) (model.FriendRequest, error)
 	ListIncomingFriendRequests(ctx context.Context, actorID uint) ([]model.FriendRequest, error)
-	ListOutgoingFriendRequests(ctx context.Context, actorID uint) ([]model.FriendRequest, error)
 	GetFriendRequestByID(ctx context.Context, id uint) (model.FriendRequest, error)
 	ListAcceptedFriendRequests(ctx context.Context, actorID uint) ([]model.FriendRequest, error)
 	FindAcceptedFriendRelation(ctx context.Context, a, b uint) (model.FriendRequest, bool, error)
@@ -82,10 +81,6 @@ type UserStore interface {
 	GetUserAvatar(ctx context.Context, userID string) (model.UserAvatar, bool, error)
 	CreateUserAvatar(ctx context.Context, avatar *model.UserAvatar) error
 	UpdateUserAvatarFields(ctx context.Context, existing *model.UserAvatar, updates map[string]interface{}) error
-
-	UpsertAvatarPackRevision(ctx context.Context, revision *model.AvatarPackRevision) error
-	GetAvatarPackRevision(ctx context.Context, userID, packID, version string) (model.AvatarPackRevision, bool, error)
-	GetLatestAvatarPackRevision(ctx context.Context, userID, packID string) (model.AvatarPackRevision, bool, error)
 
 	FindUserByFeishuOpenID(ctx context.Context, openID string) (model.User, error)
 	FindUserByWechatOpenID(ctx context.Context, openID string) (model.User, error)

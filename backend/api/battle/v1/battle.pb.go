@@ -639,50 +639,6 @@ func (x *StartRoomRequest) GetRoomId() uint64 {
 	return 0
 }
 
-type FinishRoomRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RoomId        uint64                 `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *FinishRoomRequest) Reset() {
-	*x = FinishRoomRequest{}
-	mi := &file_api_battle_v1_battle_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *FinishRoomRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FinishRoomRequest) ProtoMessage() {}
-
-func (x *FinishRoomRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_battle_v1_battle_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use FinishRoomRequest.ProtoReflect.Descriptor instead.
-func (*FinishRoomRequest) Descriptor() ([]byte, []int) {
-	return file_api_battle_v1_battle_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *FinishRoomRequest) GetRoomId() uint64 {
-	if x != nil {
-		return x.RoomId
-	}
-	return 0
-}
-
 type SendBattleGiftRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoomId        uint64                 `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
@@ -696,7 +652,7 @@ type SendBattleGiftRequest struct {
 
 func (x *SendBattleGiftRequest) Reset() {
 	*x = SendBattleGiftRequest{}
-	mi := &file_api_battle_v1_battle_proto_msgTypes[8]
+	mi := &file_api_battle_v1_battle_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -708,7 +664,7 @@ func (x *SendBattleGiftRequest) String() string {
 func (*SendBattleGiftRequest) ProtoMessage() {}
 
 func (x *SendBattleGiftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_battle_v1_battle_proto_msgTypes[8]
+	mi := &file_api_battle_v1_battle_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -721,7 +677,7 @@ func (x *SendBattleGiftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendBattleGiftRequest.ProtoReflect.Descriptor instead.
 func (*SendBattleGiftRequest) Descriptor() ([]byte, []int) {
-	return file_api_battle_v1_battle_proto_rawDescGZIP(), []int{8}
+	return file_api_battle_v1_battle_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SendBattleGiftRequest) GetRoomId() uint64 {
@@ -768,7 +724,7 @@ type BattleRoomReply struct {
 
 func (x *BattleRoomReply) Reset() {
 	*x = BattleRoomReply{}
-	mi := &file_api_battle_v1_battle_proto_msgTypes[9]
+	mi := &file_api_battle_v1_battle_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -780,7 +736,7 @@ func (x *BattleRoomReply) String() string {
 func (*BattleRoomReply) ProtoMessage() {}
 
 func (x *BattleRoomReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_battle_v1_battle_proto_msgTypes[9]
+	mi := &file_api_battle_v1_battle_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -793,7 +749,7 @@ func (x *BattleRoomReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BattleRoomReply.ProtoReflect.Descriptor instead.
 func (*BattleRoomReply) Descriptor() ([]byte, []int) {
-	return file_api_battle_v1_battle_proto_rawDescGZIP(), []int{9}
+	return file_api_battle_v1_battle_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BattleRoomReply) GetRoom() *BattleRoomSnapshot {
@@ -813,7 +769,7 @@ type SendBattleGiftReply struct {
 
 func (x *SendBattleGiftReply) Reset() {
 	*x = SendBattleGiftReply{}
-	mi := &file_api_battle_v1_battle_proto_msgTypes[10]
+	mi := &file_api_battle_v1_battle_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -825,7 +781,7 @@ func (x *SendBattleGiftReply) String() string {
 func (*SendBattleGiftReply) ProtoMessage() {}
 
 func (x *SendBattleGiftReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_battle_v1_battle_proto_msgTypes[10]
+	mi := &file_api_battle_v1_battle_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -838,7 +794,7 @@ func (x *SendBattleGiftReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendBattleGiftReply.ProtoReflect.Descriptor instead.
 func (*SendBattleGiftReply) Descriptor() ([]byte, []int) {
-	return file_api_battle_v1_battle_proto_rawDescGZIP(), []int{10}
+	return file_api_battle_v1_battle_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SendBattleGiftReply) GetRoom() *BattleRoomSnapshot {
@@ -913,8 +869,6 @@ const file_api_battle_v1_battle_proto_rawDesc = "" +
 	"\x0eGetRoomRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\x04R\x06roomId\"+\n" +
 	"\x10StartRoomRequest\x12\x17\n" +
-	"\aroom_id\x18\x01 \x01(\x04R\x06roomId\",\n" +
-	"\x11FinishRoomRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\x04R\x06roomId\"\xaf\x01\n" +
 	"\x15SendBattleGiftRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\x04R\x06roomId\x12)\n" +
@@ -937,15 +891,13 @@ const file_api_battle_v1_battle_proto_rawDesc = "" +
 	"\x1eBATTLE_ROOM_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18BATTLE_ROOM_STATUS_DRAFT\x10\x01\x12\x1e\n" +
 	"\x1aBATTLE_ROOM_STATUS_RUNNING\x10\x02\x12\x1f\n" +
-	"\x1bBATTLE_ROOM_STATUS_FINISHED\x10\x032\xb0\x04\n" +
+	"\x1bBATTLE_ROOM_STATUS_FINISHED\x10\x032\xbe\x03\n" +
 	"\rBattleService\x12_\n" +
 	"\n" +
 	"CreateRoom\x12\x1c.battle.v1.CreateRoomRequest\x1a\x1a.battle.v1.BattleRoomReply\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/api/battles\x12`\n" +
 	"\aGetRoom\x12\x19.battle.v1.GetRoomRequest\x1a\x1a.battle.v1.BattleRoomReply\"\x1e\x82\xd3\xe4\x93\x02\x18\x12\x16/api/battles/{room_id}\x12m\n" +
 	"\tStartRoom\x12\x1b.battle.v1.StartRoomRequest\x1a\x1a.battle.v1.BattleRoomReply\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/battles/{room_id}/start\x12{\n" +
-	"\x0eSendBattleGift\x12 .battle.v1.SendBattleGiftRequest\x1a\x1e.battle.v1.SendBattleGiftReply\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/battles/{room_id}/gifts\x12p\n" +
-	"\n" +
-	"FinishRoom\x12\x1c.battle.v1.FinishRoomRequest\x1a\x1a.battle.v1.BattleRoomReply\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/api/battles/{room_id}/finishB Z\x1ebackend/api/battle/v1;battlev1b\x06proto3"
+	"\x0eSendBattleGift\x12 .battle.v1.SendBattleGiftRequest\x1a\x1e.battle.v1.SendBattleGiftReply\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/battles/{room_id}/giftsB Z\x1ebackend/api/battle/v1;battlev1b\x06proto3"
 
 var (
 	file_api_battle_v1_battle_proto_rawDescOnce sync.Once
@@ -960,7 +912,7 @@ func file_api_battle_v1_battle_proto_rawDescGZIP() []byte {
 }
 
 var file_api_battle_v1_battle_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_api_battle_v1_battle_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_api_battle_v1_battle_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_api_battle_v1_battle_proto_goTypes = []any{
 	(BattleSide)(0),               // 0: battle.v1.BattleSide
 	(BattleRoomStatus)(0),         // 1: battle.v1.BattleRoomStatus
@@ -971,10 +923,9 @@ var file_api_battle_v1_battle_proto_goTypes = []any{
 	(*CreateRoomRequest)(nil),     // 6: battle.v1.CreateRoomRequest
 	(*GetRoomRequest)(nil),        // 7: battle.v1.GetRoomRequest
 	(*StartRoomRequest)(nil),      // 8: battle.v1.StartRoomRequest
-	(*FinishRoomRequest)(nil),     // 9: battle.v1.FinishRoomRequest
-	(*SendBattleGiftRequest)(nil), // 10: battle.v1.SendBattleGiftRequest
-	(*BattleRoomReply)(nil),       // 11: battle.v1.BattleRoomReply
-	(*SendBattleGiftReply)(nil),   // 12: battle.v1.SendBattleGiftReply
+	(*SendBattleGiftRequest)(nil), // 9: battle.v1.SendBattleGiftRequest
+	(*BattleRoomReply)(nil),       // 10: battle.v1.BattleRoomReply
+	(*SendBattleGiftReply)(nil),   // 11: battle.v1.SendBattleGiftReply
 }
 var file_api_battle_v1_battle_proto_depIdxs = []int32{
 	0,  // 0: battle.v1.BattleScore.side:type_name -> battle.v1.BattleSide
@@ -994,15 +945,13 @@ var file_api_battle_v1_battle_proto_depIdxs = []int32{
 	6,  // 14: battle.v1.BattleService.CreateRoom:input_type -> battle.v1.CreateRoomRequest
 	7,  // 15: battle.v1.BattleService.GetRoom:input_type -> battle.v1.GetRoomRequest
 	8,  // 16: battle.v1.BattleService.StartRoom:input_type -> battle.v1.StartRoomRequest
-	10, // 17: battle.v1.BattleService.SendBattleGift:input_type -> battle.v1.SendBattleGiftRequest
-	9,  // 18: battle.v1.BattleService.FinishRoom:input_type -> battle.v1.FinishRoomRequest
-	11, // 19: battle.v1.BattleService.CreateRoom:output_type -> battle.v1.BattleRoomReply
-	11, // 20: battle.v1.BattleService.GetRoom:output_type -> battle.v1.BattleRoomReply
-	11, // 21: battle.v1.BattleService.StartRoom:output_type -> battle.v1.BattleRoomReply
-	12, // 22: battle.v1.BattleService.SendBattleGift:output_type -> battle.v1.SendBattleGiftReply
-	11, // 23: battle.v1.BattleService.FinishRoom:output_type -> battle.v1.BattleRoomReply
-	19, // [19:24] is the sub-list for method output_type
-	14, // [14:19] is the sub-list for method input_type
+	9,  // 17: battle.v1.BattleService.SendBattleGift:input_type -> battle.v1.SendBattleGiftRequest
+	10, // 18: battle.v1.BattleService.CreateRoom:output_type -> battle.v1.BattleRoomReply
+	10, // 19: battle.v1.BattleService.GetRoom:output_type -> battle.v1.BattleRoomReply
+	10, // 20: battle.v1.BattleService.StartRoom:output_type -> battle.v1.BattleRoomReply
+	11, // 21: battle.v1.BattleService.SendBattleGift:output_type -> battle.v1.SendBattleGiftReply
+	18, // [18:22] is the sub-list for method output_type
+	14, // [14:18] is the sub-list for method input_type
 	14, // [14:14] is the sub-list for extension type_name
 	14, // [14:14] is the sub-list for extension extendee
 	0,  // [0:14] is the sub-list for field type_name
@@ -1019,7 +968,7 @@ func file_api_battle_v1_battle_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_battle_v1_battle_proto_rawDesc), len(file_api_battle_v1_battle_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   11,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

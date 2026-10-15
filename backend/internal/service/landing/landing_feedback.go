@@ -1,9 +1,10 @@
 package landingapp
 
 import (
+	"context"
+
 	landingv1 "backend/api/landing/v1"
 	landingbiz "backend/internal/biz/landing"
-	"context"
 )
 
 // Submit 提交落地页反馈。
@@ -20,20 +21,4 @@ func (s *AppService) Submit(ctx context.Context, in *landingv1.SubmitLandingFeed
 		return nil, err
 	}
 	return &landingv1.SubmitLandingFeedbackReply{Id: id}, nil
-}
-
-// List 分页列表。
-func (s *AppService) List(ctx context.Context, in *landingv1.ListLandingFeedbackRequest) (*landingv1.ListLandingFeedbackReply, error) {
-	result, err := landingbiz.List(ctx, s.feedback, landingbiz.ListFilter{
-		Page:     in.GetPage(),
-		PageSize: in.GetPageSize(),
-		Category: in.GetCategory(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &landingv1.ListLandingFeedbackReply{
-		Items: landingbiz.FeedbackItemsToProto(result.Rows),
-		Total: int32(result.Total),
-	}, nil
 }

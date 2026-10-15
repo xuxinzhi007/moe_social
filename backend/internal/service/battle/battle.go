@@ -101,16 +101,6 @@ func (s *AppService) SendBattleGift(ctx context.Context, in *battlev1.SendBattle
 	return &battlev1.SendBattleGiftReply{Room: snapshotToProto(snapshot), Event: protoEvent}, nil
 }
 
-// FinishRoom finishes an elapsed room and broadcasts the durable result.
-func (s *AppService) FinishRoom(ctx context.Context, in *battlev1.FinishRoomRequest) (*battlev1.BattleRoomReply, error) {
-	snapshot, err := s.manager.FinishRoom(ctx, uint(in.GetRoomId()), time.Now())
-	if err != nil {
-		return nil, err
-	}
-	s.hub.PublishSnapshot("room_finished", snapshotToProto(snapshot))
-	return &battlev1.BattleRoomReply{Room: snapshotToProto(snapshot)}, nil
-}
-
 func snapshotToProto(snapshot battlebiz.Snapshot) *battlev1.BattleRoomSnapshot {
 	return &battlev1.BattleRoomSnapshot{RoomId: uint64(snapshot.Room.ID), Status: statusToProto(snapshot.Room.Status), Left: participantToProto(snapshot.Left), Right: participantToProto(snapshot.Right), LeftScore: scoreToProto(snapshot.LeftScore), RightScore: scoreToProto(snapshot.RightScore), StartedAt: timeString(snapshot.Room.StartedAt), EndsAt: timeString(snapshot.Room.EndsAt), ServerTime: time.Now().UTC().Format(time.RFC3339Nano), WinnerSide: sideToProto(snapshot.Room.WinnerSide), LastEventSeq: snapshot.Room.EventSeq}
 }

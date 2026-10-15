@@ -26,6 +26,3 @@ func (s *Server) StartRoom(ctx context.Context, in *battlev1.StartRoomRequest) (
 func (s *Server) SendBattleGift(ctx context.Context, in *battlev1.SendBattleGiftRequest) (*battlev1.SendBattleGiftReply, error) {
 	return s.app.SendBattleGift(ctx, in)
 }
-func (s *Server) FinishRoom(ctx context.Context, in *battlev1.FinishRoomRequest) (*battlev1.BattleRoomReply, error) {
-	return s.app.FinishRoom(ctx, in)
-}

@@ -31,7 +31,7 @@ func (s *AppService) GetUserInfo(ctx context.Context, in *userv1.GetUserInfoReq)
 	return userbiz.UserInfoRespV1(user), nil
 }
 
-// GetUser 同 GetUserInfo（super 契约）。
+// GetUser 同 GetUserInfo（super 契约）。无 HTTP 路由，仅供 chatdelivery 内部调用。
 func (s *AppService) GetUser(ctx context.Context, in *userv1.GetUserReq) (*userv1.GetUserResp, error) {
 	uid, err := parseUserID(in.GetUserId())
 	if err != nil {

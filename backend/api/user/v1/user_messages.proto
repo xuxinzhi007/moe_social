@@ -272,6 +272,8 @@ message GetUserMemoriesResp {
   bool has_more = 5;
 }
 
+// GetUserReq/GetUserResp 无 HTTP RPC（/detail 已下线）；
+// 保留 message 是因为 WS 私信投递链 chatdelivery.UserProfileAdapter 内部调用 AppService.GetUser。
 message GetUserReq {
   string user_id = 1;
 }
@@ -313,15 +315,6 @@ message ListIncomingFriendRequestsReq {
 }
 
 message ListIncomingFriendRequestsResp {
-  repeated FriendRequestView data = 1;
-}
-
-message ListOutgoingFriendRequestsReq {
-  string actor_user_id = 1;
-  string user_id = 2;
-}
-
-message ListOutgoingFriendRequestsResp {
   repeated FriendRequestView data = 1;
 }
 
@@ -824,9 +817,6 @@ service UserService {
   rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp) {
     option (google.api.http) = { get: "/api/user/{user_id}" };
   }
-  rpc GetUser(GetUserReq) returns (GetUserResp) {
-    option (google.api.http) = { get: "/api/user/{user_id}/detail" };
-  }
   rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp) {
     option (google.api.http) = { put: "/api/user/{user_id}" body: "*" };
   }
@@ -869,12 +859,6 @@ service UserService {
       returns (ListIncomingFriendRequestsResp) {
     option (google.api.http) = {
       get: "/api/user/{user_id}/friend-requests/incoming"
-    };
-  }
-  rpc ListOutgoingFriendRequests(ListOutgoingFriendRequestsReq)
-      returns (ListOutgoingFriendRequestsResp) {
-    option (google.api.http) = {
-      get: "/api/user/{user_id}/friend-requests/outgoing"
     };
   }
   rpc FeishuAuthorizeURL(FeishuAuthorizeURLReq) returns (FeishuAuthorizeURLResp) {

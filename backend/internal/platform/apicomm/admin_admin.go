@@ -96,29 +96,6 @@ func RpcAdminAccountToTypes(item *adminv1.AdminAccountItem) types.AdminAccountIt
 	}
 }
 
-func RpcAdminMenuToTypes(item *adminv1.AdminMenuItem) types.AdminMenuItem {
-	if item == nil {
-		return types.AdminMenuItem{}
-	}
-	return types.AdminMenuItem{
-		Id:           item.GetId(),
-		Key:          item.GetKey(),
-		Kind:         item.GetKind(),
-		ParentKey:    item.GetParentKey(),
-		Path:         item.GetPath(),
-		Label:        item.GetLabel(),
-		Icon:         item.GetIcon(),
-		Caption:      item.GetCaption(),
-		Status:       item.GetStatus(),
-		AppDomain:    item.GetAppDomain(),
-		SortOrder:    int(item.GetSortOrder()),
-		DefaultOpen:  item.GetDefaultOpen(),
-		End:          item.GetEnd(),
-		ExternalHref: item.GetExternalHref(),
-		Enabled:      item.GetEnabled(),
-	}
-}
-
 func RpcAdminAuditLogToTypes(item *adminv1.AdminAuditLogItem) types.AdminAuditLogItem {
 	if item == nil {
 		return types.AdminAuditLogItem{}

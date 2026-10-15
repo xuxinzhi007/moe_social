@@ -19,19 +19,15 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationLandingListLandingFeedback = "/landing.v1.Landing/ListLandingFeedback"
 const OperationLandingSubmitLandingFeedback = "/landing.v1.Landing/SubmitLandingFeedback"
 
 type LandingHTTPServer interface {
-	ListLandingFeedback(context.Context, *ListLandingFeedbackRequest) (*ListLandingFeedbackReply, error)
 	SubmitLandingFeedback(context.Context, *SubmitLandingFeedbackRequest) (*SubmitLandingFeedbackReply, error)
 }
 
 func RegisterLandingHTTPServer(s *http.Server, srv LandingHTTPServer) {
 	r := s.Route("/")
 	r.POST("/api/landing/feedback", _Landing_SubmitLandingFeedback0_HTTP_Handler(srv))
-	r.GET("/api/ops/landing/feedback", _Landing_ListLandingFeedback0_HTTP_Handler(srv))
-	r.GET("/api/admin/landing/feedback", _Landing_ListLandingFeedback1_HTTP_Handler(srv))
 }
 
 func _Landing_SubmitLandingFeedback0_HTTP_Handler(srv LandingHTTPServer) func(ctx http.Context) error {
@@ -56,46 +52,7 @@ func _Landing_SubmitLandingFeedback0_HTTP_Handler(srv LandingHTTPServer) func(ct
 	}
 }
 
-func _Landing_ListLandingFeedback0_HTTP_Handler(srv LandingHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ListLandingFeedbackRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationLandingListLandingFeedback)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.ListLandingFeedback(ctx, req.(*ListLandingFeedbackRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*ListLandingFeedbackReply)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Landing_ListLandingFeedback1_HTTP_Handler(srv LandingHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ListLandingFeedbackRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationLandingListLandingFeedback)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.ListLandingFeedback(ctx, req.(*ListLandingFeedbackRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*ListLandingFeedbackReply)
-		return ctx.Result(200, reply)
-	}
-}
-
 type LandingHTTPClient interface {
-	ListLandingFeedback(ctx context.Context, req *ListLandingFeedbackRequest, opts ...http.CallOption) (rsp *ListLandingFeedbackReply, err error)
 	SubmitLandingFeedback(ctx context.Context, req *SubmitLandingFeedbackRequest, opts ...http.CallOption) (rsp *SubmitLandingFeedbackReply, err error)
 }
 
@@ -105,19 +62,6 @@ type LandingHTTPClientImpl struct {
 
 func NewLandingHTTPClient(client *http.Client) LandingHTTPClient {
 	return &LandingHTTPClientImpl{client}
-}
-
-func (c *LandingHTTPClientImpl) ListLandingFeedback(ctx context.Context, in *ListLandingFeedbackRequest, opts ...http.CallOption) (*ListLandingFeedbackReply, error) {
-	var out ListLandingFeedbackReply
-	pattern := "/api/admin/landing/feedback"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationLandingListLandingFeedback))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
 }
 
 func (c *LandingHTTPClientImpl) SubmitLandingFeedback(ctx context.Context, in *SubmitLandingFeedbackRequest, opts ...http.CallOption) (*SubmitLandingFeedbackReply, error) {
