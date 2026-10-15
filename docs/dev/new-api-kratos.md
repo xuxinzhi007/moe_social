@@ -165,7 +165,7 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 | MoeAdmin | `api/moe/v1/moe.proto` | `protohttp/moe_extended.go` | 工具/大脑 |
 
 完整目录清单（`ls backend/internal/server/protohttp/`）：
-`achievement` `adminapp` `admininsights` `ai` `arena` `battle` `behavior` `chat` `checkin` `comment` `community` `companion` `content` `game` `gift` `landing` `life` `llm` `media` `notify` `pet` `platform` `post` `user` `vip` `vipplans` `vipread`
+`achievement` `adminapp` `admininsights` `ai` `arena` `battle` `behavior` `chat` `checkin` `comment` `community` `companion` `content` `game` `gift` `landing` `life` `llm` `media` `notify` `platform` `post` `user` `vip` `vipplans` `vipread`
 
 > 旧版本文这里列的「仍走 httplegacy（45 条，P2）」清单已作废——compat 层已删除，全部路由均为 proto 路由。
 

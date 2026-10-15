@@ -86,7 +86,7 @@ CompanionService.getSnapshot()
         └─ Daily tile → world / memory sheet / post detail / chat
 ```
 
-原则：状态以 `/api/companion/state` 为展示 SSOT；Life 照料仍走 LifeProvider；Flame 只渲染。
+原则：状态以 `/api/companion/state` 为展示 SSOT；照料走 `LifeService`（旧 LifeProvider 已随 Life 旧 UI 删除，2026-10）；Flame 只渲染。
 
 **绑定联动（必守）**：`companion.life_entity_id` = 当前伙伴在世界里的居民。  
 进「TA 的世界」必须对焦该 ID；Hub 世界条只展示已绑定居民，未绑定不得假装 `entities.first` 就是 TA。

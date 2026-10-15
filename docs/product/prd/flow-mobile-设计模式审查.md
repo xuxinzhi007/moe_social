@@ -29,10 +29,10 @@
 | --- | --- | --- |
 | P1-1 SafeArea | ✅ 通过 | Scaffold + bottomNavigationBar 体系，主壳无裸奔（`lib/app/main_shell.dart`） |
 | P1-2 触摸目标 ≥44 | ✅ 通过 | 主 CTA 高 46px（companion_hub_page.dart:604）；IconButton 默认 48 |
-| P1-3 颜色硬编码 | ⚠️ **部分违反** | `lib/pages` 39 文件 273 处 `Color(0xFF...)`：arena_page 54（`_ArenaColors` 游戏壳，设计内例外）、life_world_page 50（转向期，不投入）、**companion_memories_page 11 / live_pk_room_page 11 / checkin_page 9 / cloud_gallery_page 8 / profile_page 7 / gacha_page 6**——这批在主路径或半主路径上，应收敛进 MoeTokens |
+| P1-3 颜色硬编码 | ⚠️ **部分违反** | `lib/pages` 39 文件 273 处 `Color(0xFF...)`：arena_page 54（`_ArenaColors` 游戏壳，设计内例外）、**companion_memories_page 11 / live_pk_room_page 11 / checkin_page 9 / cloud_gallery_page 8 / profile_page 7**——这批在主路径或半主路径上，应收敛进 MoeTokens（life_world_page / gacha_page 已于 2026-10 删除） |
 | P1-6 主 CTA 拇指区 | ✅ 基本通过 | Hub「开始聊天/回复 TA」在首屏关系卡内 46px 全宽按钮（companion_hub_page.dart:596-632）；发帖发布按钮在 AppBar 右上（编辑器惯例，可接受）；发帖**入口**在筛选栏右侧（UI 迭代已收束，可接受） |
 
-**P1 处置建议**：仅 P1-3 需要行动——排期收敛 companion_memories / live_pk / checkin / gallery / profile / gacha 六页的硬编码颜色（Arena 与 Life 不动，前者是游戏壳例外、后者转向期不投入）。
+**P1 处置建议**：仅 P1-3 需要行动——排期收敛 companion_memories / live_pk / checkin / gallery / profile 五页的硬编码颜色（Arena 是游戏壳例外不动；gacha 页已删除）。
 
 ## P2 扫描（建议修复级）
 
@@ -77,7 +77,7 @@
 2. **Companion 关系里程碑（新）**：解决 frame #3 + bench takeaway-1——Hub 增加里程碑时间线区块，叙事化呈现（首聊/首次送礼/记忆数达成等），不做数值排行。
 3. **搜索默认态（补）**：社区动态搜索 + 圈子搜索空关键词时展示历史/热门（P2-7）——新功能标配补齐。
 4. **Peak 反馈加强（补）**：发帖成功、爬塔通关、召唤出货三个时刻补情感反馈（bench takeaway-2，Lottie 基建已有）。
-5. **硬编码颜色收敛（债）**：companion_memories / live_pk / checkin / gallery / profile / gacha 六页 → MoeTokens（P1-3）。
+5. **硬编码颜色收敛（债）**：companion_memories / live_pk / checkin / gallery / profile 五页 → MoeTokens（P1-3）。
 6. **成就分享出口（设计）**：frame #4——先出设计方案再实施，注意克制不刷屏。
 7. **权限说明页 + 恢复购买 + Feed 骨架屏（P3 长尾）**：随下次相关页面改动顺带补齐。
 

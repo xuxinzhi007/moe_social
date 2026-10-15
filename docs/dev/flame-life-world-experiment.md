@@ -1,5 +1,7 @@
 # Flame 小世界（TA 院子 v1）
 
+> ⚠️ **已失效（2026-10）**：TA 院子页已随旧 Life UI 删除，Flame 引擎收口到 Arena 营地页复用。引擎开发规范以 `flame-life-world` skill 为准。
+
 > **日期**：2026-08-01  
 > **状态**：**v1 院子竖切（可用演示）**（`FeatureFlags.useFlameLifeWorld = true`）  
 > **引擎设计 / 开发规范 SSOT**：`.cursor/skills/flame-life-world/SKILL.md`  

@@ -66,7 +66,7 @@
 - Given PK 房间送礼，When 结算，Then 礼物计入对战结果且余额正确扣减。
 
 **设计触点**：`lib/pages/battle/`（直播 PK 两页）· 礼物入口（聊天/资料场景）。
-**关联后端**：`GiftService.GetGifts/PurchaseGift/SendGift/GetGiftRecords` · `BattleService.CreateRoom/StartRoom/SendBattleGift/FinishRoom`。
+**关联后端**：`GiftService.GetGifts/PurchaseGift/SendGift` · `BattleService.CreateRoom/StartRoom/SendBattleGift`（FinishRoom 对外 RPC 已删，房间结算走 biz 内部自动结算）。
 
 ### Story 6.4 — 签到 / 经验 / 等级 / 成就 · P2
 

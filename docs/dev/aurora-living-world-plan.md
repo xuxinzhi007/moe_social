@@ -1,6 +1,7 @@
 # 星辉活世界（Living World）· 合并方案 · 2026-09-02
 
-> **状态**：方案定稿；**M0 已落地**（2026-09-09，低频待机），M1/M2 尚未开始。
+> **状态**：方案定稿；**M0 已落地**（2026-09-09，低频待机）；**M1 已收口**（2026-10-14）；M2 未开始。
+> **2026-10 注**：旧 Life UI 已删除，世界面收口到 Arena 营地页（见 `cleanup-2026-10-15.md`）；本文仍是 Arena/Life 方向 SSOT。
 > **本文合并两项已拍板决策**：① 英雄 AI 不出游戏边界；② Life 引擎转向 Arena 英雄生活模拟。
 > **产品边界 SSOT**：[../product/product-positioning.md](../product/product-positioning.md)（落地时同步更新 §2.1/2.2）· Arena 域：[aurora-arena-ssot.md](./aurora-arena-ssot.md)
 

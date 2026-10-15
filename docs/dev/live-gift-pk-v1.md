@@ -65,7 +65,8 @@ Battle service -> Battle biz -> Battle data
 | `StartRoom` | `POST /api/battles/{room_id}/start` | 服务端写入 `started_at/ends_at`，幂等 |
 | `GetRoom` | `GET /api/battles/{room_id}` | 返回当前快照，用于首屏和重连 |
 | `SendBattleGift` | `POST /api/battles/{room_id}/gifts` | 向指定阵营送礼，必带 `request_id` |
-| `FinishRoom` | `POST /api/battles/{room_id}/finish` | 到期结算；仅服务端任务或运营调用 |
+
+> 注（2026-10）：`FinishRoom` 对外 RPC（`POST /api/battles/{room_id}/finish`）已删除；房间到期结算由 biz 内部自动完成（`Manager.FinishRoom`），无对外端点。
 
 `SendBattleGiftRequest` 的最小字段：`room_id`、`side`、`gift_id`、`quantity`、`request_id`。送礼人从 JWT context 读取，不能由请求体指定；参赛者身份、房间状态和结束时间由服务端校验。
 

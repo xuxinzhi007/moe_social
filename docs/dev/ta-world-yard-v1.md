@@ -1,5 +1,7 @@
 # TA 的世界 · 院子成品竖切（v1）
 
+> ⚠️ **已失效（2026-10）**：旧 Life 世界页 UI 已删除，世界面收口到 Arena 营地页（复用 `lib/game/life/` 引擎）。本文仅作历史参考，见 `docs/dev/cleanup-2026-10-15.md`。
+
 > **日期**：2026-08-01  
 > **状态**：已落地（可演示）  
 > **引擎规范 SSOT**：`.cursor/skills/flame-life-world/SKILL.md`  

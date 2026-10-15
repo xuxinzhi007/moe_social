@@ -467,7 +467,6 @@ cardBackground: Color(0xFF1E1E1E)
 | AI 聊天 | `ai-chat.html` | v2 | AI 对话界面 |
 | 探索页 | `discover.html` | v2 | 发现内容 |
 | VIP 会员中心 | `vip-center.html` | v2 | 会员订阅 |
-| 心情扭蛋机 | `gacha.html` | v2 | 扭蛋抽奖 |
 | 兴趣社区 | `community.html` | v2 | 社区板块 |
 | 设置页 | `settings.html` | v2 | 应用设置 |
 | 编辑资料 | `edit-profile.html` | v2 | 编辑个人信息 |

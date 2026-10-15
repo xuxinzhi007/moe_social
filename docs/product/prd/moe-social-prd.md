@@ -100,29 +100,27 @@ JTBD：当孤独或想分享时，阿星想和一个记得共同经历的 TA 说
 | AI 伙伴 | P1 | ✅ 一期+Slice 1-6.1 落地；多 bond 未开工 | `lib/pages/ai/companion_hub_page.dart` `lib/pages/companion/` `backend/internal/biz/companion/` |
 | 星辉远征 | P1 | ✅ Flag `arenaGamePrototype=true` 全量可玩；活世界 M1 未开工 | `lib/pages/arena/` `lib/game/arena/` `backend/internal/biz/arena/` |
 | 商业化 | P2 | ✅ 结构完整，不做主视觉重心 | `lib/pages/commerce/` `backend/internal/biz/{vip,gift}/` |
-| 数字生命 Life | 转向期 | ⏸️ 前端入口全关（`showLifeEngine=false`）；引擎降频待机，作为活世界内核保留 | `backend/internal/biz/life/` |
+| 数字生命 Life | 已收口 | 🗑️ 旧前端 UI 2026-10 删除；引擎由 Arena 营地页复用（`lib/game/life/`），不再独立演进 | `backend/internal/biz/life/` |
 | AutoGLM | 实验 | 🔒 `showAutoGlm=false`，开发者自用 | `lib/pages/autoglm/` |
-| 小游戏/旧抽卡 | 已下线 | 🗑️ `showGameFeatures=false`，代码暂留无入口 | — |
+| 小游戏/旧抽卡/Pet 旧养成 | 已删除 | 🗑️ 2026-10 整批删除，无回滚入口；见 `docs/dev/cleanup-2026-10-15.md` | — |
 
 ### FeatureFlags 当前事实（`lib/constants/feature_flags.dart`）
 
 | Flag | 当前值 | 含义 |
 | --- | --- | --- |
-| `showGameFeatures` | false | 小游戏/互动故事/旧抽卡入口全隐藏 |
 | `arenaGamePrototype` | true | 星辉远征对全量用户开放 |
-| `showGachaFeatures` | false | 独立扭蛋入口隐藏（召唤在 Arena 内） |
 | `showExperimentalFeatures` | false | 实验功能关 |
-| `showGameNetworkLab` | true | 联机网络实验室（仅网络层，不涉英雄记忆） |
+| `showGameNetworkLab` | true | 联机网络实验室（仅网络层，不涉英雄记忆）；发布前需置 false |
 | `showAutoGlm` | false | AutoGLM 仅设置→高级选项 |
-| `showLifeEngine` | false | Life 独立入口全关（转向 Arena 内核） |
-| `useFlameLifeWorld` | true | Flame 渲染小世界（营地预览在用） |
 | `companionVoicePresence` | true | Companion 语音 STT/TTS 开 |
 | `useLottieGiftEffects` / `liveGiftPk` | true | 礼物特效 / 直播 PK 开 |
 | `glassNavigation` / `chatGradientBubbles` / `chatBrandMotion` / `chatVoiceMessage` / `chatThemeSkins` | true | IM 视觉升级全量 |
 
+> 已删除 flag（2026-10）：`showGameFeatures`、`showGachaFeatures`、`showLifeEngine`、`useFlameLifeWorld`（对应功能整批移除）。
+
 ### 后端能力事实（Kratos 单进程 :8888，24 个 proto 模块）
 
-user / post / community / comment / chat / companion / arena / battle / game / pet / life / llm / ai / platform / vip / gift / checkin / achievement / notify / media / content / moe / behavior / landing / admin。通知类型常量：2=评论回复、4=系统、6=私聊、7=公告、8=礼物、9=伙伴主动消息、10=评论@提及。
+user / post / community / comment / chat / companion / arena / battle / game / life / llm / ai / platform / vip / gift / checkin / achievement / notify / media / content / moe / behavior / landing / admin。通知类型常量：2=评论回复、4=系统、6=私聊、7=公告、8=礼物、9=伙伴主动消息、10=评论@提及。
 
 ### 未列入本版的 Stories（备 Phase 2 引用）
 

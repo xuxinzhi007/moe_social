@@ -87,7 +87,7 @@
 
 **验收标准**：Arena → 营地 → 返回链路稳定；不把旧居民伪装为英雄。
 
-**设计触点**：`lib/pages/arena/arena_camp_preview_page.dart` · Flame 渲染 `useFlameLifeWorld=true`。
+**设计触点**：`lib/pages/arena/arena_camp_preview_page.dart` · Flame 渲染引擎 `lib/game/life/`。
 
 ### 未列入本版（活世界 M1/M2，方案已定稿）
 

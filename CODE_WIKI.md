@@ -59,7 +59,7 @@ Moe Social（萌社交）是一款**复合型社交产品**，融合传统社交
 |------|------|
 | **社交主线** | 动态流、发帖、评论、点赞、话题、关注/粉丝、好友、私信 |
 | **AI 能力** | 多 Provider 角色卡、酒馆广场、Lorebook/世界书、平台 LLM 代理聊天 |
-| **商业化** | VIP 会员、充值钱包、抽卡、虚拟形象、礼物 |
+| **商业化** | VIP 会员、充值钱包、虚拟形象、礼物 |
 | **成长体系** | 签到、用户等级、成就徽章、经验值 |
 | **实时通信** | WebSocket 私信、在线状态、语音通话（Agora RTC） |
 | **自动化** | AutoGLM 实验页、Moe Bot / Brain 运行时（管理台可编排） |
@@ -170,13 +170,15 @@ Flutter 不作为业务规则事实源。客户端可以决定展示、输入、
 | **动态流** | `feed/` | 首页、发帖、评论；`home_redesign_demo.dart` 改版方案对比 |
 | **AI** | `ai/` | 聊天、酒馆（`tavern/`）、Provider 配置、Lorebook |
 | **私信** | `chat/` | 会话、语音通话 |
-| **商业化** | `commerce/` | VIP、钱包、抽卡、背包 |
+| **商业化** | `commerce/` | VIP、钱包、充值、订单、背包 |
+| **星辉远征** | `arena/`、`battle/` | 全屏营地、英雄聊天、爬塔战斗 |
+| **AI 伙伴** | `companion/` | 关系首页、记忆、聊天 |
 | **社区** | `community/` | 兴趣小组 |
 | **个人** | `profile/` | 主页、资料、好友 |
 | **成长** | `checkin/`、`achievements/` | 签到、成就 |
-| **发现/游戏** | `discover/`、`game/` | 匹配、游戏大厅 |
+| **入门** | `onboarding/` | 兴趣选择（新用户首进） |
 | **设置** | `settings/` | 账号、外观、AI、隐私（模块化 `modules/`） |
-| **其他** | `notifications/`、`gallery/`、`scan/`、`autoglm/`、`demo/` | 通知、相册、扫码、AutoGLM |
+| **其他** | `notifications/`、`gallery/`、`scan/`、`autoglm/`、`memory/`、`game_network/`、`announcements/` | 通知、相册、扫码、AutoGLM、记忆、联机实验室、公告 |
 
 **AI 酒馆子模块**：`pages/ai/tavern/` — `agents_tab.part.dart`、`providers_tab.part.dart`（part 文件，挂载于 `agent_list_page.dart`）。
 

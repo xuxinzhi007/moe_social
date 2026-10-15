@@ -1,5 +1,7 @@
 # 数字生命模拟器现状分析
 
+> ⚠️ **部分失效（2026-10）**：前端 `lib/pages/life/` / `lib/widgets/life/` 已删除，世界面收口到 Arena 营地页；后端 `backend/internal/biz/life/` 引擎保留。前端部分仅作历史参考，见 `docs/dev/cleanup-2026-10-15.md`。
+
 > 文档生成时间：2026-07-07  
 > 模块：`life` 域（数字生命模拟器）  
 > 范围：后端 `backend/internal/biz/life/` + 前端 `lib/pages/life/` / `lib/widgets/life/`

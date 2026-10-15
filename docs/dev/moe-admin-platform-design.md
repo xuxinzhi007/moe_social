@@ -100,11 +100,11 @@ admin:
 | **工作台** | 统计卡片、服务健康、快捷入口 | P0 ✅部分已有 | `GET /api/admin/dashboard` | `DashboardPage` |
 | **用户管理** | 列表/搜索/详情/禁用/VIP/角色 | P0 | 新增 admin 用户 API | `UserListPage` `UserDetailPage` |
 | **运营商品** | VIP 套餐、礼物目录 CRUD、默认初始化 | P1 | `/api/admin/vip/plans`、`/api/admin/gifts`；迁移**不** seed 业务数据 | — |
-| **官网反馈** | 列表/筛选/详情 | P0 ✅已有 | `GET /api/ops/landing/feedback` → 迁到 `/api/admin/landing/feedback` | `FeedbackPage` |
+| **官网反馈** | ~~列表/筛选/详情~~ | 已删除 | ~~`GET /api/ops/landing/feedback` → 迁到 `/api/admin/landing/feedback`~~（查询端点 2026-10 已删除，仅保留落地页提交） | `FeedbackPage` |
 | **公告管理** | 富文本公告、上下线、置顶 | P1 | 新表 + CRUD | `AnnouncementPage` |
 | **通知推送** | 全员广播、指定用户 | P1 | 复用/封装 `broadcast` | `NotifyBroadcastPage` |
 | **内容 moderation** | 帖子列表/隐藏/删除 | P2 | 封装现有 post RPC | `PostModerationPage` |
-| **菜单管理** | 侧栏菜单 CRUD、排序、按角色可见 | P1 | `admin_menu` 表 | `MenuManagePage` |
+| **菜单管理** | ~~侧栏菜单 CRUD、排序、按角色可见~~ | 已删除 | ~~`admin_menu` 表~~（2026-10 已删除，侧栏菜单前端静态配置） | ~~`MenuManagePage`~~ |
 | **管理员** | 管理员账号 CRUD、改密 | P1 | `admin_account` | `AdminAccountPage` |
 | **操作日志** | 谁在何时做了什么 | P2 | `admin_audit_log` | `AuditLogPage` |
 | **运维部署** | 构建/Docker/发布/任务 | 已有 | Deploy Agent `/api/deploy/*` | 现有页面 |
@@ -159,9 +159,11 @@ admin:
 - `GET/PUT/DELETE /api/admin/announcements/:id`
 - `POST /api/admin/announcements/:id/publish`
 
-### 3.4 菜单管理（详细）
+### 3.4 菜单管理（详细 · 已废弃，2026-10）
 
-新表 `admin_menu`（驱动 **Moe Admin 前端侧栏**，不是 App 底部 Tab）：
+> 菜单接口与 `admin_menu` 模型已删除（见 `docs/dev/cleanup-2026-10-15.md`）；Moe Admin 侧栏改为前端静态配置。
+
+~~新表 `admin_menu`（驱动 **Moe Admin 前端侧栏**，不是 App 底部 Tab）：~~
 
 | 字段 | 说明 |
 |------|------|
@@ -174,16 +176,16 @@ admin:
 | roles | JSON 数组 `["super_admin","admin"]` 可见角色 |
 | hidden | 是否在侧栏隐藏 |
 
-**流程**
+**流程（已废弃，2026-10）**
 
-1. 登录后 `GET /api/admin/menus` → 按当前管理员角色过滤 → 前端 `react-router` 动态注册（或静态路由 + 菜单过滤）  
-2. super_admin 在「菜单管理」页改库 → 下次登录生效  
+1. ~~登录后 `GET /api/admin/menus` → 按当前管理员角色过滤 → 前端 `react-router` 动态注册~~（菜单接口已删除，侧栏为前端静态配置）  
+2. ~~super_admin 在「菜单管理」页改库 → 下次登录生效~~
 
 v1 可 **半动态**：路由仍在前端写死，菜单表只控制显示/排序；v2 再做到全动态组件加载。
 
 ### 3.5 官网反馈 / 通知
 
-- **反馈**：已有 `landing_feedbacks`，将列表接口统一前缀为 `/api/admin/landing/feedback`（保留旧路径别名一期）。  
+- **反馈**：~~已有 `landing_feedbacks`，将列表接口统一前缀为 `/api/admin/landing/feedback`~~（反馈查询端点 2026-10 已删除，`landing_feedbacks` 数据仅落库，无管理界面）。  
 - **通知**：封装 `POST /api/admin/notifications/broadcast`，内部调现有 RPC，body 简化为 `{ title, content, user_ids? }`。
 
 ---
@@ -247,7 +249,7 @@ GET    /api/admin/users
 GET    /api/admin/users/:id
 PUT    /api/admin/users/:id
 
-GET    /api/admin/landing/feedback
+GET    /api/admin/landing/feedback    # 已删除（2026-10）
 
 GET    /api/admin/announcements
 POST   /api/admin/announcements
@@ -258,7 +260,7 @@ POST   /api/admin/announcements/:id/publish
 
 POST   /api/admin/notifications/broadcast
 
-GET    /api/admin/menus
+GET    /api/admin/menus               # 以下 4 个菜单接口已删除（2026-10）
 POST   /api/admin/menus
 PUT    /api/admin/menus/:id
 DELETE /api/admin/menus/:id
@@ -372,7 +374,7 @@ ops-console/src/
 | `User.Role` | App 用户角色；管理台「用户管理」可修改，与 `admin_account.role` 无关 |
 | `GET /api/users` | 保留给历史/调试；管理台改用 `/api/admin/users` |
 | `GET /api/admin/dashboard` | 保留并扩展字段 |
-| `GET /api/ops/landing/feedback` | 迁移别名到 `/api/admin/landing/feedback` |
+| `GET /api/ops/landing/feedback` | ~~迁移别名到 `/api/admin/landing/feedback`~~（查询端点 2026-10 已删除） |
 | `POST /api/notification/broadcast` | 管理台封装一层 |
 | Deploy Token | 仅 `pages/deploy/*` 使用 |
 
