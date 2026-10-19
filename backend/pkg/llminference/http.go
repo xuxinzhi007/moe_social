@@ -15,6 +15,7 @@ import (
 
 const (
 	defaultTimeout   = 120 * time.Second
+	thinkTimeout     = 10 * time.Minute
 	maxResponseBytes = 8 << 20
 	maxErrorBytes    = 64 << 10
 )
@@ -40,6 +41,15 @@ func upstreamError(message string, status int, uncertain bool) *UpstreamError {
 func timeoutOrDefault(timeout time.Duration) time.Duration {
 	if timeout <= 0 {
 		return defaultTimeout
+	}
+	return timeout
+}
+
+// streamClientTimeout 给思考流更长的读完时间。普通请求仍用配置超时。
+func streamClientTimeout(timeout time.Duration, think bool) time.Duration {
+	timeout = timeoutOrDefault(timeout)
+	if think && timeout < thinkTimeout {
+		return thinkTimeout
 	}
 	return timeout
 }

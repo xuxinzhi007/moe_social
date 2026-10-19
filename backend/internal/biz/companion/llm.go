@@ -141,6 +141,9 @@ func buildSystemPromptWithContext(
 	b.WriteString("\n- 回复控制在 1-3 句话内")
 	b.WriteString("\n- 可以表达情绪和想法，但不要过度")
 	b.WriteString("\n- 用户的称呼只以「你记得的事」为准。记得就直接叫出来；没有就说还不知道，请对方告诉你。不要编造名字")
+	b.WriteString("\n- 「")
+	b.WriteString(profile.Name)
+	b.WriteString("」是你自己的名字，不是对方的名字。不要用这个名字称呼对方")
 	b.WriteString("\n- 问现在几点，用场景里给出的时间回答")
 	b.WriteString("\n- 不知道的事直接说不知道，不要装成已经会、已经做完")
 
@@ -320,6 +323,21 @@ func buildMessagesWithContext(
 
 type chatThinkContextKey struct{}
 
+type thinkingHandlerKey struct{}
+
+// WithThinkingHandler 把这一轮的思考增量交给调用方，不写进正式回复。
+func WithThinkingHandler(ctx context.Context, handler llminference.StreamHandler) context.Context {
+	if handler == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, thinkingHandlerKey{}, handler)
+}
+
+func thinkingHandler(ctx context.Context) llminference.StreamHandler {
+	handler, _ := ctx.Value(thinkingHandlerKey{}).(llminference.StreamHandler)
+	return handler
+}
+
 // WithChatThink 标记这一轮伙伴聊天是否请求思考模式。
 func WithChatThink(ctx context.Context, enabled bool) context.Context {
 	return context.WithValue(ctx, chatThinkContextKey{}, enabled)
@@ -357,10 +375,29 @@ func LookupCatalog(ctx context.Context, cfg llminference.Config, modelName strin
 	return false, 0
 }
 
-// modelSupportsThinking 只看实时目录里的 thinking 能力。目录读失败时当作不支持。
-func modelSupportsThinking(ctx context.Context, cfg llminference.Config, modelName string) bool {
-	thinking, _ := LookupCatalog(ctx, cfg, modelName)
-	return thinking
+// modelSupportsThinking 只在目录明确列出该模型时下结论。
+// 目录失败或没有这个名字时，第二个返回值是 false，调用方应保留用户的思考开关。
+func modelSupportsThinking(ctx context.Context, cfg llminference.Config, modelName string) (supported, known bool) {
+	modelName = strings.TrimSpace(modelName)
+	if modelName == "" || !cfg.Ready() {
+		return false, false
+	}
+	items, err := llminference.ListCatalog(ctx, cfg)
+	if err != nil {
+		return false, false
+	}
+	for _, item := range items {
+		if item.Name != modelName {
+			continue
+		}
+		for _, capability := range item.Capabilities {
+			if capability == "thinking" {
+				return true, true
+			}
+		}
+		return false, true
+	}
+	return false, false
 }
 
 // streamChat 流式调用 LLM，返回完整文本。
@@ -372,34 +409,73 @@ func streamChat(
 	onChunk llminference.StreamHandler,
 	think bool,
 ) (string, error) {
-	if think && !modelSupportsThinking(ctx, cfg, modelName) {
-		think = false
+	if think {
+		if supported, known := modelSupportsThinking(ctx, cfg, modelName); known && !supported {
+			think = false
+		}
+	}
+	splitter := thinkStream{
+		onAnswer:  onChunk,
+		onThink:   thinkingHandler(ctx),
+		emitThink: think,
 	}
 	reply, err := llminference.ChatStream(ctx, cfg, modelName, messages,
-		llminference.ChatOptions{
-			Temperature: 0.85,
-			MaxTokens:   chatMaxOutputTokens,
-			Think:       think,
-		}, onChunk)
-	if err == nil || strings.TrimSpace(reply) != "" {
-		return reply, err
+		companionChatOptions(think, thinkingHandler(ctx)), splitter.push)
+	if finishErr := splitter.finish(); err == nil && finishErr != nil {
+		err = finishErr
+	}
+	answer := splitter.answer.String()
+	if strings.TrimSpace(answer) == "" && !strings.Contains(reply, thinkOpenTag) {
+		answer = reply
+	}
+	if err == nil || strings.TrimSpace(answer) != "" {
+		return strings.TrimSpace(answer), err
 	}
 
-	fallbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeoutOrDefault(cfg.Timeout))
+	fallbackTimeout := timeoutOrDefault(cfg.Timeout)
+	if think && fallbackTimeout < 10*time.Minute {
+		fallbackTimeout = 10 * time.Minute
+	}
+	fallbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), fallbackTimeout)
 	defer cancel()
-	fallback, fallbackErr := nonStreamChat(fallbackCtx, cfg, modelName, messages, think)
+	fallbackCfg := cfg
+	fallbackCfg.Timeout = fallbackTimeout
+	fallback, fallbackErr := nonStreamChat(fallbackCtx, fallbackCfg, modelName, messages, think)
 	if fallbackErr != nil {
 		return "", fmt.Errorf("stream chat failed: %w; non-stream fallback failed: %v", err, fallbackErr)
 	}
-	if strings.TrimSpace(fallback) == "" {
+	fallbackAnswer, fallbackThink := splitFinishedThink(fallback)
+	if strings.TrimSpace(fallbackAnswer) == "" {
 		return "", fmt.Errorf("stream chat failed: %w; non-stream fallback returned empty reply", err)
 	}
-	if onChunk != nil {
-		if chunkErr := onChunk(fallback); chunkErr != nil {
-			return fallback, fmt.Errorf("write non-stream fallback: %w", chunkErr)
+	if think {
+		if handler := thinkingHandler(ctx); handler != nil && fallbackThink != "" {
+			if thinkErr := handler(fallbackThink); thinkErr != nil {
+				return fallbackAnswer, fmt.Errorf("write fallback thinking: %w", thinkErr)
+			}
 		}
 	}
-	return fallback, nil
+	if onChunk != nil {
+		if chunkErr := onChunk(fallbackAnswer); chunkErr != nil {
+			return fallbackAnswer, fmt.Errorf("write non-stream fallback: %w", chunkErr)
+		}
+	}
+	return fallbackAnswer, nil
+}
+
+// splitFinishedThink 拆开一次性返回里的思考标签。流式路径用 thinkStream。
+func splitFinishedThink(raw string) (answer, thought string) {
+	stream := thinkStream{emitThink: true, onThink: func(chunk string) error {
+		thought += chunk
+		return nil
+	}}
+	if err := stream.push(raw); err != nil {
+		return raw, ""
+	}
+	if err := stream.finish(); err != nil {
+		return raw, ""
+	}
+	return strings.TrimSpace(stream.answer.String()), strings.TrimSpace(thought)
 }
 
 // nonStreamChat 非流式调用 LLM（备用）。
@@ -410,12 +486,17 @@ func nonStreamChat(
 	messages []llminference.Message,
 	think bool,
 ) (string, error) {
-	return llminference.Chat(ctx, cfg, modelName, messages,
-		llminference.ChatOptions{
-			Temperature: 0.85,
-			MaxTokens:   chatMaxOutputTokens,
-			Think:       think,
-		})
+	return llminference.Chat(ctx, cfg, modelName, messages, companionChatOptions(think, nil))
+}
+
+// companionChatOptions 不给伙伴聊天加 num_predict。
+// 思考和正文共用这个额度，480 会在正文出现前被思考用完。
+func companionChatOptions(think bool, onThinking llminference.StreamHandler) llminference.ChatOptions {
+	return llminference.ChatOptions{
+		Temperature: 0.85,
+		Think:       think,
+		OnThinking:  onThinking,
+	}
 }
 
 func timeoutOrDefault(timeout time.Duration) time.Duration {

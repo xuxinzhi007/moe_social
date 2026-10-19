@@ -234,3 +234,81 @@ func TestStreamChatFallbackSurvivesCanceledStreamContext(t *testing.T) {
 		t.Fatalf("chunks = %#v, want fallback reply", chunks)
 	}
 }
+
+func TestStreamChatThinkDoesNotCapPrediction(t *testing.T) {
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"models":[{"name":"qwen3.5:9b","capabilities":["thinking"]}]}`))
+			return
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		_, _ = w.Write([]byte("{\"message\":{\"thinking\":\"先想\",\"content\":\"好\"},\"done\":true}\n"))
+	}))
+	defer server.Close()
+
+	reply, err := streamChat(
+		context.Background(),
+		llminference.Config{BaseURL: server.URL, APIStyle: llminference.APIOllama, DefaultModel: "qwen3.5:9b", Timeout: time.Second},
+		"qwen3.5:9b",
+		[]llminference.Message{{Role: "user", Content: "你好"}},
+		func(string) error { return nil },
+		true,
+	)
+	if err != nil {
+		t.Fatalf("streamChat() error = %v", err)
+	}
+	if reply != "好" {
+		t.Fatalf("reply = %q", reply)
+	}
+	if body["think"] != true {
+		t.Fatalf("think = %#v", body["think"])
+	}
+	options, _ := body["options"].(map[string]any)
+	if _, ok := options["num_predict"]; ok {
+		t.Fatalf("options = %#v, want no num_predict while thinking", options)
+	}
+}
+
+func TestStreamChatSeparatesInlineThink(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"models":[{"name":"lfm","capabilities":["thinking"]}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(strings.Join([]string{
+			`{"message":{"content":"<think>先"},"done":false}`,
+			`{"message":{"content":"想</think>你好"},"done":true}`,
+		}, "\n") + "\n"))
+	}))
+	defer server.Close()
+
+	var answer, thought strings.Builder
+	ctx := WithThinkingHandler(context.Background(), func(chunk string) error {
+		thought.WriteString(chunk)
+		return nil
+	})
+	ctx = WithChatThink(ctx, true)
+	reply, err := streamChat(
+		ctx,
+		llminference.Config{BaseURL: server.URL, APIStyle: llminference.APIOllama, DefaultModel: "lfm", Timeout: time.Second},
+		"lfm",
+		[]llminference.Message{{Role: "user", Content: "你好"}},
+		func(chunk string) error {
+			answer.WriteString(chunk)
+			return nil
+		},
+		true,
+	)
+	if err != nil {
+		t.Fatalf("streamChat() error = %v", err)
+	}
+	if reply != "你好" || answer.String() != "你好" {
+		t.Fatalf("reply = %q answer = %q", reply, answer.String())
+	}
+	if thought.String() != "先想" {
+		t.Fatalf("thinking = %q", thought.String())
+	}
+}

@@ -325,9 +325,32 @@ func TestStreamsRejectMalformedErrorsAndTruncation(t *testing.T) {
 		})
 	}
 	stop := errors.New("stop")
-	_, err := readChatStream(strings.NewReader(`{"message":{"content":"a"},"done":true}`+"\n"), "ollama", func(string) error { return stop })
+	_, err := readChatStream(strings.NewReader(`{"message":{"content":"a"},"done":true}`+"\n"), "ollama", func(string) error { return stop }, nil)
 	if !errors.Is(err, stop) {
 		t.Fatalf("callback error = %v", err)
+	}
+}
+
+func TestOllamaStreamKeepsThinkingOutOfReply(t *testing.T) {
+	body := strings.Join([]string{
+		`{"message":{"thinking":"先看"},"done":false}`,
+		`{"message":{"thinking":"问题"},"done":false}`,
+		`{"message":{"content":"好的"},"done":false}`,
+		`{"message":{"thinking":"先看问题"},"done":true}`,
+	}, "\n") + "\n"
+	var thought strings.Builder
+	reply, err := readChatStream(strings.NewReader(body), "ollama", nil, func(chunk string) error {
+		thought.WriteString(chunk)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("readChatStream() error = %v", err)
+	}
+	if reply != "好的" {
+		t.Fatalf("reply = %q", reply)
+	}
+	if thought.String() != "先看问题" {
+		t.Fatalf("thinking = %q", thought.String())
 	}
 }
 

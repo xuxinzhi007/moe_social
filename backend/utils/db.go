@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"backend/internal/platform/moelog"
 	"backend/model"
 	"backend/pkg/conf"
 
@@ -62,12 +63,12 @@ func initDBWithMigrateOnce(opts MigrateOptions) error {
 	if err := ensureConfigLoaded(); err != nil {
 		return err
 	}
-	logMode := logger.Info
+	gormLogger := moelog.GORMLogger()
 	if opts.Enabled {
-		logMode = logger.Silent
+		gormLogger = logger.Default.LogMode(logger.Silent)
 	}
 	gormConfig := &gorm.Config{
-		Logger:                                   logger.Default.LogMode(logMode),
+		Logger:                                   gormLogger,
 		DisableForeignKeyConstraintWhenMigrating: true,
 	}
 

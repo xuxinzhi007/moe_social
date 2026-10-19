@@ -31,6 +31,7 @@ type Config struct {
 type Message struct {
 	Role       string     `json:"role"`
 	Content    string     `json:"content,omitempty"`
+	Thinking   string     `json:"thinking,omitempty"`
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 }
@@ -64,6 +65,7 @@ type ChatOptions struct {
 	RepeatPenalty float64
 	Think         bool
 	Tools         []Tool
+	OnThinking    StreamHandler
 }
 
 // CatalogEntry is one model advertised by the inference endpoint.
@@ -187,7 +189,11 @@ func Chat(ctx context.Context, cfg Config, model string, messages []Message, opt
 		if !parsed.Done {
 			return "", upstreamError("incomplete inference response", 200, false)
 		}
-		return strings.TrimSpace(parsed.Message.Content), nil
+		content := strings.TrimSpace(parsed.Message.Content)
+		if content == "" && strings.TrimSpace(parsed.Message.Thinking) != "" {
+			return "", upstreamError("inference reply contained only thinking", 200, false)
+		}
+		return content, nil
 	}
 	if usesResponsesAPI(model) {
 		return postResponsesChat(ctx, NewHTTPClient(cfg.Timeout), cfg, model, messages, opts)

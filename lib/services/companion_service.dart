@@ -701,7 +701,10 @@ class CompanionService {
 
   http.Client? _activeStreamClient;
 
+  bool _streamCancelled = false;
+
   void cancelStream() {
+    _streamCancelled = true;
     _activeStreamClient?.close();
     _activeStreamClient = null;
   }
@@ -1051,6 +1054,7 @@ class CompanionService {
     bool think = false,
   }) async* {
     _requireUserId();
+    _streamCancelled = false;
     final uri = Uri.parse('${ApiService.baseUrl}/api/companion/chat/stream');
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -1115,7 +1119,7 @@ class CompanionService {
           yield event;
         }
       }
-      if (!receivedTerminalEvent) {
+      if (!receivedTerminalEvent && !_streamCancelled) {
         yield const CompanionChatEvent(
           type: 'error',
           text: '模型服务在返回完整结果前断开。请测试 API Key、模型 ID 与流式支持。',

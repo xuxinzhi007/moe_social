@@ -37,6 +37,56 @@ String _formatContextTokens(int tokens) {
   return '$tokens';
 }
 
+class _InlineThink {
+  const _InlineThink(this.thinking, this.answer);
+
+  final String thinking;
+  final String answer;
+}
+
+/// 有的模型会把思考写进正文的 `<think>`，和请求上的思考开关不是一回事。
+_InlineThink _splitInlineThink(String raw) {
+  const openTag = '<think>';
+  const closeTag = '</think>';
+  final think = StringBuffer();
+  final answer = StringBuffer();
+  var rest = raw;
+  var open = false;
+  while (rest.isNotEmpty) {
+    if (!open) {
+      final start = rest.indexOf(openTag);
+      if (start < 0) {
+        final partial = _partialTagSuffix(rest, openTag);
+        answer.write(rest.substring(0, rest.length - partial));
+        break;
+      }
+      answer.write(rest.substring(0, start));
+      rest = rest.substring(start + openTag.length);
+      open = true;
+      continue;
+    }
+    final end = rest.indexOf(closeTag);
+    if (end < 0) {
+      final partial = _partialTagSuffix(rest, closeTag);
+      think.write(rest.substring(0, rest.length - partial));
+      break;
+    }
+    think.write(rest.substring(0, end));
+    rest = rest.substring(end + closeTag.length);
+    open = false;
+  }
+  return _InlineThink(think.toString().trim(), answer.toString().trim());
+}
+
+int _partialTagSuffix(String text, String tag) {
+  final max = tag.length - 1;
+  final n = text.length < max ? text.length : max;
+  for (var len = n; len > 0; len--) {
+    if (tag.startsWith(text.substring(text.length - len))) return len;
+  }
+  return 0;
+}
+
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
 class CompanionChatPage extends StatefulWidget {
   const CompanionChatPage({super.key, this.initialDraft});
@@ -55,6 +105,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   final List<_ChatItem> _items = [];
   bool _isSending = false;
+  bool _stopRequested = false;
   bool _isLoading = true;
 
   CompanionProfileData _profile = const CompanionProfileData();
@@ -345,6 +396,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
     final wasVoiceInput = appendUserMessage && _voiceInputPending;
     _voiceInputPending = false;
+    _stopRequested = false;
 
     _controller.clear();
     final quotaBefore = _providerUsage?.totalAvailable;
@@ -374,15 +426,30 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         think: _modelCanThink && _thinkEnabled,
       )) {
         if (!mounted) return;
+        if (_stopRequested) break;
         switch (event.type) {
           case 'start':
             break;
-          case 'delta':
-            fullText += event.text;
+          case 'thinking':
+            final prior = _items.last.thinking;
             setState(() {
               _items.last = _ChatItem(
                 role: 'assistant',
                 content: fullText,
+                thinking: prior + event.text,
+                isStreaming: true,
+              );
+            });
+            _scrollToBottom();
+            break;
+          case 'delta':
+            fullText += event.text;
+            final prior = _items.last.thinking;
+            setState(() {
+              _items.last = _ChatItem(
+                role: 'assistant',
+                content: fullText,
+                thinking: prior,
                 isStreaming: true,
               );
             });
@@ -397,10 +464,12 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 : streamedText;
             final spoken =
                 finalText.isNotEmpty ? finalText : '我在呢～刚才走神了一下，再说一次好吗？';
+            final prior = _items.last.thinking;
             setState(() {
               _items.last = _ChatItem(
                 role: 'assistant',
                 content: spoken,
+                thinking: prior,
                 isStreaming: false,
               );
             });
@@ -420,18 +489,23 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                   .publishVoiceTurnCompleted(scene: null);
             }
             if (_voiceEnabled && _autoSpeak) {
-              unawaited(_speakAt(_items.length - 1, spoken));
+              final spokenAnswer = _splitInlineThink(spoken).answer;
+              if (spokenAnswer.isNotEmpty) {
+                unawaited(_speakAt(_items.length - 1, spokenAnswer));
+              }
             }
             break;
           case 'error':
             receivedTerminalEvent = true;
             final errorMessage = event.text.trim();
+            final prior = _items.isEmpty ? '' : _items.last.thinking;
             setState(() {
               _items.last = _ChatItem(
                 role: 'assistant',
                 content: errorMessage.isEmpty
                     ? '这次对话没有顺利完成，请检查模型服务后重试。'
                     : errorMessage,
+                thinking: prior,
                 isError: true,
               );
             });
@@ -439,37 +513,46 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         }
       }
       if (!receivedTerminalEvent && mounted) {
-        final last = _items.isNotEmpty ? _items.last : null;
-        if (last != null && last.role == 'assistant' && last.isStreaming) {
-          setState(() {
-            _items.last = last.content.trim().isEmpty
-                ? const _ChatItem(
-                    role: 'assistant',
-                    content: '这次回复没有完整返回，请再试一次。',
-                    isError: true,
-                  )
-                : _ChatItem(
-                    role: 'assistant',
-                    content: last.content,
-                    isStreaming: false,
-                  );
-          });
+        if (_stopRequested) {
+          _keepStoppedReply();
+        } else {
+          final last = _items.isNotEmpty ? _items.last : null;
+          if (last != null && last.role == 'assistant' && last.isStreaming) {
+            setState(() {
+              _items.last = last.content.trim().isEmpty
+                  ? const _ChatItem(
+                      role: 'assistant',
+                      content: '这次回复没有完整返回，请再试一次。',
+                      isError: true,
+                    )
+                  : _ChatItem(
+                      role: 'assistant',
+                      content: last.content,
+                      thinking: last.thinking,
+                      isStreaming: false,
+                    );
+            });
+          }
         }
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        if (_items.isNotEmpty &&
-            _items.last.role == 'assistant' &&
-            _items.last.content.isEmpty) {
-          _items.removeLast();
-        }
-        _items.add(_ChatItem(
-          role: 'assistant',
-          content: '网络好像断开了，检查一下连接再找我聊天吧~',
-          isError: true,
-        ));
-      });
+      if (_stopRequested) {
+        _keepStoppedReply();
+      } else {
+        setState(() {
+          if (_items.isNotEmpty &&
+              _items.last.role == 'assistant' &&
+              _items.last.content.isEmpty) {
+            _items.removeLast();
+          }
+          _items.add(_ChatItem(
+            role: 'assistant',
+            content: '网络好像断开了，检查一下连接再找我聊天吧~',
+            isError: true,
+          ));
+        });
+      }
     } finally {
       if (mounted) {
         setState(() => _isSending = false);
@@ -478,6 +561,31 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         unawaited(_refreshReplyUsage(replyIndex, quotaBefore));
       }
     }
+  }
+
+  void _stopGeneration() {
+    if (!_isSending) return;
+    _stopRequested = true;
+    CompanionService().cancelStream();
+  }
+
+  void _keepStoppedReply() {
+    if (!mounted || _items.isEmpty) return;
+    final last = _items.last;
+    if (last.role != 'assistant' || !last.isStreaming) return;
+    final answer = _splitInlineThink(last.content).answer.trim();
+    final thinking = last.thinking.trim();
+    setState(() {
+      if (answer.isEmpty && thinking.isEmpty) {
+        _items.removeLast();
+      } else {
+        _items.last = _ChatItem(
+          role: 'assistant',
+          content: answer.isEmpty ? '已停止生成。' : last.content,
+          thinking: last.thinking,
+        );
+      }
+    });
   }
 
   Future<void> _retryFailedMessage(int failedIndex) async {
@@ -870,11 +978,30 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         final item = _items[chronoIndex];
         final isAssistant = item.role == 'assistant';
         final itemIndex = chronoIndex;
+        final split = isAssistant && !item.isError
+            ? _splitInlineThink(item.content)
+            : _InlineThink(item.thinking, item.content);
+        final showThink = _modelCanThink && _thinkEnabled;
+        final rawThinking = [
+          item.thinking.trim(),
+          split.thinking,
+        ].where((part) => part.isNotEmpty).join('\n\n');
+        final awaitingAnswer = item.isStreaming && split.answer.isEmpty;
+        // 链路只跟思考开关走。正文里的 <think> 由后端拆成 thinking 事件。
+        final visibleThinking = showThink ? rawThinking : '';
+        final showChain =
+            showThink && (visibleThinking.isNotEmpty || awaitingAnswer);
+        final visibleAnswer = split.answer.isNotEmpty
+            ? split.answer
+            : (!item.isStreaming && !item.isError && split.thinking.isNotEmpty
+                ? '这次没有整理出正文。'
+                : split.answer);
         final canSpeak = _voiceEnabled &&
             isAssistant &&
             !item.isStreaming &&
             !item.isError &&
-            item.content.trim().isNotEmpty;
+            visibleAnswer.trim().isNotEmpty &&
+            visibleAnswer != '这次没有整理出正文。';
         final speakingThis =
             (_isSpeaking || _ttsBusy) && _speakingIndex == itemIndex;
         return Padding(
@@ -883,26 +1010,54 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             crossAxisAlignment:
                 isAssistant ? CrossAxisAlignment.start : CrossAxisAlignment.end,
             children: [
-              AiMessageBubble(
-                content: item.content,
-                contentType: MessageContentType.text,
-                isUser: item.role == 'user',
-                isLoading: item.isStreaming,
-                isError: item.isError,
-                onErrorAction: item.isError && !_isSending
-                    ? () => unawaited(_retryFailedMessage(itemIndex))
-                    : null,
-                airyCompanion: true,
-                agentLabel: isAssistant ? _profile.name : null,
-                assistantAvatar: isAssistant
-                    ? CompanionAvatar(
-                        emoji: _profile.emoji,
-                        avatarUrl: _profile.avatarUrl,
-                        size: 32,
-                        borderRadius: BorderRadius.circular(12),
-                      )
-                    : null,
-              ),
+              if (isAssistant && awaitingAnswer && showChain)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CompanionAvatar(
+                      emoji: _profile.emoji,
+                      avatarUrl: _profile.avatarUrl,
+                      size: 32,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ThinkingTrace(
+                        text: visibleThinking,
+                        streaming: true,
+                        indent: 0,
+                      ),
+                    ),
+                  ],
+                )
+              else if (isAssistant && visibleThinking.isNotEmpty)
+                _ThinkingTrace(
+                  text: visibleThinking,
+                  streaming: false,
+                ),
+              if (!(isAssistant && awaitingAnswer && showChain))
+                AiMessageBubble(
+                  content: isAssistant ? visibleAnswer : item.content,
+                  contentType: MessageContentType.text,
+                  isUser: item.role == 'user',
+                  isLoading:
+                      item.isStreaming && visibleAnswer.isEmpty && !showChain,
+                  isError: item.isError,
+                  richFormat: isAssistant && !item.isError,
+                  onErrorAction: item.isError && !_isSending
+                      ? () => unawaited(_retryFailedMessage(itemIndex))
+                      : null,
+                  airyCompanion: true,
+                  agentLabel: isAssistant ? _profile.name : null,
+                  assistantAvatar: isAssistant
+                      ? CompanionAvatar(
+                          emoji: _profile.emoji,
+                          avatarUrl: _profile.avatarUrl,
+                          size: 32,
+                          borderRadius: BorderRadius.circular(12),
+                        )
+                      : null,
+                ),
               if (canSpeak)
                 Padding(
                   padding: const EdgeInsets.only(left: 40, top: 2),
@@ -910,11 +1065,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                     speaking: speakingThis,
                     busy: _ttsBusy && _speakingIndex == itemIndex,
                     onTap: () => unawaited(
-                      _speakAt(itemIndex, item.content),
+                      _speakAt(itemIndex, visibleAnswer),
                     ),
                   ),
                 ),
-              if (isAssistant && item.isStreaming && item.content.isNotEmpty)
+              if (isAssistant && item.isStreaming && visibleAnswer.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: 40, top: 1),
                   child: Semantics(
@@ -1131,7 +1286,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       MoeToast.error(context, '模型列表读取失败：$error');
       return;
     }
-    models = models.where((item) => item.name.isNotEmpty && !item.derived).toList();
+    models =
+        models.where((item) => item.name.isNotEmpty && !item.derived).toList();
     if (!mounted) return;
     if (models.isEmpty) {
       MoeToast.error(context, '小主机上没有可读到的模型');
@@ -1166,7 +1322,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     try {
       final cloud = AiCloudConfigService();
       final snapshot = await cloud.fetch();
-      final preferences = Map<String, dynamic>.from(snapshot?.preferences ?? {});
+      final preferences =
+          Map<String, dynamic>.from(snapshot?.preferences ?? {});
       preferences['builtin_chat_model'] = selected;
       await cloud.savePreferences(preferences);
     } catch (error) {
@@ -1273,9 +1430,12 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                     value: thinkOn,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     activeThumbColor: MoeTokens.primary,
-                    onChanged: !_modelCanThink || _isSending
+                    onChanged: !_modelCanThink
                         ? null
-                        : (value) => unawaited(_setThink(value)),
+                        : (value) {
+                            if (_isSending) return;
+                            unawaited(_setThink(value));
+                          },
                   ),
                 ),
               ),
@@ -1386,22 +1546,23 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                   const SizedBox(width: 8),
                   _ComposerCircleButton(
                     size: btnSize,
-                    tooltip: '发送',
-                    onTap: (_isSending || hasError) ? null : _sendMessage,
-                    background: (_isSending || hasError)
-                        ? MoeTokens.softChipBg
-                        : MoeTokens.primary,
-                    borderColor: (_isSending || hasError)
+                    tooltip: _isSending ? '停止' : '发送',
+                    onTap: hasError
+                        ? null
+                        : _isSending
+                            ? _stopGeneration
+                            : () => unawaited(_sendMessage()),
+                    background:
+                        hasError ? MoeTokens.softChipBg : MoeTokens.primary,
+                    borderColor: hasError
                         ? AiBrandTokens.companionBorder
                         : Colors.transparent,
                     child: Icon(
                       _isSending
-                          ? Icons.more_horiz_rounded
+                          ? Icons.stop_rounded
                           : Icons.arrow_upward_rounded,
                       size: 20,
-                      color: (_isSending || hasError)
-                          ? MoeTokens.hintText
-                          : Colors.white,
+                      color: hasError ? MoeTokens.hintText : Colors.white,
                     ),
                   ),
                 ],
@@ -1718,6 +1879,7 @@ class _ComposerStatus extends StatelessWidget {
 class _ChatItem {
   final String role;
   final String content;
+  final String thinking;
   final bool isStreaming;
   final bool isError;
   final String? meta;
@@ -1725,8 +1887,138 @@ class _ChatItem {
   const _ChatItem({
     required this.role,
     required this.content,
+    this.thinking = '',
     this.isStreaming = false,
     this.isError = false,
     this.meta,
   });
+}
+
+class _ThinkingTrace extends StatefulWidget {
+  const _ThinkingTrace({
+    required this.text,
+    required this.streaming,
+    this.indent = 40,
+  });
+
+  final String text;
+  final bool streaming;
+  final double indent;
+
+  @override
+  State<_ThinkingTrace> createState() => _ThinkingTraceState();
+}
+
+class _ThinkingTraceState extends State<_ThinkingTrace> {
+  final _scroll = ScrollController();
+  bool _open = false;
+  bool _userToggled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _open = widget.streaming;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ThinkingTrace oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_userToggled && oldWidget.streaming != widget.streaming) {
+      _open = widget.streaming;
+    }
+    if (_open && widget.text != oldWidget.text) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scroll.hasClients) return;
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: widget.indent, bottom: 4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: MoeTokens.softLavenderBg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () => setState(() {
+                _userToggled = true;
+                _open = !_open;
+              }),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.psychology_alt_rounded,
+                      size: 14,
+                      color: MoeTokens.primary.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.streaming ? '正在思考' : '思考过程',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: MoeTokens.inkMuted,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _open
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 16,
+                      color: MoeTokens.inkMuted,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_open && widget.streaming && widget.text.isEmpty)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(10, 0, 10, 8),
+                child: Text(
+                  '还没有收到第一个字',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: MoeTokens.hintText,
+                  ),
+                ),
+              ),
+            if (_open && widget.text.isNotEmpty)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 120),
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                  child: Text(
+                    widget.text,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.45,
+                      color: MoeTokens.hintText,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

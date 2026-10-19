@@ -2,10 +2,11 @@ package server
 
 import (
 	"bufio"
-	"log"
 	"net"
 	"net/http"
 	"time"
+
+	"backend/internal/platform/moelog"
 )
 
 type loggingResponseWriter struct {
@@ -36,8 +37,9 @@ func (w *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 func requestLogFilter(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+		moelog.Infof("http request method=%s path=%s", r.Method, r.URL.Path)
 		lrw := &loggingResponseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(lrw, r)
-		log.Printf("[HTTP] method=%s path=%s status=%d duration=%s", r.Method, r.URL.Path, lrw.status, time.Since(start).Round(time.Millisecond))
+		moelog.Infof("http result method=%s path=%s status=%d duration=%s", r.Method, r.URL.Path, lrw.status, time.Since(start).Round(time.Millisecond))
 	})
 }

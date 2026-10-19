@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	aibiz "backend/internal/biz/ai"
 	companionbiz "backend/internal/biz/companion"
 	apicomm "backend/internal/platform/apicomm"
+	"backend/internal/platform/moelog"
 	companionapp "backend/internal/service/companion"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -76,21 +78,59 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 		return err
 	}
 
+	modelName := ""
+	if override != nil {
+		modelName = override.DefaultModel
+	}
+	started := time.Now()
+	moelog.Infof("companion chat request user=%d think=%t model=%s", userID, req.Think, modelName)
+	var thinkingN, answerN atomic.Int64
+	stopWait := make(chan struct{})
+	defer close(stopWait)
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stopWait:
+				return
+			case <-r.Context().Done():
+				return
+			case <-ticker.C:
+				if thinkingN.Load() == 0 && answerN.Load() == 0 {
+					moelog.Infof("companion chat waiting model user=%d elapsed=%s", userID, time.Since(started).Round(time.Second))
+				}
+			}
+		}
+	}()
+
 	apicomm.InitSSEHeaders(w)
 	if err := apicomm.WriteSSE(w, "start", map[string]string{}); err != nil {
 		return fmt.Errorf("write companion chat start: %w", err)
 	}
 
-	streamCtx := r.Context()
+	var streamCtx = r.Context()
 	if req.Think {
 		streamCtx = companionbiz.WithChatThink(streamCtx, true)
+		streamCtx = companionbiz.WithThinkingHandler(streamCtx, func(chunk string) error {
+			if thinkingN.Load() == 0 {
+				moelog.Infof("companion chat thinking user=%d elapsed=%s", userID, time.Since(started).Round(time.Millisecond))
+			}
+			thinkingN.Add(int64(len(chunk)))
+			return apicomm.WriteSSE(w, "thinking", map[string]string{"text": chunk})
+		})
 	}
 	fullReply, err := app.ChatStreamWithInputMode(streamCtx, userID, req.Message, override, req.Scene, req.InputMode, func(chunk string) error {
+		if answerN.Load() == 0 && chunk != "" {
+			moelog.Infof("companion chat answer user=%d elapsed=%s", userID, time.Since(started).Round(time.Millisecond))
+		}
+		answerN.Add(int64(len(chunk)))
 		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
+	moelog.Infof("companion chat result user=%d think=%t thinking_bytes=%d answer_bytes=%d elapsed=%s err=%v", userID, req.Think, thinkingN.Load(), answerN.Load(), time.Since(started).Round(time.Millisecond), err)
 	if err != nil {
 		if strings.TrimSpace(fullReply) != "" {
-			log.Printf("[companion] chat reply generated but history persistence failed user=%d: %v", userID, err)
+			moelog.Errorf("companion chat history not saved user=%d err=%v", userID, err)
 			payload := map[string]any{
 				"text":          strings.TrimSpace(fullReply),
 				"history_saved": false,

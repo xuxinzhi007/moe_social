@@ -55,7 +55,7 @@ func (e *Engine) ChatContextUsage(ctx context.Context, userID uint) (ContextUsag
 		limit = 10
 	}
 	usage := measureContextUsage(messages, len(snapshot.History), limit, conf.ContextTokens(), chatMaxOutputTokens)
-	usage.Thinking = modelSupportsThinking(ctx, e.llmCfg, e.model)
+	usage.Thinking, _ = modelSupportsThinking(ctx, e.llmCfg, e.model)
 	return usage, nil
 }
 

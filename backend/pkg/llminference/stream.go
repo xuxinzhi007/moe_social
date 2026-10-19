@@ -36,20 +36,20 @@ func ChatStream(ctx context.Context, cfg Config, model string, messages []Messag
 	if protocol != "ollama" {
 		req.Header.Set("Accept", "text/event-stream")
 	}
-	resp, err := execute(NewHTTPClient(cfg.Timeout), req, false)
+	resp, err := execute(NewHTTPClient(streamClientTimeout(cfg.Timeout, opts.Think)), req, false)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	return readChatStream(resp.Body, protocol, onChunk)
+	return readChatStream(resp.Body, protocol, onChunk, opts.OnThinking)
 }
 
 func readResponsesStream(r io.Reader, onChunk StreamHandler) (string, error) {
-	return readChatStream(r, "responses", onChunk)
+	return readChatStream(r, "responses", onChunk, nil)
 }
 
 func readOpenAIStream(r io.Reader, onChunk StreamHandler) (string, error) {
-	return readChatStream(r, "openai", onChunk)
+	return readChatStream(r, "openai", onChunk, nil)
 }
 
 type streamEvent struct {
@@ -67,10 +67,11 @@ type streamEvent struct {
 	} `json:"choices"`
 }
 
-func readChatStream(r io.Reader, protocol string, onChunk StreamHandler) (string, error) {
+func readChatStream(r io.Reader, protocol string, onChunk, onThinking StreamHandler) (string, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 64<<10), 1<<20)
 	var full strings.Builder
+	var thought strings.Builder
 	var total int
 	done := false
 	consume := func(payload string) error {
@@ -90,6 +91,12 @@ func readChatStream(r io.Reader, protocol string, onChunk StreamHandler) (string
 		switch protocol {
 		case "ollama":
 			chunk, done = event.Message.Content, event.Done
+			if thinking := event.Message.Thinking; thinking != "" && onThinking != nil && !(event.Done && thought.Len() > 0) {
+				thought.WriteString(thinking)
+				if err := onThinking(thinking); err != nil {
+					return err
+				}
+			}
 		case "responses":
 			if event.Type == "response.output_text.delta" {
 				chunk = event.Delta
