@@ -12,6 +12,7 @@ import (
 	companionv1 "backend/api/companion/v1"
 	companionbiz "backend/internal/biz/companion"
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/pkg/llminference"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -424,6 +425,21 @@ func (s *AppService) ChatContext(ctx context.Context, userID uint) (companionbiz
 	usage, err := engine.ChatContextUsage(ctx, userID)
 	if err != nil {
 		return companionbiz.ContextUsage{}, err
+	}
+	cfg := conf.Inference()
+	modelName := strings.TrimSpace(cfg.DefaultModel)
+	if override, resolveErr := s.ResolveChatInference(ctx, userID); resolveErr == nil && override != nil {
+		if name := strings.TrimSpace(override.DefaultModel); name != "" {
+			cfg = *override
+			modelName = name
+		}
+	}
+	usage.ModelName = modelName
+	thinking, contextLength := companionbiz.LookupCatalog(ctx, cfg, modelName)
+	usage.Thinking = thinking
+	if contextLength > 0 {
+		usage.ContextLimit = contextLength
+		usage.Overflow = usage.PromptTokens+usage.OutputReserve > contextLength
 	}
 	return usage, nil
 }

@@ -39,6 +39,8 @@ class CompanionContextUsage {
   final int contextLimit;
   final int outputReserve;
   final bool overflow;
+  final bool thinking;
+  final String modelName;
 
   const CompanionContextUsage({
     this.promptTokens = 0,
@@ -49,6 +51,8 @@ class CompanionContextUsage {
     this.contextLimit = 0,
     this.outputReserve = 0,
     this.overflow = false,
+    this.thinking = false,
+    this.modelName = '',
   });
 
   /// 用当前页面上的人设和最近对话估算。服务端数字回来之前也够画出占用条。
@@ -113,6 +117,8 @@ class CompanionContextUsage {
       contextLimit: contextLimit > 0 ? contextLimit : defaultContextLimit,
       outputReserve: outputReserve > 0 ? outputReserve : defaultOutputReserve,
       overflow: map['overflow'] == true,
+      thinking: map['thinking'] == true,
+      modelName: (map['model_name'] ?? map['modelName'] ?? '').toString(),
     );
   }
 }
@@ -1042,6 +1048,7 @@ class CompanionService {
     String message, {
     String? scene,
     String inputMode = 'text',
+    bool think = false,
   }) async* {
     _requireUserId();
     final uri = Uri.parse('${ApiService.baseUrl}/api/companion/chat/stream');
@@ -1054,7 +1061,10 @@ class CompanionService {
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
-    final body = <String, dynamic>{'message': message};
+    final body = <String, dynamic>{
+      'message': message,
+      'think': think,
+    };
     if (scene != null && scene.trim().isNotEmpty) {
       body['scene'] = scene.trim();
     }

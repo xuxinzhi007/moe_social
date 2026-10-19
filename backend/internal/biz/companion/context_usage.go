@@ -17,14 +17,16 @@ const messageOverheadTokens = 4
 
 // ContextUsage 是下一轮请求的上下文占用估算。
 type ContextUsage struct {
-	PromptTokens    int  `json:"prompt_tokens"`
-	PersonaTokens   int  `json:"persona_tokens"`
-	HistoryTokens   int  `json:"history_tokens"`
-	HistoryMessages int  `json:"history_messages"`
-	HistoryLimit    int  `json:"history_limit"`
-	ContextLimit    int  `json:"context_limit"`
-	OutputReserve   int  `json:"output_reserve"`
-	Overflow        bool `json:"overflow"`
+	PromptTokens    int    `json:"prompt_tokens"`
+	PersonaTokens   int    `json:"persona_tokens"`
+	HistoryTokens   int    `json:"history_tokens"`
+	HistoryMessages int    `json:"history_messages"`
+	HistoryLimit    int    `json:"history_limit"`
+	ContextLimit    int    `json:"context_limit"`
+	OutputReserve   int    `json:"output_reserve"`
+	Overflow        bool   `json:"overflow"`
+	Thinking        bool   `json:"thinking"`
+	ModelName       string `json:"model_name"`
 }
 
 // ChatContextUsage 按和正式聊天相同的拼装方式估算占用，不附加一条空的用户消息。
@@ -52,7 +54,9 @@ func (e *Engine) ChatContextUsage(ctx context.Context, userID uint) (ContextUsag
 	if limit <= 0 {
 		limit = 10
 	}
-	return measureContextUsage(messages, len(snapshot.History), limit, conf.ContextTokens(), chatMaxOutputTokens), nil
+	usage := measureContextUsage(messages, len(snapshot.History), limit, conf.ContextTokens(), chatMaxOutputTokens)
+	usage.Thinking = modelSupportsThinking(ctx, e.llmCfg, e.model)
+	return usage, nil
 }
 
 func dropEmptyTrailingUser(messages []llminference.Message) []llminference.Message {

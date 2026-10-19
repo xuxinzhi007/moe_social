@@ -17,6 +17,7 @@ class AiAgent {
   final DateTime? updatedAt;
   final bool isPublic;
   final String? authorName;
+  final bool thinkEnabled;
 
   AiAgent({
     required this.id,
@@ -36,6 +37,7 @@ class AiAgent {
     this.updatedAt,
     this.isPublic = false,
     this.authorName,
+    this.thinkEnabled = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -57,7 +59,9 @@ class AiAgent {
         'created_by_user_id': createdByUserId,
       if (updatedAt != null) 'updated_at': updatedAt!.millisecondsSinceEpoch,
       'is_public': isPublic,
-      if (authorName != null && authorName!.isNotEmpty) 'author_name': authorName,
+      'think_enabled': thinkEnabled,
+      if (authorName != null && authorName!.isNotEmpty)
+        'author_name': authorName,
     };
   }
 
@@ -89,6 +93,7 @@ class AiAgent {
       updatedAt: updatedAt,
       isPublic: _parseBool(map['is_public']),
       authorName: map['author_name']?.toString(),
+      thinkEnabled: _parseBool(map['think_enabled']),
     );
   }
 
@@ -117,6 +122,7 @@ class AiAgent {
     DateTime? updatedAt,
     bool? isPublic,
     String? authorName,
+    bool? thinkEnabled,
   }) {
     return AiAgent(
       id: id ?? this.id,
@@ -136,6 +142,7 @@ class AiAgent {
       updatedAt: updatedAt ?? this.updatedAt,
       isPublic: isPublic ?? this.isPublic,
       authorName: authorName ?? this.authorName,
+      thinkEnabled: thinkEnabled ?? this.thinkEnabled,
     );
   }
 }

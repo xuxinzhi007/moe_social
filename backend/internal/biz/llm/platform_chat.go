@@ -24,6 +24,7 @@ type PlatformChatInput struct {
 	TopP                float64
 	MaxTokens           int
 	RepeatPenalty       float64
+	Think               bool
 }
 
 type PlatformChatOutcome struct {

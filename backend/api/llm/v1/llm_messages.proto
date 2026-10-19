@@ -55,8 +55,16 @@ message UpsertAiUserConfigResp {
 
 message ListLlmModelsReq {}
 
+message LlmModelCatalogItem {
+  string name = 1;
+  int32 context_length = 2;
+  repeated string capabilities = 3;
+  bool derived = 4;
+}
+
 message ListLlmModelsResp {
   repeated string models = 1;
+  repeated LlmModelCatalogItem catalog = 2;
 }
 
 message GetLlmModelPromptReq {
@@ -65,6 +73,7 @@ message GetLlmModelPromptReq {
 
 message GetLlmModelPromptResp {
   string system_prompt = 1;
+  string parameters_json = 2;
 }
 
 service LlmChat {

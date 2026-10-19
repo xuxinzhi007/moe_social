@@ -45,11 +45,18 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 		messages = append(messages, llminference.Message{Role: m.Role, Content: m.Content})
 	}
 
-	chatOpts := llminference.ChatOptions{
-		Temperature:   in.Temperature,
-		TopP:          in.TopP,
-		MaxTokens:     boundedTokens(in.MaxTokens),
-		RepeatPenalty: in.RepeatPenalty,
+	chatOpts := llminference.ChatOptions{Think: in.Think}
+	if in.Temperature != 0 {
+		chatOpts.Temperature = in.Temperature
+	}
+	if in.TopP != 0 {
+		chatOpts.TopP = in.TopP
+	}
+	if in.MaxTokens > 0 {
+		chatOpts.MaxTokens = boundedTokens(in.MaxTokens)
+	}
+	if in.RepeatPenalty != 0 {
+		chatOpts.RepeatPenalty = in.RepeatPenalty
 	}
 
 	content, chatErr := chatComplete(ctx, deps, in.Model, messages, chatOpts)

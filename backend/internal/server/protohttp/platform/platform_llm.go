@@ -3,6 +3,7 @@ package platformhttp
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	platformv1 "backend/api/platform/v1"
 	llmbiz "backend/internal/biz/llm"
@@ -34,9 +35,14 @@ func (s *Server) LlmCreateAgent(ctx context.Context, in *platformv1.LlmCreateAge
 	if s.deps.LLMApp == nil {
 		return nil, kerrors.ServiceUnavailable("LLM_UNAVAILABLE", "模型服务尚未初始化")
 	}
+	params, err := decodeCreateParameters(in.GetParametersJson())
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.deps.LLMApp.UpsertManagedModel(ctx, llmbiz.CreateAgentInput{
 		AgentID: in.GetAgentId(), RequestID: in.GetRequestId(),
 		Name: in.GetName(), BaseModel: in.GetBaseModel(), SystemPrompt: in.GetSystemPrompt(),
+		Parameters: params,
 	})
 	if err != nil {
 		return nil, err
@@ -122,8 +128,20 @@ func platformConfigSnapshotFromConfig(c apiconfig.Config) llmbiz.ConfigSnapshot 
 	return llmbiz.ConfigSnapshot{InferenceBaseURL: inf.BaseUrl, InferenceAPIStyle: inf.ApiStyle, InferenceTimeoutSec: inf.TimeoutSeconds, MemoryModel: inf.MemoryModel, HasSummaryPrompt: inf.MemorySummaryPrompt != "", HasExtractPrompt: inf.MemoryExtractPrompt != "", MemoryBudget: llmbiz.DefaultMemoryBudget()}
 }
 
+func decodeCreateParameters(raw string) (map[string]float64, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	out := map[string]float64{}
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil, kerrors.BadRequest("LLM_MODEL", "采样参数格式无效")
+	}
+	return out, nil
+}
+
 func platformChatInputFromProto(in *platformv1.LlmChatReq) llmbiz.PlatformChatInput {
-	out := llmbiz.PlatformChatInput{Model: in.GetModel(), SessionId: in.GetSessionId(), SourceMsgId: in.GetSourceMsgId(), AgentID: in.GetAgentId(), ClientMemoryApplied: in.GetClientMemoryApplied(), Stream: in.GetStream(), Temperature: in.GetTemperature(), TopP: in.GetTopP(), MaxTokens: int(in.GetMaxTokens()), RepeatPenalty: in.GetRepeatPenalty()}
+	out := llmbiz.PlatformChatInput{Model: in.GetModel(), SessionId: in.GetSessionId(), SourceMsgId: in.GetSourceMsgId(), AgentID: in.GetAgentId(), ClientMemoryApplied: in.GetClientMemoryApplied(), Stream: in.GetStream(), Temperature: in.GetTemperature(), TopP: in.GetTopP(), MaxTokens: int(in.GetMaxTokens()), RepeatPenalty: in.GetRepeatPenalty(), Think: in.GetThink()}
 	if len(in.GetMessages()) > 0 {
 		out.Messages = make([]llmbiz.PlatformChatMessage, len(in.GetMessages()))
 		for i, m := range in.GetMessages() {

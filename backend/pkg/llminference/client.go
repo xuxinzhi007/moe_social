@@ -56,12 +56,21 @@ type Tool struct {
 }
 
 // ChatOptions contains sampling parameters.
+// Zero sampling values mean the request keeps the model's own parameters.
 type ChatOptions struct {
 	Temperature   float64
 	TopP          float64
 	MaxTokens     int
 	RepeatPenalty float64
+	Think         bool
 	Tools         []Tool
+}
+
+// CatalogEntry is one model advertised by the inference endpoint.
+type CatalogEntry struct {
+	Name          string
+	ContextLength int
+	Capabilities  []string
 }
 
 // ConfigFrom normalizes application configuration.
@@ -96,31 +105,48 @@ func Ping(ctx context.Context, cfg Config) bool {
 	return err == nil && len(models) > 0
 }
 
-// ListModels returns the complete catalog, including managed models. Authorization
-// of explicitly requested private models belongs to the caller, not this client.
-func ListModels(ctx context.Context, cfg Config) ([]string, error) {
+// ListCatalog returns the endpoint catalog, including managed models.
+// Authorization of private models belongs to the caller, not this client.
+func ListCatalog(ctx context.Context, cfg Config) ([]CatalogEntry, error) {
 	var parsed struct {
 		Data []struct {
 			ID string `json:"id"`
 		} `json:"data"`
 		Models []struct {
-			Name string `json:"name"`
+			Name    string `json:"name"`
+			Details struct {
+				ContextLength int `json:"context_length"`
+			} `json:"details"`
+			Capabilities []string `json:"capabilities"`
 		} `json:"models"`
 	}
 	if err := requestJSON(ctx, cfg, http.MethodGet, "/api/tags", "/models", nil, &parsed, false); err != nil {
 		return nil, err
 	}
-	var out []string
+	var out []CatalogEntry
 	if cfg.APIStyle == APIOllama {
 		for _, m := range parsed.Models {
-			out = append(out, m.Name)
+			out = append(out, CatalogEntry{Name: m.Name, ContextLength: m.Details.ContextLength, Capabilities: append([]string(nil), m.Capabilities...)})
 		}
 	} else {
 		for _, m := range parsed.Data {
-			out = append(out, m.ID)
+			out = append(out, CatalogEntry{Name: m.ID})
 		}
 	}
-	return dedupeNonEmpty(out), nil
+	return dedupeCatalog(out), nil
+}
+
+// ListModels returns catalog names. Authorization of private models belongs to the caller.
+func ListModels(ctx context.Context, cfg Config) ([]string, error) {
+	items, err := ListCatalog(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		out = append(out, item.Name)
+	}
+	return out, nil
 }
 
 // ResolveModelName resolves a preference without auto-selecting managed models.
@@ -317,7 +343,7 @@ type ollamaChatRequest struct {
 	Tools    []map[string]any `json:"tools,omitempty"`
 	Stream   bool             `json:"stream"`
 	Think    bool             `json:"think"`
-	Options  ollamaOptions    `json:"options"`
+	Options  *ollamaOptions   `json:"options,omitempty"`
 }
 
 // ollamaMessage 把工具参数按对象发给 Ollama。OpenAI 那条链路仍用字符串参数。
@@ -338,14 +364,17 @@ type ollamaToolCallBody struct {
 }
 
 func newOllamaChatRequest(model string, messages []Message, opts ChatOptions, stream bool) ollamaChatRequest {
-	return ollamaChatRequest{
+	req := ollamaChatRequest{
 		Model:    model,
 		Messages: ollamaMessages(messages),
 		Tools:    openAITools(opts.Tools),
 		Stream:   stream,
-		Think:    false,
-		Options:  ollamaOptions{Temperature: opts.Temperature, TopP: opts.TopP, NumPredict: opts.MaxTokens, RepeatPenalty: opts.RepeatPenalty},
+		Think:    opts.Think,
 	}
+	if opts.Temperature != 0 || opts.TopP != 0 || opts.MaxTokens != 0 || opts.RepeatPenalty != 0 {
+		req.Options = &ollamaOptions{Temperature: opts.Temperature, TopP: opts.TopP, NumPredict: opts.MaxTokens, RepeatPenalty: opts.RepeatPenalty}
+	}
+	return req
 }
 
 func ollamaMessages(messages []Message) []ollamaMessage {

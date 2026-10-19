@@ -15,6 +15,7 @@ type LLMManagedModel struct {
 	RequestHashes  string `gorm:"type:longtext"` // Retain prior IDs so delayed retries cannot overwrite newer intents.
 	Intent         string `gorm:"size:16;not null"`
 	Prompt         string `gorm:"type:longtext"`
+	Parameters     string `gorm:"type:longtext"` // 创建时写入派生模型的采样参数 JSON。
 	CardSnapshot   string `gorm:"type:longtext"`
 	BaseEvidence   string `gorm:"type:longtext"`
 	State          string `gorm:"size:16;not null;index"`

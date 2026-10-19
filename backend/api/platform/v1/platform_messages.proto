@@ -134,6 +134,8 @@ message LlmCreateAgentReq {
   string system_prompt = 3;
   string agent_id = 4;
   string request_id = 5;
+  // 创建时写入派生模型的采样参数 JSON。空表示不覆盖基座参数。
+  string parameters_json = 6;
 }
 
 message LlmManagedModelResp {
@@ -179,6 +181,8 @@ message LlmChatReq {
   int32 max_tokens = 9;
   double repeat_penalty = 10;
   string agent_id = 11;
+  // 为 true 时请求思考。模型没有 thinking 能力时服务端保持 false。
+  bool think = 12;
 }
 
 message LlmChatResp {

@@ -316,16 +316,85 @@ func (*ListLlmModelsReq) Descriptor() ([]byte, []int) {
 	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{4}
 }
 
+type LlmModelCatalogItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	ContextLength int32                  `protobuf:"varint,2,opt,name=context_length,json=contextLength,proto3" json:"context_length,omitempty"`
+	Capabilities  []string               `protobuf:"bytes,3,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	Derived       bool                   `protobuf:"varint,4,opt,name=derived,proto3" json:"derived,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LlmModelCatalogItem) Reset() {
+	*x = LlmModelCatalogItem{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LlmModelCatalogItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LlmModelCatalogItem) ProtoMessage() {}
+
+func (x *LlmModelCatalogItem) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LlmModelCatalogItem.ProtoReflect.Descriptor instead.
+func (*LlmModelCatalogItem) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *LlmModelCatalogItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *LlmModelCatalogItem) GetContextLength() int32 {
+	if x != nil {
+		return x.ContextLength
+	}
+	return 0
+}
+
+func (x *LlmModelCatalogItem) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+func (x *LlmModelCatalogItem) GetDerived() bool {
+	if x != nil {
+		return x.Derived
+	}
+	return false
+}
+
 type ListLlmModelsResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Models        []string               `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"`
+	Catalog       []*LlmModelCatalogItem `protobuf:"bytes,2,rep,name=catalog,proto3" json:"catalog,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListLlmModelsResp) Reset() {
 	*x = ListLlmModelsResp{}
-	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[5]
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -337,7 +406,7 @@ func (x *ListLlmModelsResp) String() string {
 func (*ListLlmModelsResp) ProtoMessage() {}
 
 func (x *ListLlmModelsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[5]
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -350,12 +419,19 @@ func (x *ListLlmModelsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLlmModelsResp.ProtoReflect.Descriptor instead.
 func (*ListLlmModelsResp) Descriptor() ([]byte, []int) {
-	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{5}
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListLlmModelsResp) GetModels() []string {
 	if x != nil {
 		return x.Models
+	}
+	return nil
+}
+
+func (x *ListLlmModelsResp) GetCatalog() []*LlmModelCatalogItem {
+	if x != nil {
+		return x.Catalog
 	}
 	return nil
 }
@@ -369,7 +445,7 @@ type GetLlmModelPromptReq struct {
 
 func (x *GetLlmModelPromptReq) Reset() {
 	*x = GetLlmModelPromptReq{}
-	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[6]
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -381,7 +457,7 @@ func (x *GetLlmModelPromptReq) String() string {
 func (*GetLlmModelPromptReq) ProtoMessage() {}
 
 func (x *GetLlmModelPromptReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[6]
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -394,7 +470,7 @@ func (x *GetLlmModelPromptReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLlmModelPromptReq.ProtoReflect.Descriptor instead.
 func (*GetLlmModelPromptReq) Descriptor() ([]byte, []int) {
-	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{6}
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetLlmModelPromptReq) GetModel() string {
@@ -405,15 +481,16 @@ func (x *GetLlmModelPromptReq) GetModel() string {
 }
 
 type GetLlmModelPromptResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SystemPrompt  string                 `protobuf:"bytes,1,opt,name=system_prompt,json=systemPrompt,proto3" json:"system_prompt,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	SystemPrompt   string                 `protobuf:"bytes,1,opt,name=system_prompt,json=systemPrompt,proto3" json:"system_prompt,omitempty"`
+	ParametersJson string                 `protobuf:"bytes,2,opt,name=parameters_json,json=parametersJson,proto3" json:"parameters_json,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *GetLlmModelPromptResp) Reset() {
 	*x = GetLlmModelPromptResp{}
-	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[7]
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -425,7 +502,7 @@ func (x *GetLlmModelPromptResp) String() string {
 func (*GetLlmModelPromptResp) ProtoMessage() {}
 
 func (x *GetLlmModelPromptResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[7]
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -438,12 +515,19 @@ func (x *GetLlmModelPromptResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLlmModelPromptResp.ProtoReflect.Descriptor instead.
 func (*GetLlmModelPromptResp) Descriptor() ([]byte, []int) {
-	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{7}
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetLlmModelPromptResp) GetSystemPrompt() string {
 	if x != nil {
 		return x.SystemPrompt
+	}
+	return ""
+}
+
+func (x *GetLlmModelPromptResp) GetParametersJson() string {
+	if x != nil {
+		return x.ParametersJson
 	}
 	return ""
 }
@@ -471,13 +555,20 @@ const file_api_llm_v1_llm_messages_proto_rawDesc = "" +
 	"\fuser_persona\x18\x01 \x01(\tR\vuserPersona\x12)\n" +
 	"\x10preferences_json\x18\x02 \x01(\tR\x0fpreferencesJson\x123\n" +
 	"\x16provider_api_keys_json\x18\x03 \x01(\tR\x13providerApiKeysJson\"\x12\n" +
-	"\x10ListLlmModelsReq\"+\n" +
+	"\x10ListLlmModelsReq\"\x8e\x01\n" +
+	"\x13LlmModelCatalogItem\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
+	"\x0econtext_length\x18\x02 \x01(\x05R\rcontextLength\x12\"\n" +
+	"\fcapabilities\x18\x03 \x03(\tR\fcapabilities\x12\x18\n" +
+	"\aderived\x18\x04 \x01(\bR\aderived\"b\n" +
 	"\x11ListLlmModelsResp\x12\x16\n" +
-	"\x06models\x18\x01 \x03(\tR\x06models\",\n" +
+	"\x06models\x18\x01 \x03(\tR\x06models\x125\n" +
+	"\acatalog\x18\x02 \x03(\v2\x1b.llm.v1.LlmModelCatalogItemR\acatalog\",\n" +
 	"\x14GetLlmModelPromptReq\x12\x14\n" +
-	"\x05model\x18\x01 \x01(\tR\x05model\"<\n" +
+	"\x05model\x18\x01 \x01(\tR\x05model\"e\n" +
 	"\x15GetLlmModelPromptResp\x12#\n" +
-	"\rsystem_prompt\x18\x01 \x01(\tR\fsystemPrompt2\xad\x03\n" +
+	"\rsystem_prompt\x18\x01 \x01(\tR\fsystemPrompt\x12'\n" +
+	"\x0fparameters_json\x18\x02 \x01(\tR\x0eparametersJson2\xad\x03\n" +
 	"\aLlmChat\x12b\n" +
 	"\x0fGetAiUserConfig\x12\x1a.llm.v1.GetAiUserConfigReq\x1a\x1b.llm.v1.GetAiUserConfigResp\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/api/ai/config\x12n\n" +
 	"\x12UpsertAiUserConfig\x12\x1d.llm.v1.UpsertAiUserConfigReq\x1a\x1e.llm.v1.UpsertAiUserConfigResp\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\x1a\x0e/api/ai/config\x12]\n" +
@@ -496,31 +587,33 @@ func file_api_llm_v1_llm_messages_proto_rawDescGZIP() []byte {
 	return file_api_llm_v1_llm_messages_proto_rawDescData
 }
 
-var file_api_llm_v1_llm_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_api_llm_v1_llm_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_api_llm_v1_llm_messages_proto_goTypes = []any{
 	(*GetAiUserConfigReq)(nil),     // 0: llm.v1.GetAiUserConfigReq
 	(*GetAiUserConfigResp)(nil),    // 1: llm.v1.GetAiUserConfigResp
 	(*UpsertAiUserConfigReq)(nil),  // 2: llm.v1.UpsertAiUserConfigReq
 	(*UpsertAiUserConfigResp)(nil), // 3: llm.v1.UpsertAiUserConfigResp
 	(*ListLlmModelsReq)(nil),       // 4: llm.v1.ListLlmModelsReq
-	(*ListLlmModelsResp)(nil),      // 5: llm.v1.ListLlmModelsResp
-	(*GetLlmModelPromptReq)(nil),   // 6: llm.v1.GetLlmModelPromptReq
-	(*GetLlmModelPromptResp)(nil),  // 7: llm.v1.GetLlmModelPromptResp
+	(*LlmModelCatalogItem)(nil),    // 5: llm.v1.LlmModelCatalogItem
+	(*ListLlmModelsResp)(nil),      // 6: llm.v1.ListLlmModelsResp
+	(*GetLlmModelPromptReq)(nil),   // 7: llm.v1.GetLlmModelPromptReq
+	(*GetLlmModelPromptResp)(nil),  // 8: llm.v1.GetLlmModelPromptResp
 }
 var file_api_llm_v1_llm_messages_proto_depIdxs = []int32{
-	0, // 0: llm.v1.LlmChat.GetAiUserConfig:input_type -> llm.v1.GetAiUserConfigReq
-	2, // 1: llm.v1.LlmChat.UpsertAiUserConfig:input_type -> llm.v1.UpsertAiUserConfigReq
-	4, // 2: llm.v1.LlmChat.ListLlmModels:input_type -> llm.v1.ListLlmModelsReq
-	6, // 3: llm.v1.LlmChat.GetLlmModelPrompt:input_type -> llm.v1.GetLlmModelPromptReq
-	1, // 4: llm.v1.LlmChat.GetAiUserConfig:output_type -> llm.v1.GetAiUserConfigResp
-	3, // 5: llm.v1.LlmChat.UpsertAiUserConfig:output_type -> llm.v1.UpsertAiUserConfigResp
-	5, // 6: llm.v1.LlmChat.ListLlmModels:output_type -> llm.v1.ListLlmModelsResp
-	7, // 7: llm.v1.LlmChat.GetLlmModelPrompt:output_type -> llm.v1.GetLlmModelPromptResp
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	5, // 0: llm.v1.ListLlmModelsResp.catalog:type_name -> llm.v1.LlmModelCatalogItem
+	0, // 1: llm.v1.LlmChat.GetAiUserConfig:input_type -> llm.v1.GetAiUserConfigReq
+	2, // 2: llm.v1.LlmChat.UpsertAiUserConfig:input_type -> llm.v1.UpsertAiUserConfigReq
+	4, // 3: llm.v1.LlmChat.ListLlmModels:input_type -> llm.v1.ListLlmModelsReq
+	7, // 4: llm.v1.LlmChat.GetLlmModelPrompt:input_type -> llm.v1.GetLlmModelPromptReq
+	1, // 5: llm.v1.LlmChat.GetAiUserConfig:output_type -> llm.v1.GetAiUserConfigResp
+	3, // 6: llm.v1.LlmChat.UpsertAiUserConfig:output_type -> llm.v1.UpsertAiUserConfigResp
+	6, // 7: llm.v1.LlmChat.ListLlmModels:output_type -> llm.v1.ListLlmModelsResp
+	8, // 8: llm.v1.LlmChat.GetLlmModelPrompt:output_type -> llm.v1.GetLlmModelPromptResp
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_api_llm_v1_llm_messages_proto_init() }
@@ -534,7 +627,7 @@ func file_api_llm_v1_llm_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_llm_v1_llm_messages_proto_rawDesc), len(file_api_llm_v1_llm_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

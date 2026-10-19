@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"backend/model"
+	"backend/pkg/llminference"
 )
 
 func TestResolveActiveInferenceUsesSavedProvider(t *testing.T) {
@@ -77,6 +78,34 @@ func TestResolveActiveInferenceBuiltinUsesServerDefault(t *testing.T) {
 	}
 	if got != nil {
 		t.Fatalf("ResolveActiveInference() = %+v, want nil server default", got)
+	}
+}
+
+func TestApplyBuiltinChatModelUsesSavedOllamaModel(t *testing.T) {
+	server := llminference.Config{
+		BaseURL:      "http://127.0.0.1:11434",
+		APIStyle:     llminference.APIOllama,
+		DefaultModel: "qwen2.5:3b-instruct",
+	}
+	cfg := &model.AiUserConfig{
+		PreferencesJSON: `{"last_selected_provider_id":"builtin_backend_ollama","builtin_chat_model":"qwen3.5:9b"}`,
+	}
+	got := applyBuiltinChatModel(cfg, server)
+	if got == nil || got.DefaultModel != "qwen3.5:9b" || got.BaseURL != server.BaseURL {
+		t.Fatalf("applyBuiltinChatModel() = %+v", got)
+	}
+	if server.DefaultModel != "qwen2.5:3b-instruct" {
+		t.Fatalf("server default model changed to %s", server.DefaultModel)
+	}
+	if applyBuiltinChatModel(&model.AiUserConfig{PreferencesJSON: `{}`}, server) != nil {
+		t.Fatal("applyBuiltinChatModel() without a saved model = non-nil")
+	}
+	if applyBuiltinChatModel(cfg, llminference.Config{}) != nil {
+		t.Fatal("applyBuiltinChatModel() with an unready server = non-nil")
+	}
+	bad := &model.AiUserConfig{PreferencesJSON: `{"builtin_chat_model":"../secret"}`}
+	if applyBuiltinChatModel(bad, server) != nil {
+		t.Fatal("applyBuiltinChatModel() accepted an unsafe model name")
 	}
 }
 

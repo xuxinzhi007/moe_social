@@ -95,7 +95,7 @@ func (e *Engine) HeroChat(
 	}
 
 	msgs := buildHeroMessages(hero, entity, events, memories, history, message)
-	fullReply, err := nonStreamChat(ctx, config, modelName, msgs)
+	fullReply, err := nonStreamChat(ctx, config, modelName, msgs, false)
 	if err != nil {
 		return "", fmt.Errorf("hero chat model response failed: %w", err)
 	}

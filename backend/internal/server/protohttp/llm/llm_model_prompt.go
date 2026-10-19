@@ -12,9 +12,9 @@ func (s *Server) GetLlmModelPrompt(ctx context.Context, in *llmv1.GetLlmModelPro
 	if err != nil {
 		return nil, err
 	}
-	prompt, err := app.ModelPrompt(ctx, in.GetModel())
+	prompt, parameters, err := app.ModelCard(ctx, in.GetModel())
 	if err != nil {
 		return nil, err
 	}
-	return &llmv1.GetLlmModelPromptResp{SystemPrompt: prompt}, nil
+	return &llmv1.GetLlmModelPromptResp{SystemPrompt: prompt, ParametersJson: parameters}, nil
 }

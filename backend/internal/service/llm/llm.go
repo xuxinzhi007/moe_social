@@ -2,6 +2,7 @@ package llmapp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -121,6 +122,13 @@ func (s *AppService) Chat(ctx context.Context, in llmbiz.PlatformChatInput) (llm
 		if err := s.models.Authorize(ctx, id, in.Model); err != nil {
 			return llmbiz.PlatformChatOutcome{}, err
 		}
+		if in.Think {
+			thinking, err := s.models.SupportsThinking(ctx, in.Model)
+			if err != nil {
+				return llmbiz.PlatformChatOutcome{}, err
+			}
+			in.Think = thinking
+		}
 	}
 	if err := s.persistChatUserMessage(ctx, id, in); err != nil {
 		return llmbiz.PlatformChatOutcome{}, err
@@ -144,6 +152,19 @@ func (s *AppService) ConfigSnapshot() llmbiz.ConfigSnapshot {
 	return llmbiz.ConfigSnapshot{InferenceAPIStyle: string(s.deps.Inference.APIStyle), InferenceTimeoutSec: int(s.deps.Inference.Timeout.Seconds()), MemoryModel: s.deps.Inference.DefaultModel, MemoryBudget: llmbiz.DefaultMemoryBudget(), SupportsModelManagement: s.deps.ModelStore != nil && s.deps.Inference.Ready() && string(s.deps.Inference.APIStyle) == "ollama", ModelSyncTimeoutSeconds: s.deps.ModelManagement.ModelSyncTimeoutSeconds}
 }
 func (s *AppService) ListModels(ctx context.Context) ([]string, error) {
+	items, err := s.ListVisibleModels(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		names = append(names, item.Name)
+	}
+	return names, nil
+}
+
+// ListVisibleModels returns the caller's live model catalog.
+func (s *AppService) ListVisibleModels(ctx context.Context) ([]llmbiz.VisibleModel, error) {
 	if err := s.available(); err != nil {
 		return nil, err
 	}
@@ -151,7 +172,7 @@ func (s *AppService) ListModels(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.models.ListModels(ctx, id)
+	return s.models.VisibleModels(ctx, id)
 }
 func (s *AppService) ModelPrompt(ctx context.Context, model string) (string, error) {
 	if err := s.available(); err != nil {
@@ -172,6 +193,32 @@ func (s *AppService) ModelPrompt(ctx context.Context, model string) (string, err
 		return "", llmbiz.UpstreamStatusError(err)
 	}
 	return info.SystemPrompt(), nil
+}
+
+// ModelCard returns the authorized model's system prompt and sampling parameters.
+func (s *AppService) ModelCard(ctx context.Context, model string) (string, string, error) {
+	if err := s.available(); err != nil {
+		return "", "", err
+	}
+	id, err := s.actor(ctx, false)
+	if err != nil {
+		return "", "", err
+	}
+	if err := s.models.Authorize(ctx, id, model); err != nil {
+		return "", "", err
+	}
+	if string(s.deps.Inference.APIStyle) != "ollama" {
+		return "", "", kerrors.BadRequest("LLM_PROTOCOL", "当前协议不支持 show")
+	}
+	info, err := llminference.ShowModel(ctx, s.deps.Inference, model)
+	if err != nil {
+		return "", "", llmbiz.UpstreamStatusError(err)
+	}
+	raw, err := json.Marshal(llminference.ParseShowParameters(info.Parameters))
+	if err != nil {
+		return "", "", err
+	}
+	return info.SystemPrompt(), string(raw), nil
 }
 func (s *AppService) ForwardChatRaw(w http.ResponseWriter, r *http.Request) error {
 	if err := s.available(); err != nil {

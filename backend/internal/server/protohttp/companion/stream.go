@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	aibiz "backend/internal/biz/ai"
+	companionbiz "backend/internal/biz/companion"
 	apicomm "backend/internal/platform/apicomm"
 	companionapp "backend/internal/service/companion"
 
@@ -20,6 +21,7 @@ type chatStreamRequest struct {
 	Message   string `json:"message"`
 	Scene     string `json:"scene"`
 	InputMode string `json:"input_mode"`
+	Think     bool   `json:"think"`
 }
 
 const maxChatStreamBodyBytes = 32 << 10
@@ -79,7 +81,11 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 		return fmt.Errorf("write companion chat start: %w", err)
 	}
 
-	fullReply, err := app.ChatStreamWithInputMode(r.Context(), userID, req.Message, override, req.Scene, req.InputMode, func(chunk string) error {
+	streamCtx := r.Context()
+	if req.Think {
+		streamCtx = companionbiz.WithChatThink(streamCtx, true)
+	}
+	fullReply, err := app.ChatStreamWithInputMode(streamCtx, userID, req.Message, override, req.Scene, req.InputMode, func(chunk string) error {
 		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {

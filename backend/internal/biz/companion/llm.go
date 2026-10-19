@@ -318,6 +318,51 @@ func buildMessagesWithContext(
 	return msgs
 }
 
+type chatThinkContextKey struct{}
+
+// WithChatThink 标记这一轮伙伴聊天是否请求思考模式。
+func WithChatThink(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, chatThinkContextKey{}, enabled)
+}
+
+// ChatThink 读取这一轮是否请求思考模式。
+func ChatThink(ctx context.Context) bool {
+	enabled, _ := ctx.Value(chatThinkContextKey{}).(bool)
+	return enabled
+}
+
+// LookupCatalog 读取这个模型在实时目录里的思考能力和上下文长度。
+// 目录读失败或找不到模型时，两个结果都是零值。
+func LookupCatalog(ctx context.Context, cfg llminference.Config, modelName string) (thinking bool, contextLength int) {
+	modelName = strings.TrimSpace(modelName)
+	if modelName == "" || !cfg.Ready() {
+		return false, 0
+	}
+	items, err := llminference.ListCatalog(ctx, cfg)
+	if err != nil {
+		return false, 0
+	}
+	for _, item := range items {
+		if item.Name != modelName {
+			continue
+		}
+		for _, capability := range item.Capabilities {
+			if capability == "thinking" {
+				thinking = true
+				break
+			}
+		}
+		return thinking, item.ContextLength
+	}
+	return false, 0
+}
+
+// modelSupportsThinking 只看实时目录里的 thinking 能力。目录读失败时当作不支持。
+func modelSupportsThinking(ctx context.Context, cfg llminference.Config, modelName string) bool {
+	thinking, _ := LookupCatalog(ctx, cfg, modelName)
+	return thinking
+}
+
 // streamChat 流式调用 LLM，返回完整文本。
 func streamChat(
 	ctx context.Context,
@@ -325,11 +370,16 @@ func streamChat(
 	modelName string,
 	messages []llminference.Message,
 	onChunk llminference.StreamHandler,
+	think bool,
 ) (string, error) {
+	if think && !modelSupportsThinking(ctx, cfg, modelName) {
+		think = false
+	}
 	reply, err := llminference.ChatStream(ctx, cfg, modelName, messages,
 		llminference.ChatOptions{
 			Temperature: 0.85,
 			MaxTokens:   chatMaxOutputTokens,
+			Think:       think,
 		}, onChunk)
 	if err == nil || strings.TrimSpace(reply) != "" {
 		return reply, err
@@ -337,7 +387,7 @@ func streamChat(
 
 	fallbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeoutOrDefault(cfg.Timeout))
 	defer cancel()
-	fallback, fallbackErr := nonStreamChat(fallbackCtx, cfg, modelName, messages)
+	fallback, fallbackErr := nonStreamChat(fallbackCtx, cfg, modelName, messages, think)
 	if fallbackErr != nil {
 		return "", fmt.Errorf("stream chat failed: %w; non-stream fallback failed: %v", err, fallbackErr)
 	}
@@ -358,11 +408,13 @@ func nonStreamChat(
 	cfg llminference.Config,
 	modelName string,
 	messages []llminference.Message,
+	think bool,
 ) (string, error) {
 	return llminference.Chat(ctx, cfg, modelName, messages,
 		llminference.ChatOptions{
 			Temperature: 0.85,
 			MaxTokens:   chatMaxOutputTokens,
+			Think:       think,
 		})
 }
 

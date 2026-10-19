@@ -8,14 +8,17 @@ import (
 	"strings"
 
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/pkg/llminference"
 )
 
 const (
-	builtinBackendProviderID     = "builtin_backend_ollama"
-	legacyBuiltinLocalProviderID = "builtin_local_llama_cpp"
-	activeProviderPreferenceKey  = "last_selected_provider_id"
-	activeProviderTimeoutSeconds = 300
+	builtinBackendProviderID      = "builtin_backend_ollama"
+	legacyBuiltinLocalProviderID  = "builtin_local_llama_cpp"
+	activeProviderPreferenceKey   = "last_selected_provider_id"
+	builtinChatModelPreferenceKey = "builtin_chat_model"
+	activeProviderTimeoutSeconds  = 300
+	maxBuiltinChatModelRunes      = 200
 )
 
 // ErrActiveProviderUnavailable 表示用户选中的外部供应商缺少地址或模型。
@@ -31,7 +34,49 @@ func ResolveActiveInference(ctx context.Context, store AiStore, userID uint) (*l
 	if err != nil {
 		return nil, fmt.Errorf("load ai user config: %w", err)
 	}
-	return ResolveProfileInference(cfg, "")
+	resolved, err := ResolveProfileInference(cfg, "")
+	if err != nil || resolved != nil {
+		return resolved, err
+	}
+	return applyBuiltinChatModel(cfg, conf.Inference()), nil
+}
+
+// applyBuiltinChatModel 在使用内置后端时，把当前用户选中的 Ollama 模型套到服务端地址上。
+// 没有选择时返回 nil，调用方继续用 memory_model。
+func applyBuiltinChatModel(cfg *model.AiUserConfig, server llminference.Config) *llminference.Config {
+	if cfg == nil || !server.Ready() {
+		return nil
+	}
+	modelName := builtinChatModel(cfg.PreferencesJSON)
+	if !validBuiltinChatModel(modelName) {
+		return nil
+	}
+	copied := server
+	copied.DefaultModel = modelName
+	return &copied
+}
+
+func builtinChatModel(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	var prefs map[string]any
+	if err := json.Unmarshal([]byte(raw), &prefs); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(fmtString(prefs[builtinChatModelPreferenceKey]))
+}
+
+func validBuiltinChatModel(name string) bool {
+	name = strings.TrimSpace(name)
+	if name == "" || len([]rune(name)) > maxBuiltinChatModelRunes {
+		return false
+	}
+	if strings.Contains(name, "..") || strings.Contains(name, "://") || strings.ContainsAny(name, " \t\r\n") {
+		return false
+	}
+	return true
 }
 
 // ResolveProfileInference 按指定供应商构造推理配置。

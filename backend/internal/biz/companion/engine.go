@@ -1213,7 +1213,7 @@ func (e *Engine) ChatStreamWithInputMode(
 		return "", fmt.Errorf("companion: model service is not configured")
 	}
 
-	fullReply, err := streamChat(ctx, config, modelName, msgs, onChunk)
+	fullReply, err := streamChat(ctx, config, modelName, msgs, onChunk, ChatThink(ctx))
 	if err != nil {
 		if strings.TrimSpace(fullReply) != "" {
 			persistCtx, cancel := context.WithTimeout(

@@ -176,6 +176,7 @@ class LlmApiService {
     required String requestId,
     required String baseModel,
     required String systemPrompt,
+    Map<String, double> parameters = const {},
   }) =>
       _mutateManagedModel('/api/llm/agents',
           agentId: agentId,
@@ -185,8 +186,48 @@ class LlmApiService {
             'agent_id': agentId,
             'request_id': requestId,
             'base_model': baseModel,
-            'system_prompt': systemPrompt
+            'system_prompt': systemPrompt,
+            if (parameters.isNotEmpty)
+              'parameters_json': jsonEncode(parameters),
           });
+
+  static Future<List<LlmCatalogModel>> fetchCatalog() async {
+    final decoded = await ApiClient.get('/api/llm/models')
+        .timeout(const Duration(seconds: 12));
+    final data = ApiResponse.payload(decoded);
+    final raw = data['catalog'];
+    if (raw is List && raw.isNotEmpty) {
+      final items = raw
+          .whereType<Map>()
+          .map((item) =>
+              LlmCatalogModel.fromJson(Map<String, dynamic>.from(item)))
+          .where((item) => item.name.isNotEmpty)
+          .toList();
+      if (items.isNotEmpty) return items;
+    }
+    final names = data['models'];
+    if (names is! List) return const [];
+    return names
+        .map((item) => LlmCatalogModel(name: item.toString()))
+        .where((item) => item.name.isNotEmpty)
+        .toList();
+  }
+
+  static Future<LlmModelCard> fetchModelCard(String modelName) async {
+    final model = Uri.encodeComponent(modelName.trim());
+    final data = await ApiClient.get('/api/llm/model-prompt?model=$model')
+        .timeout(const Duration(seconds: 15));
+    final prompt = ApiResponse.stringField(data, 'system_prompt')?.trim() ?? '';
+    final raw = data['parameters_json']?.toString() ?? '{}';
+    final decoded = jsonDecode(raw);
+    final parameters = <String, double>{};
+    if (decoded is Map) {
+      decoded.forEach((key, value) {
+        if (value is num) parameters[key.toString()] = value.toDouble();
+      });
+    }
+    return LlmModelCard(systemPrompt: prompt, parameters: parameters);
+  }
 
   static Future<LlmManagedModel> _mutateManagedModel(
     String path, {
@@ -275,4 +316,38 @@ class LlmApiService {
       return '（读取失败：$e）';
     }
   }
+}
+
+class LlmCatalogModel {
+  const LlmCatalogModel({
+    required this.name,
+    this.contextLength = 0,
+    this.capabilities = const [],
+    this.derived = false,
+  });
+
+  factory LlmCatalogModel.fromJson(Map<String, dynamic> json) {
+    final caps = json['capabilities'];
+    return LlmCatalogModel(
+      name: json['name']?.toString() ?? '',
+      contextLength: (json['context_length'] as num?)?.toInt() ?? 0,
+      capabilities:
+          caps is List ? caps.map((e) => e.toString()).toList() : const [],
+      derived: json['derived'] == true,
+    );
+  }
+
+  final String name;
+  final int contextLength;
+  final List<String> capabilities;
+  final bool derived;
+
+  bool get thinking => capabilities.contains('thinking');
+}
+
+class LlmModelCard {
+  const LlmModelCard({required this.systemPrompt, required this.parameters});
+
+  final String systemPrompt;
+  final Map<String, double> parameters;
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"sync"
@@ -21,6 +22,14 @@ import (
 )
 
 const ManagedPrefix = "moe-user-"
+
+// VisibleModel is one model the current user may select for chat.
+type VisibleModel struct {
+	Name          string
+	ContextLength int
+	Capabilities  []string
+	Derived       bool
+}
 
 // ManagedModelView intentionally omits owner IDs, prompt and internal evidence.
 type ManagedModelView struct {
@@ -149,15 +158,23 @@ func (u *ManagedModels) Upsert(ctx context.Context, owner uint, in CreateAgentIn
 	if in.AgentID == "" || len(in.AgentID) > 128 || in.RequestID == "" || len(in.RequestID) > 128 || len(in.SystemPrompt) > 65536 {
 		return ManagedModelView{}, llmError(400, "需要有效的 agent_id、request_id 和受限提示词")
 	}
-	if !u.AllowedBase(in.BaseModel) {
-		return ManagedModelView{}, llmError(403, "不允许使用此基座")
+	params, err := normalizeParameters(in.Parameters)
+	if err != nil {
+		return ManagedModelView{}, err
+	}
+	paramJSON, err := canonicalParameters(params)
+	if err != nil {
+		return ManagedModelView{}, err
+	}
+	if err = u.hostedBase(ctx, in.BaseModel); err != nil {
+		return ManagedModelView{}, err
 	}
 	release, err := u.acquire(owner, in.AgentID)
 	if err != nil {
 		return ManagedModelView{}, err
 	}
 	defer release()
-	intentBytes, _ := json.Marshal([]string{in.AgentID, in.BaseModel, in.SystemPrompt, u.scope})
+	intentBytes, _ := json.Marshal([]string{in.AgentID, in.BaseModel, in.SystemPrompt, paramJSON, u.scope})
 	hash := digest(string(intentBytes))
 	row, err := u.store.Reserve(ctx, owner, in.AgentID, func(row *model.LLMManagedModel, card map[string]any, users, global int64) error {
 		if row.ID != 0 {
@@ -195,6 +212,7 @@ func (u *ManagedModels) Upsert(ctx context.Context, owner uint, in CreateAgentIn
 		row.EndpointScope = u.scope
 		row.BaseModel = in.BaseModel
 		row.Prompt = in.SystemPrompt
+		row.Parameters = paramJSON
 		row.CardSnapshot = string(snapshot)
 		row.RequestID = in.RequestID
 		row.IntentHash = hash
@@ -231,7 +249,7 @@ func (u *ManagedModels) Upsert(ctx context.Context, owner uint, in CreateAgentIn
 	if err = u.store.Finish(work, &row, false); err != nil {
 		return ManagedModelView{}, storeError(err)
 	}
-	err = llminference.CreateModel(work, cfg, row.ManagedName, row.BaseModel, row.Prompt)
+	err = llminference.CreateModel(work, cfg, row.ManagedName, row.BaseModel, row.Prompt, decodeParameters(row.Parameters))
 	if err != nil {
 		return u.finishFailure(ctx, &row, err, true)
 	}
@@ -320,34 +338,50 @@ func (u *ManagedModels) Get(ctx context.Context, owner uint, agent string) (Mana
 }
 
 // Authorize protects every inference entrypoint, including anonymous reads.
+// 派生模型只查所有权账本。基座先放行配置中的默认模型，其余以实时目录为准。
 func (u *ManagedModels) Authorize(ctx context.Context, owner uint, name string) error {
+	name = strings.TrimSpace(name)
+	if strings.HasPrefix(strings.ToLower(name), ManagedPrefix) {
+		if owner == 0 {
+			return llmError(403, "模型不可访问")
+		}
+		if u.store == nil {
+			return llmError(503, "模型所有权存储不可用")
+		}
+		row, err := u.store.ByName(ctx, name)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return llmError(403, "模型不可访问")
+			}
+			return storeError(err)
+		}
+		if row.OwnerID != owner || row.EndpointScope != u.scope || row.State != "ready" {
+			return llmError(403, "模型不可访问或未就绪")
+		}
+		return nil
+	}
 	if u.AllowedBase(name) {
 		return nil
 	}
-	if owner == 0 {
-		return llmError(403, "模型不可访问")
-	}
-	if u.store == nil {
-		return llmError(503, "模型所有权存储不可用")
-	}
-	row, err := u.store.ByName(ctx, name)
+	items, err := u.VisibleModels(ctx, owner)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return llmError(403, "模型不可访问")
+		return err
+	}
+	for _, item := range items {
+		if item.Name == name && !item.Derived {
+			return nil
 		}
-		return storeError(err)
 	}
-	if row.OwnerID != owner || row.EndpointScope != u.scope || row.State != "ready" {
-		return llmError(403, "模型不可访问或未就绪")
-	}
-	return nil
+	return llmError(403, "模型不可访问")
 }
-func (u *ManagedModels) ListModels(ctx context.Context, owner uint) ([]string, error) {
-	names, err := llminference.ListModels(ctx, u.cfg)
+
+// VisibleModels lists host base models plus the caller's ready derived models.
+func (u *ManagedModels) VisibleModels(ctx context.Context, owner uint) ([]VisibleModel, error) {
+	items, err := llminference.ListCatalog(ctx, u.cfg)
 	if err != nil {
 		return nil, UpstreamStatusError(err)
 	}
-	allowed := make(map[string]bool)
+	owned := map[string]bool{}
 	if owner != 0 && u.store != nil {
 		rows, err := u.store.List(ctx, owner)
 		if err != nil {
@@ -355,15 +389,104 @@ func (u *ManagedModels) ListModels(ctx context.Context, owner uint) ([]string, e
 		}
 		for _, row := range rows {
 			if row.State == "ready" && row.EndpointScope == u.scope {
-				allowed[row.ManagedName] = true
+				owned[row.ManagedName] = true
 			}
 		}
 	}
-	result := []string{}
-	for _, name := range names {
-		if u.AllowedBase(name) || allowed[name] {
-			result = append(result, name)
+	out := make([]VisibleModel, 0, len(items))
+	for _, item := range items {
+		derived := strings.HasPrefix(strings.ToLower(item.Name), ManagedPrefix)
+		if derived && !owned[item.Name] {
+			continue
+		}
+		out = append(out, VisibleModel{Name: item.Name, ContextLength: item.ContextLength, Capabilities: item.Capabilities, Derived: derived})
+	}
+	return out, nil
+}
+
+// SupportsThinking reports whether the live catalog marks the model as thinking-capable.
+func (u *ManagedModels) SupportsThinking(ctx context.Context, name string) (bool, error) {
+	items, err := llminference.ListCatalog(ctx, u.cfg)
+	if err != nil {
+		return false, UpstreamStatusError(err)
+	}
+	for _, item := range items {
+		if item.Name != name {
+			continue
+		}
+		for _, capability := range item.Capabilities {
+			if capability == "thinking" {
+				return true, nil
+			}
 		}
 	}
-	return result, nil
+	return false, nil
+}
+
+func (u *ManagedModels) hostedBase(ctx context.Context, name string) error {
+	if !validBase.MatchString(name) || strings.HasPrefix(strings.ToLower(name), ManagedPrefix) || strings.Contains(name, "..") || strings.Contains(name, "sha256") || strings.HasPrefix(name, "/") || strings.Contains(name, "://") {
+		return llmError(403, "不允许使用此基座")
+	}
+	items, err := llminference.ListCatalog(ctx, u.cfg)
+	if err != nil {
+		return UpstreamStatusError(err)
+	}
+	for _, item := range items {
+		if item.Name == name && !strings.HasPrefix(strings.ToLower(item.Name), ManagedPrefix) {
+			return nil
+		}
+	}
+	return llmError(403, "不允许使用此基座")
+}
+
+func (u *ManagedModels) ListModels(ctx context.Context, owner uint) ([]string, error) {
+	items, err := u.VisibleModels(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		names = append(names, item.Name)
+	}
+	return names, nil
+}
+
+func normalizeParameters(in map[string]float64) (map[string]float64, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+	allowed := llminference.SamplingParameterNames()
+	out := make(map[string]float64, len(in))
+	for key, value := range in {
+		if _, ok := allowed[key]; !ok {
+			return nil, llmError(400, "不支持的采样参数")
+		}
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return nil, llmError(400, "采样参数无效")
+		}
+		out[key] = value
+	}
+	return out, nil
+}
+
+func canonicalParameters(in map[string]float64) (string, error) {
+	if len(in) == 0 {
+		return "", nil
+	}
+	raw, err := json.Marshal(in)
+	if err != nil {
+		return "", llmError(400, "采样参数无效")
+	}
+	return string(raw), nil
+}
+
+func decodeParameters(raw string) map[string]float64 {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	out := map[string]float64{}
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	return out
 }

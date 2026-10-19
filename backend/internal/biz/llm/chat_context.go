@@ -48,6 +48,12 @@ func ApplyAgentChatContext(cfg *model.AiUserConfig, in PlatformChatInput) (Platf
 	if agent.ModelName != "" {
 		in.Model = agent.ModelName
 	}
+	// 派生模型的人设写在 Modelfile SYSTEM 里，请求不再插入角色卡提示词。
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(in.Model)), ManagedPrefix) {
+		in.Messages = dropSystemMessages(in.Messages)
+		in.ClientMemoryApplied = false
+		return in, nil
+	}
 	systemPrompt := buildAgentSystemPrompt(agent, strings.TrimSpace(cfg.UserPersona), matchedLorebookEntries(
 		cfg.LorebooksJSON,
 		agent.LorebookID,
@@ -169,6 +175,17 @@ func buildAgentSystemPrompt(agent chatAgentCard, userPersona string, lorebookEnt
 
 func roleplayStyle(agent chatAgentCard) bool {
 	return agent.Persona != "" || agent.Scenario != "" || agent.ExampleDialogues != ""
+}
+
+func dropSystemMessages(messages []PlatformChatMessage) []PlatformChatMessage {
+	next := make([]PlatformChatMessage, 0, len(messages))
+	for _, message := range messages {
+		if strings.TrimSpace(message.Role) == "system" {
+			continue
+		}
+		next = append(next, message)
+	}
+	return next
 }
 
 func prependSystemMessage(messages []PlatformChatMessage, prompt string) []PlatformChatMessage {

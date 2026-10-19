@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -66,6 +67,24 @@ func modelIDMatches(modelID, lowerPreferred string) bool {
 		return true
 	}
 	return false
+}
+
+func dedupeCatalog(in []CatalogEntry) []CatalogEntry {
+	seen := make(map[string]struct{}, len(in))
+	out := make([]CatalogEntry, 0, len(in))
+	for _, item := range in {
+		item.Name = strings.TrimSpace(item.Name)
+		if item.Name == "" {
+			continue
+		}
+		key := strings.ToLower(item.Name)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, item)
+	}
+	return out
 }
 
 func dedupeNonEmpty(in []string) []string {
@@ -155,9 +174,40 @@ func ShowModel(ctx context.Context, cfg Config, model string) (ModelInfo, error)
 	return info, err
 }
 
+// SamplingParameterNames are the Modelfile PARAMETER keys a derived model may set.
+func SamplingParameterNames() map[string]struct{} {
+	return map[string]struct{}{
+		"temperature": {}, "top_p": {}, "top_k": {},
+		"presence_penalty": {}, "repeat_penalty": {},
+		"frequency_penalty": {}, "min_p": {},
+	}
+}
+
+// ParseShowParameters reads Ollama's parameter text into the allowed sampling keys.
+func ParseShowParameters(text string) map[string]float64 {
+	allowed := SamplingParameterNames()
+	out := map[string]float64{}
+	for _, line := range strings.Split(text, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			continue
+		}
+		if _, ok := allowed[fields[0]]; !ok {
+			continue
+		}
+		value, err := strconv.ParseFloat(fields[1], 64)
+		if err != nil {
+			continue
+		}
+		out[fields[0]] = value
+	}
+	return out
+}
+
 // CreateModel derives a model from an already available base; it never auto-pulls.
 // Only an explicit success response is considered a confirmed write.
-func CreateModel(ctx context.Context, cfg Config, name, base, prompt string) error {
+// An optional parameters map is written into the model; an empty map leaves the base parameters.
+func CreateModel(ctx context.Context, cfg Config, name, base, prompt string, parameters ...map[string]float64) error {
 	if err := validateModelName(name); err != nil {
 		return err
 	}
@@ -168,6 +218,9 @@ func CreateModel(ctx context.Context, cfg Config, name, base, prompt string) err
 		Status string `json:"status"`
 	}
 	body := map[string]any{"model": name, "from": base, "system": prompt, "stream": false}
+	if len(parameters) > 0 && len(parameters[0]) > 0 {
+		body["parameters"] = parameters[0]
+	}
 	if err := requestJSON(ctx, cfg, http.MethodPost, "/api/create", "", body, &result, true); err != nil {
 		return err
 	}

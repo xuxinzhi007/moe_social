@@ -1276,14 +1276,16 @@ func (x *LlmMessage) GetContent() string {
 }
 
 type LlmCreateAgentReq struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	BaseModel     string                 `protobuf:"bytes,2,opt,name=base_model,json=baseModel,proto3" json:"base_model,omitempty"`
-	SystemPrompt  string                 `protobuf:"bytes,3,opt,name=system_prompt,json=systemPrompt,proto3" json:"system_prompt,omitempty"`
-	AgentId       string                 `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	RequestId     string                 `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Name         string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	BaseModel    string                 `protobuf:"bytes,2,opt,name=base_model,json=baseModel,proto3" json:"base_model,omitempty"`
+	SystemPrompt string                 `protobuf:"bytes,3,opt,name=system_prompt,json=systemPrompt,proto3" json:"system_prompt,omitempty"`
+	AgentId      string                 `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	RequestId    string                 `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// 创建时写入派生模型的采样参数 JSON。空表示不覆盖基座参数。
+	ParametersJson string `protobuf:"bytes,6,opt,name=parameters_json,json=parametersJson,proto3" json:"parameters_json,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *LlmCreateAgentReq) Reset() {
@@ -1347,6 +1349,13 @@ func (x *LlmCreateAgentReq) GetAgentId() string {
 func (x *LlmCreateAgentReq) GetRequestId() string {
 	if x != nil {
 		return x.RequestId
+	}
+	return ""
+}
+
+func (x *LlmCreateAgentReq) GetParametersJson() string {
+	if x != nil {
+		return x.ParametersJson
 	}
 	return ""
 }
@@ -1680,8 +1689,10 @@ type LlmChatReq struct {
 	MaxTokens           int32                  `protobuf:"varint,9,opt,name=max_tokens,json=maxTokens,proto3" json:"max_tokens,omitempty"`
 	RepeatPenalty       float64                `protobuf:"fixed64,10,opt,name=repeat_penalty,json=repeatPenalty,proto3" json:"repeat_penalty,omitempty"`
 	AgentId             string                 `protobuf:"bytes,11,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// 为 true 时请求思考。模型没有 thinking 能力时服务端保持 false。
+	Think         bool `protobuf:"varint,12,opt,name=think,proto3" json:"think,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LlmChatReq) Reset() {
@@ -1789,6 +1800,13 @@ func (x *LlmChatReq) GetAgentId() string {
 		return x.AgentId
 	}
 	return ""
+}
+
+func (x *LlmChatReq) GetThink() bool {
+	if x != nil {
+		return x.Think
+	}
+	return false
 }
 
 type LlmChatResp struct {
@@ -2356,7 +2374,7 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\n" +
 	"LlmMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\"\xa5\x01\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\"\xce\x01\n" +
 	"\x11LlmCreateAgentReq\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -2364,7 +2382,8 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\rsystem_prompt\x18\x03 \x01(\tR\fsystemPrompt\x12\x19\n" +
 	"\bagent_id\x18\x04 \x01(\tR\aagentId\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x05 \x01(\tR\trequestId\"\xb2\x02\n" +
+	"request_id\x18\x05 \x01(\tR\trequestId\x12'\n" +
+	"\x0fparameters_json\x18\x06 \x01(\tR\x0eparametersJson\"\xb2\x02\n" +
 	"\x13LlmManagedModelResp\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x18\n" +
@@ -2391,7 +2410,7 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\x18DeleteLlmManagedModelReq\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x02 \x01(\tR\trequestId\"\xfe\x02\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\"\x94\x03\n" +
 	"\n" +
 	"LlmChatReq\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x123\n" +
@@ -2407,7 +2426,8 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"max_tokens\x18\t \x01(\x05R\tmaxTokens\x12%\n" +
 	"\x0erepeat_penalty\x18\n" +
 	" \x01(\x01R\rrepeatPenalty\x12\x19\n" +
-	"\bagent_id\x18\v \x01(\tR\aagentId\"\xb8\x01\n" +
+	"\bagent_id\x18\v \x01(\tR\aagentId\x12\x14\n" +
+	"\x05think\x18\f \x01(\bR\x05think\"\xb8\x01\n" +
 	"\vLlmChatResp\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x18\n" +

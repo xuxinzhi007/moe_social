@@ -92,8 +92,7 @@ class AiCloudConfigService {
               .map((e) => Map<String, dynamic>.from(e))
               .toList() ??
           const <Map<String, dynamic>>[];
-      final prefs = (data['preferences'] as Map?)?.cast<String, dynamic>() ??
-          const <String, dynamic>{};
+      final prefs = _readPreferences(data);
       final providerApiKeys = _parseProviderApiKeys(data);
       return AiCloudConfigSnapshot(
         providerProfiles: profiles,
@@ -198,7 +197,7 @@ class AiCloudConfigService {
   }
 
   Future<void> savePreferences(Map<String, dynamic> preferences) async {
-    await _put({'preferences': preferences});
+    await _put({'preferences_json': jsonEncode(preferences)});
   }
 
   /// 保存单个 Provider 的账号同步密钥；空值表示删除云端密钥。
@@ -233,6 +232,20 @@ class AiCloudConfigService {
         'payload_json': jsonEncode(payload),
       },
     ).timeout(_writeTimeout);
+  }
+
+  Map<String, dynamic> _readPreferences(Map<String, dynamic> data) {
+    final direct = data['preferences'];
+    if (direct is Map) return Map<String, dynamic>.from(direct);
+    final raw = data['preferences_json'] ?? data['preferencesJson'];
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return const <String, dynamic>{};
   }
 
   Map<String, String> _parseProviderApiKeys(Map<String, dynamic> data) {

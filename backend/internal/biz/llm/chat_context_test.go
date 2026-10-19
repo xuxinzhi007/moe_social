@@ -88,6 +88,29 @@ func TestApplyAgentChatContextBuildsServerOwnedPrompt(t *testing.T) {
 	}
 }
 
+func TestApplyAgentChatContextSkipsCardPromptForDerivedModel(t *testing.T) {
+	agents := mustJSONForTest(t, []map[string]any{{
+		"id":            "agent-1",
+		"model_name":    "moe-user-abc:latest",
+		"system_prompt": "card prompt",
+	}})
+	cfg := &model.AiUserConfig{AgentsJSON: agents}
+	in := PlatformChatInput{
+		AgentID: "agent-1",
+		Messages: []PlatformChatMessage{
+			{Role: "system", Content: "client system"},
+			{Role: "user", Content: "hello"},
+		},
+	}
+	out, err := ApplyAgentChatContext(cfg, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Messages) != 1 || out.Messages[0].Role != "user" || out.Messages[0].Content != "hello" {
+		t.Fatalf("messages=%+v", out.Messages)
+	}
+}
+
 func TestApplyAgentChatContextKeepsPlainInputWithoutAgent(t *testing.T) {
 	in := PlatformChatInput{
 		Model:    "base",

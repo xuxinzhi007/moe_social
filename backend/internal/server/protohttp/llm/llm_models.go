@@ -13,9 +13,16 @@ func (s *Server) ListLlmModels(ctx context.Context, _ *llmv1.ListLlmModelsReq) (
 	if err != nil {
 		return nil, err
 	}
-	models, err := app.ListModels(ctx)
+	items, err := app.ListVisibleModels(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &llmv1.ListLlmModelsResp{Models: models}, nil
+	resp := &llmv1.ListLlmModelsResp{}
+	for _, item := range items {
+		resp.Models = append(resp.Models, item.Name)
+		resp.Catalog = append(resp.Catalog, &llmv1.LlmModelCatalogItem{
+			Name: item.Name, ContextLength: int32(item.ContextLength), Capabilities: item.Capabilities, Derived: item.Derived,
+		})
+	}
+	return resp, nil
 }

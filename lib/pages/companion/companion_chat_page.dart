@@ -3,23 +3,30 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../constants/feature_flags.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../pages/ai/ai_provider_profiles_page.dart';
 import '../../providers/companion_presence_provider.dart';
+import '../../services/ai_cloud_config_service.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_provider_usage_service.dart';
 import '../../services/ai_tts_helper.dart';
 import '../../services/companion_service.dart';
+import '../../services/llm_api_service.dart';
 import '../../services/companion_interaction_coordinator.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
+import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_toast.dart';
+
+const _companionThinkPrefKey = 'companion_chat_think';
 
 String _formatContextTokens(int tokens) {
   if (tokens >= 1000) {
@@ -60,6 +67,9 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   AiProviderProfile? _activeProvider;
   ProviderTokenUsage? _providerUsage;
   CompanionContextUsage? _contextUsage;
+  bool _thinkEnabled = false;
+  bool _modelCanThink = false;
+  String _chatModel = '';
 
   // AIRI 向轻量语音：STT 本机；TTS 走 Edge 神经音色 + just_audio
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -86,6 +96,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       unawaited(_initVoice());
     }
     _loadInitialData();
+    unawaited(_loadThinkPref());
     unawaited(_loadProviderStatus());
   }
 
@@ -181,7 +192,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     try {
       final usage = await CompanionService().getChatContext();
       if (!mounted) return;
-      setState(() => _contextUsage = usage);
+      setState(() {
+        _contextUsage = usage;
+        _modelCanThink = usage.thinking;
+        if (usage.modelName.isNotEmpty) _chatModel = usage.modelName;
+      });
     } catch (_) {}
   }
 
@@ -356,6 +371,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         text,
         scene: null,
         inputMode: wasVoiceInput ? 'voice' : 'text',
+        think: _modelCanThink && _thinkEnabled,
       )) {
         if (!mounted) return;
         switch (event.type) {
@@ -1093,48 +1109,180 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     );
   }
 
+  Future<void> _loadThinkPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool(_companionThinkPrefKey) ?? false;
+    if (!mounted) return;
+    setState(() => _thinkEnabled = enabled);
+  }
+
+  Future<void> _setThink(bool enabled) async {
+    setState(() => _thinkEnabled = enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_companionThinkPrefKey, enabled);
+  }
+
+  Future<void> _pickChatModel() async {
+    List<LlmCatalogModel> models;
+    try {
+      models = await LlmApiService.fetchCatalog();
+    } catch (error) {
+      if (!mounted) return;
+      MoeToast.error(context, '模型列表读取失败：$error');
+      return;
+    }
+    models = models.where((item) => item.name.isNotEmpty && !item.derived).toList();
+    if (!mounted) return;
+    if (models.isEmpty) {
+      MoeToast.error(context, '小主机上没有可读到的模型');
+      return;
+    }
+    final selected = await AiSheet.show<String>(
+      context: context,
+      title: '切换模型',
+      subtitle: '这是小主机上现在的模型',
+      initialChildSize: 0.62,
+      minChildSize: 0.32,
+      maxChildSize: 0.9,
+      child: Column(
+        children: [
+          for (final model in models)
+            MoeActionRow(
+              icon: Icons.memory_rounded,
+              title: model.name,
+              selected: model.name == _chatModel,
+              subtitle: Text(
+                [
+                  if (model.contextLength > 0) '上下文 ${model.contextLength}',
+                  model.thinking ? '可以思考' : '没有思考能力',
+                ].join(' · '),
+              ),
+              onTap: () => Navigator.of(context).pop(model.name),
+            ),
+        ],
+      ),
+    );
+    if (selected == null || selected == _chatModel || !mounted) return;
+    try {
+      final cloud = AiCloudConfigService();
+      final snapshot = await cloud.fetch();
+      final preferences = Map<String, dynamic>.from(snapshot?.preferences ?? {});
+      preferences['builtin_chat_model'] = selected;
+      await cloud.savePreferences(preferences);
+    } catch (error) {
+      if (!mounted) return;
+      MoeToast.error(context, '模型没有切换成功：$error');
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _chatModel = selected);
+    MoeToast.success(context, '已切换到 $selected');
+    unawaited(_loadChatContext());
+  }
+
   Widget _buildContextMeter() {
     final usage = _shownContextUsage();
     final color = usage.overflow ? MoeTokens.danger : MoeTokens.primary;
     final label = usage.overflow ? '上下文快满了' : '上下文';
-    return GestureDetector(
-      onTap: _showContextUsage,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          Icon(Icons.donut_small_rounded, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            '$label ${_formatContextTokens(usage.promptTokens)}/${_formatContextTokens(usage.contextLimit)}',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
+    final thinkOn = _modelCanThink && _thinkEnabled;
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: _showContextUsage,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Icon(Icons.donut_small_rounded, size: 14, color: color),
+                const SizedBox(width: 6),
+                Text(
+                  '$label ${_formatContextTokens(usage.promptTokens)}/${_formatContextTokens(usage.contextLimit)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      minHeight: 4,
+                      value: usage.usedFraction,
+                      backgroundColor: color.withValues(alpha: 0.12),
+                      color: color,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                minHeight: 4,
-                value: usage.usedFraction,
-                backgroundColor: color.withValues(alpha: 0.12),
-                color: color,
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: _isSending ? null : () => unawaited(_pickChatModel()),
+          behavior: HitTestBehavior.opaque,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 128),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    _chatModel.isEmpty ? '选择模型' : _chatModel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: MoeTokens.primary,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.expand_more_rounded,
+                  size: 16,
+                  color: MoeTokens.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: _modelCanThink
+              ? null
+              : () => MoeToast.warning(context, '当前模型没有思考能力'),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '思考',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: thinkOn ? MoeTokens.primary : MoeTokens.hintText,
+                ),
               ),
-            ),
+              SizedBox(
+                width: 36,
+                height: 22,
+                child: FittedBox(
+                  child: Switch(
+                    value: thinkOn,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    activeThumbColor: MoeTokens.primary,
+                    onChanged: !_modelCanThink || _isSending
+                        ? null
+                        : (value) => unawaited(_setThink(value)),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            '最近 ${usage.historyMessages}/${usage.historyLimit}',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: MoeTokens.hintText,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

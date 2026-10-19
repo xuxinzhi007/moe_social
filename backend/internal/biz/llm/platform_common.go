@@ -39,5 +39,8 @@ type PlatformWriteResult struct {
 	Message string
 	Success bool
 }
-type CreateAgentInput struct{ AgentID, RequestID, Name, BaseModel, SystemPrompt string }
+type CreateAgentInput struct {
+	AgentID, RequestID, Name, BaseModel, SystemPrompt string
+	Parameters                                        map[string]float64
+}
 type ModelCacheClearer interface{ Clear() }

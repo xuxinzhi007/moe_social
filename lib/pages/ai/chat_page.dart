@@ -6,7 +6,6 @@ import '../../services/ai_chat_gateway_service.dart';
 import '../../services/llm_api_service.dart';
 import '../../services/ai_chat_history_service.dart';
 import '../../services/ai_user_persona_service.dart';
-import '../../services/ai_chat_session_prefs.dart';
 import '../../services/ai_tts_helper.dart';
 import '../../utils/ai_chat_message_utils.dart';
 import '../../utils/ai_chat_quick_replies.dart';
@@ -49,7 +48,7 @@ class _ChatPageState extends State<ChatPage> {
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
   final Set<String> _revealedMessageIds = {};
-  double _temperature = 0.85;
+  late AiAgent _agent;
   String _systemPrompt = '';
   String _userPersona = '';
 
@@ -89,8 +88,8 @@ class _ChatPageState extends State<ChatPage> {
   Timer? _typewriterTimer;
 
   bool get _isBackendProviderAgent =>
-      widget.agent.providerProfileId == null ||
-      widget.agent.providerProfileId == AiProviderProfile.builtinBackendId;
+      _agent.providerProfileId == null ||
+      _agent.providerProfileId == AiProviderProfile.builtinBackendId;
 
   bool get _shouldClientPersistChatTurn => !_isBackendProviderAgent;
 
@@ -100,13 +99,13 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    _agent = widget.agent;
     _ttsHelper = AiTtsHelper();
-    _quickReplies = buildAgentQuickReplies(widget.agent);
+    _quickReplies = buildAgentQuickReplies(_agent);
     _scrollController.addListener(_onScroll);
     _systemPrompt = '';
     unawaited(_loadBackendSystemPrompt());
     _initVoice();
-    _loadChatPrefs();
     _loadUserPersona();
     _loadSessions();
   }
@@ -164,7 +163,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _loadSessions() async {
     try {
       final sessions = await _chatHistory.listSessions(
-        agentId: widget.agent.id,
+        agentId: _agent.id,
       );
       if (!mounted) return;
       setState(() => _sessions = sessions);
@@ -183,21 +182,15 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _loadChatPrefs() async {
-    final temp = await AiChatSessionPrefs.temperature(widget.agent.id);
-    if (!mounted) return;
-    setState(() => _temperature = temp);
-  }
-
   Future<void> _openChatSettings() async {
     if (!mounted) return;
     await AiChatSettingsSheet.show(
       context: context,
-      agent: widget.agent,
-      temperature: _temperature,
-      onTemperatureChanged: (v) {
+      agent: _agent,
+      onAgentChanged: (next) {
         if (!mounted) return;
-        setState(() => _temperature = v);
+        setState(() => _agent = next);
+        unawaited(_loadBackendSystemPrompt());
       },
     );
   }
@@ -283,7 +276,7 @@ class _ChatPageState extends State<ChatPage> {
       ..addAll(messages.map((m) => m.id));
   }
 
-  String get _effectiveHistoryModel => widget.agent.modelName.trim();
+  String get _effectiveHistoryModel => _agent.modelName.trim();
 
   Future<void> _saveSession(AiChatSession session) async {
     await _chatHistory.upsertSession(
@@ -330,7 +323,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _createNewSession({bool syncToBackend = true}) async {
     final session = AiChatSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      agentId: widget.agent.id,
+      agentId: _agent.id,
       title: '新对话',
       updatedAt: DateTime.now(),
     );
@@ -344,7 +337,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _seedOpeningMessageIfNeeded(AiChatSession session) async {
-    final opening = widget.agent.openingMessage.trim();
+    final opening = _agent.openingMessage.trim();
     if (opening.isEmpty) return;
     final greeting = AiChatMessage(
       id: '${session.id}_opening',
@@ -547,11 +540,11 @@ class _ChatPageState extends State<ChatPage> {
 
       if (_wasManuallyStopped) return;
       final content = await AiChatGatewayService().sendChat(
-        agent: widget.agent,
+        agent: _agent,
         messages: history,
         sessionId: _currentSession?.id,
         sourceMsgId: userMsg.id,
-        temperature: _temperature,
+        think: _agent.thinkEnabled,
       );
       if (_wasManuallyStopped) return;
 
@@ -585,7 +578,7 @@ class _ChatPageState extends State<ChatPage> {
             seed.length > 10 ? '${seed.substring(0, 10)}...' : seed;
         final updatedSession = AiChatSession(
           id: _currentSession!.id,
-          agentId: widget.agent.id,
+          agentId: _agent.id,
           title: newTitle,
           updatedAt: DateTime.now(),
         );
@@ -704,7 +697,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadBackendSystemPrompt() async {
-    final model = widget.agent.modelName.trim();
+    final model = _agent.modelName.trim();
     if (model.isEmpty) return;
     if (mounted) setState(() => _isSyncingModelPrompt = true);
     final prompt = await LlmApiService.fetchBackendModelSystemPrompt(model);
@@ -1344,7 +1337,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _showAgentInfo() {
-    final agent = widget.agent;
+    final agent = _agent;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1458,7 +1451,7 @@ class _ChatPageState extends State<ChatPage> {
   bool get _showIdentityHero => !_isLoadingHistory && _messages.length <= 1;
 
   List<String> get _emptySuggestions {
-    final opening = widget.agent.openingMessage.trim();
+    final opening = _agent.openingMessage.trim();
     if (opening.isNotEmpty) {
       return [opening, ..._quickReplies.take(3)];
     }
@@ -1492,7 +1485,7 @@ class _ChatPageState extends State<ChatPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.agent.name,
+                  _agent.name,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -1553,9 +1546,9 @@ class _ChatPageState extends State<ChatPage> {
     }
     if (_messages.isEmpty && !_isSending) {
       return AiChatEmptyState(
-        title: '和 ${widget.agent.name} 打个招呼吧',
-        subtitle: widget.agent.description.trim().isNotEmpty
-            ? widget.agent.description
+        title: '和 ${_agent.name} 打个招呼吧',
+        subtitle: _agent.description.trim().isNotEmpty
+            ? _agent.description
             : '输入消息开始对话，或点选下方建议快速开场。',
         icon: Icons.nightlife_rounded,
         suggestions: _emptySuggestions,
@@ -1601,8 +1594,8 @@ class _ChatPageState extends State<ChatPage> {
       endDrawer: _isSearching
           ? null
           : AiChatSessionDrawer(
-              agentName: widget.agent.name,
-              modelName: widget.agent.modelName,
+              agentName: _agent.name,
+              modelName: _agent.modelName,
               providerSourceLabel: _providerSourceLabel,
               userPersona: _userPersona,
               sessions: _sessions,
@@ -1622,7 +1615,7 @@ class _ChatPageState extends State<ChatPage> {
                   alignment: Alignment.topCenter,
                   child: _showIdentityHero
                       ? AiChatIdentityHero(
-                          modelName: widget.agent.modelName,
+                          modelName: _agent.modelName,
                           promptReady: _systemPrompt.trim().isNotEmpty,
                           personaMounted: _userPersona.trim().isNotEmpty,
                           isSyncingModelPrompt: _isSyncingModelPrompt,
@@ -1748,7 +1741,7 @@ class _ChatPageState extends State<ChatPage> {
                 richFormat: useRichFormat,
                 hideAvatar: hideAvatar,
                 compactTop: compactTop,
-                agentLabel: isUser ? null : widget.agent.name,
+                agentLabel: isUser ? null : _agent.name,
                 onContentExpanded: () => _scrollToBottom(force: true),
               ),
             if (isUser)
@@ -1838,7 +1831,7 @@ class _ChatPageState extends State<ChatPage> {
     return AiChatComposer(
       controller: _controller,
       focusNode: _focusNode,
-      agentName: widget.agent.name,
+      agentName: _agent.name,
       isListening: _isListening,
       isSending: _isSending,
       showQuickReplies: _showQuickReplies,

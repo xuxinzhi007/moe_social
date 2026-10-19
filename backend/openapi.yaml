@@ -9951,6 +9951,8 @@ components:
             properties:
                 systemPrompt:
                     type: string
+                parametersJson:
+                    type: string
         llm.v1.ListLlmModelsResp:
             type: object
             properties:
@@ -9958,6 +9960,24 @@ components:
                     type: array
                     items:
                         type: string
+                catalog:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/llm.v1.LlmModelCatalogItem'
+        llm.v1.LlmModelCatalogItem:
+            type: object
+            properties:
+                name:
+                    type: string
+                contextLength:
+                    type: integer
+                    format: int32
+                capabilities:
+                    type: array
+                    items:
+                        type: string
+                derived:
+                    type: boolean
         llm.v1.UpsertAiUserConfigReq:
             type: object
             properties:
@@ -11180,6 +11200,9 @@ components:
                     format: double
                 agentId:
                     type: string
+                think:
+                    type: boolean
+                    description: 为 true 时请求思考。模型没有 thinking 能力时服务端保持 false。
         platform.v1.LlmChatResp:
             type: object
             properties:
@@ -11210,6 +11233,9 @@ components:
                     type: string
                 requestId:
                     type: string
+                parametersJson:
+                    type: string
+                    description: 创建时写入派生模型的采样参数 JSON。空表示不覆盖基座参数。
         platform.v1.LlmManagedModelResp:
             type: object
             properties:

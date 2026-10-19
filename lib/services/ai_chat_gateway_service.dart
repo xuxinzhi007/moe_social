@@ -203,6 +203,7 @@ class AiChatGatewayService {
     String? sourceMsgId,
     double? temperature,
     double? topP,
+    bool think = false,
   }) async {
     return _sendToBackendInference(
       agent: agent,
@@ -211,6 +212,7 @@ class AiChatGatewayService {
       sourceMsgId: sourceMsgId,
       temperature: temperature,
       topP: topP,
+      think: think,
     );
   }
 
@@ -221,10 +223,12 @@ class AiChatGatewayService {
     String? sourceMsgId,
     double? temperature,
     double? topP,
+    bool think = false,
   }) async {
     final sampling = <String, dynamic>{
       if (temperature != null && temperature >= 0) 'temperature': temperature,
       if (topP != null && topP > 0) 'top_p': topP,
+      'think': think,
     };
     final uri = Uri.parse('${ApiService.baseUrl}/api/llm/chat');
     ApiService.logDirectHttp('POST', uri);

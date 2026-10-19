@@ -172,6 +172,7 @@ func TestStreamChatFallsBackWhenProviderStreamEndsWithoutContent(t *testing.T) {
 			chunks = append(chunks, chunk)
 			return nil
 		},
+		false,
 	)
 	if err != nil {
 		t.Fatalf("streamChat() error = %v", err)
@@ -218,6 +219,7 @@ func TestStreamChatFallbackSurvivesCanceledStreamContext(t *testing.T) {
 			chunks = append(chunks, chunk)
 			return nil
 		},
+		false,
 	)
 	if err != nil {
 		t.Fatalf("streamChat() error = %v", err)
