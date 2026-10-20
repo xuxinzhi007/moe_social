@@ -21,7 +21,6 @@ import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_status_dot.dart';
 import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
-import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_pressable.dart';
@@ -1423,62 +1422,51 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                       ],
                     )
                   : ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(
-                  AiTheme.pagePadding,
-                  MoeTokens.spaceMd,
-                  AiTheme.pagePadding,
-                  MoeTokens.spaceLg,
-                ),
-                children: [
-                  AiSurfaceCard(
-                    child: MoeActionRow(
-                      icon: Icons.storefront_rounded,
-                      title: '角色卡广场',
-                      subtitle: const Text('看别人公开的角色卡，套用到你自己的模型'),
-                      iconColor: AiBrandTokens.primary,
-                      padding: EdgeInsets.zero,
-                      onTap: () => Navigator.of(context)
-                          .pushNamed('/character-card-plaza'),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      MoeTokens.spaceXs,
-                      MoeTokens.spaceSm,
-                      MoeTokens.spaceXs,
-                      MoeTokens.spaceMd,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(
+                        AiTheme.pagePadding,
+                        MoeTokens.spaceMd,
+                        AiTheme.pagePadding,
+                        MoeTokens.spaceLg,
+                      ),
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            MoeTokens.spaceXs,
+                            MoeTokens.spaceSm,
+                            MoeTokens.spaceXs,
+                            MoeTokens.spaceMd,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('我的模型来源', style: AiTheme.title),
-                              const SizedBox(height: MoeTokens.spaceXs),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('我的模型来源', style: AiTheme.title),
+                                    const SizedBox(height: MoeTokens.spaceXs),
+                                    Text(
+                                      _loadError ?? '点一下切换聊天来源。编辑和删除在右侧菜单。',
+                                      style: AiTheme.caption,
+                                    ),
+                                  ],
+                                ),
+                              ),
                               Text(
-                                _loadError ?? '点一下切换聊天来源。编辑和删除在右侧菜单。',
-                                style: AiTheme.caption,
+                                '${visibleProfiles.length} 个服务',
+                                style: const TextStyle(
+                                  fontSize: MoeTokens.textSm,
+                                  fontWeight: MoeTokens.fontWeightSubtitle,
+                                  color: MoeTokens.inkMuted,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        Text(
-                          '${visibleProfiles.length} 个服务',
-                          style: const TextStyle(
-                            fontSize: MoeTokens.textSm,
-                            fontWeight: MoeTokens.fontWeightSubtitle,
-                            color: MoeTokens.inkMuted,
-                          ),
-                        ),
+                        ...visibleProfiles.map(_buildCard),
                       ],
                     ),
-                  ),
-                  ...visibleProfiles.map(_buildCard),
-                ],
-              ),
             ),
     );
   }

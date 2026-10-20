@@ -235,6 +235,8 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                     tint: MoeTokens.pastelPink,
                     onTap: _openJourney,
                   ),
+                  const SizedBox(height: 12),
+                  const _CharacterCardEntry(),
                   if (shouldShowCompanionDailyPanels(
                     arenaGamePrototype: FeatureFlags.arenaGamePrototype,
                   )) ...[
@@ -772,6 +774,57 @@ class _CompanionSummaryBlock extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CharacterCardEntry extends StatelessWidget {
+  const _CharacterCardEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    return MoePressable(
+      onTap: () => Navigator.pushNamed(context, '/character-card-plaza'),
+      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.style_rounded, color: MoeTokens.primary, size: 22),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '角色卡',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: MoeTokens.titleText,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    '官方样板和你保存的卡，套到自己的模型上',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      color: MoeTokens.hintText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: MoeTokens.hintText),
+          ],
+        ),
       ),
     );
   }

@@ -5,9 +5,10 @@ import '../../models/ai_agent.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../services/llm_api_service.dart';
-import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import 'agent_editor_page.dart';
 
 /// 角色卡广场：内置推荐模板 + 我的角色，社区区预留。
@@ -128,20 +129,65 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
     final picked = await showModalBottomSheet<LlmManagedModel>(
       context: context,
       showDragHandle: true,
+      backgroundColor: MoeTokens.pageBackground,
       builder: (sheetContext) {
         return SafeArea(
           child: ListView(
             shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: [
-              const ListTile(
-                title: Text('套用到已有模型'),
-                subtitle: Text('只更新这个模型的 Modelfile，不会新建。上限 3 个。'),
+              const Text(
+                '套到已有模型',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: MoeTokens.titleText,
+                ),
               ),
+              const SizedBox(height: 4),
+              const Text(
+                '只改这个模型的系统提示词，不新建。',
+                style: TextStyle(fontSize: 12, color: MoeTokens.hintText),
+              ),
+              const SizedBox(height: 12),
               for (final model in ready)
-                ListTile(
-                  title: Text(model.modelName),
-                  subtitle: Text('基座 ${model.baseModel}'),
-                  onTap: () => Navigator.pop(sheetContext, model),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: MoePressable(
+                    onTap: () => Navigator.pop(sheetContext, model),
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MoeTokens.surface1,
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            model.modelName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: MoeTokens.titleText,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '基座 ${model.baseModel}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: MoeTokens.hintText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -170,10 +216,14 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AiBrandTokens.pageBackground,
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('角色卡广场'),
-        backgroundColor: AiBrandTokens.pageBackground,
+        title: const Text('角色卡'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        foregroundColor: MoeTokens.titleText,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: RefreshIndicator(
         onRefresh: _refreshAll,
@@ -181,11 +231,21 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
           padding: const EdgeInsets.all(16),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            _sectionTitle('推荐角色卡', '内置模板，一键套用 Tavern 骨架'),
+            _sectionTitle('官方样板', '点一张，生成你自己的卡'),
             const SizedBox(height: 10),
-            ...AiStarterTemplates.agentTemplates.map(_buildStarterCard),
+            _PlazaGrid(
+              children: [
+                for (final template in AiStarterTemplates.agentTemplates)
+                  _PlazaTile(
+                    name: template.name,
+                    kicker: template.tagline,
+                    body: template.description,
+                    onTap: () => _useStarterTemplate(template),
+                  ),
+              ],
+            ),
             const SizedBox(height: 24),
-            _sectionTitle('我的角色卡', '已保存到你账号下的角色'),
+            _sectionTitle('我的角色卡', '已保存在你的账号里'),
             const SizedBox(height: 10),
             if (_loadingAgents)
               const Padding(
@@ -195,9 +255,11 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             else if (_myAgents.isEmpty)
               _buildEmptyMine()
             else
-              ..._myAgents.map(_buildMyAgentCard),
+              _PlazaGrid(
+                children: [for (final agent in _myAgents) _mineTile(agent)],
+              ),
             const SizedBox(height: 24),
-            _sectionTitle('角色卡广场', '套用到你已有的模型，只改 Modelfile，不新建'),
+            _sectionTitle('别人公开的', '套进你已有的模型'),
             const SizedBox(height: 10),
             if (_loadingPublic)
               const Padding(
@@ -207,7 +269,11 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             else if (_publicAgents.isEmpty)
               _buildPublicEmpty()
             else
-              ..._publicAgents.map(_buildPublicAgentCard),
+              _PlazaGrid(
+                children: [
+                  for (final agent in _publicAgents) _publicTile(agent),
+                ],
+              ),
             const SizedBox(height: 32),
           ],
         ),
@@ -224,258 +290,252 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
           style: const TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
-            color: AiBrandTokens.titleColor,
+            color: MoeTokens.titleText,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: const TextStyle(fontSize: 12, color: MoeTokens.hintText),
         ),
       ],
     );
   }
 
-  Widget _buildStarterCard(AiStarterAgentTemplate template) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _useStarterTemplate(template),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    gradient: AiBrandTokens.userBubbleGradient,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    template.name.isNotEmpty ? template.name[0] : '?',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        template.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        template.tagline,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AiBrandTokens.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        template.description,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded),
-              ],
-            ),
-          ),
-        ),
-      ),
+  Widget _mineTile(AiAgent agent) {
+    final subtitle = agent.description.trim().isNotEmpty
+        ? agent.description
+        : (agent.persona.trim().isNotEmpty ? agent.persona : '还没有简介');
+    return _PlazaTile(
+      name: agent.name,
+      kicker: '我的',
+      body: subtitle,
+      actions: [
+        _TileAction('编辑', () => _editAgent(agent)),
+        _TileAction('套用', () => _applyCard(agent)),
+      ],
     );
   }
 
-  Widget _buildMyAgentCard(AiAgent agent) {
-    final subtitle = agent.description.trim().isNotEmpty
-        ? agent.description
-        : (agent.persona.trim().isNotEmpty ? agent.persona : '暂无简介');
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: AiBrandTokens.primary.withValues(alpha: 0.15),
-                child: Text(
-                  agent.name.isNotEmpty ? agent.name[0] : '?',
-                  style: const TextStyle(
-                    color: AiBrandTokens.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      agent.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(height: 1.35),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () => _editAgent(agent),
-                child: const Text('编辑'),
-              ),
-              FilledButton(
-                onPressed: () => _applyCard(agent),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AiBrandTokens.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  minimumSize: const Size(0, 36),
-                ),
-                child: const Text('套用'),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Widget _publicTile(AiAgent agent) {
+    final author = (agent.authorName?.trim().isNotEmpty ?? false)
+        ? agent.authorName!
+        : '用户';
+    return _PlazaTile(
+      name: agent.name,
+      kicker: author,
+      body: agent.modelName.trim().isEmpty ? '公开角色' : agent.modelName,
+      actions: [
+        _TileAction('套用', () => _applyCard(agent)),
+      ],
     );
   }
 
   Widget _buildEmptyMine() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.person_outline_rounded,
-              size: 40, color: Colors.grey.shade400),
-          const SizedBox(height: 10),
-          const Text('还没有角色卡', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text(
-            '从上方推荐模板创建。编辑自己的卡并打开发布后，别人就能在广场看到。',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          ),
-        ],
-      ),
+    return const _EmptyNote(
+      icon: Icons.person_outline_rounded,
+      title: '还没有自己的卡',
+      body: '点上面的样板就能生成一张。发布之后，别人也能套用。',
     );
   }
 
   Widget _buildPublicEmpty() {
-    return Container(
-      padding: const EdgeInsets.all(20),
+    return const _EmptyNote(
+      icon: Icons.public_rounded,
+      title: '还没有人公开',
+      body: '编辑自己的卡时打开「发布」，保存后会出现在这里。',
+    );
+  }
+}
+
+class _TileAction {
+  const _TileAction(this.label, this.onTap);
+
+  final String label;
+  final VoidCallback onTap;
+}
+
+class _PlazaGrid extends StatelessWidget {
+  const _PlazaGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        mainAxisExtent: 188,
+      ),
+      children: children,
+    );
+  }
+}
+
+class _PlazaTile extends StatelessWidget {
+  const _PlazaTile({
+    required this.name,
+    required this.kicker,
+    required this.body,
+    this.onTap,
+    this.actions = const [],
+  });
+
+  final String name;
+  final String kicker;
+  final String body;
+  final VoidCallback? onTap;
+  final List<_TileAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.public_rounded, size: 40, color: Colors.grey.shade400),
+          _Mark(name),
           const SizedBox(height: 10),
-          const Text('广场还没有公开角色卡',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
           Text(
-            '创建角色卡时开启「发布到角色卡广场」，保存后即可出现在这里。',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Colors.grey.shade600, fontSize: 13, height: 1.4),
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: MoeTokens.titleText,
+            ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            kicker,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: MoeTokens.primary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: Text(
+              body,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.35,
+                color: MoeTokens.hintText,
+              ),
+            ),
+          ),
+          if (actions.isNotEmpty)
+            Row(
+              children: [
+                for (final action in actions)
+                  TextButton(
+                    onPressed: action.onTap,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(action.label),
+                  ),
+              ],
+            ),
         ],
       ),
     );
+    if (onTap == null) return tile;
+    return MoePressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      child: tile,
+    );
   }
+}
 
-  Widget _buildPublicAgentCard(AiAgent agent) {
-    final author = (agent.authorName?.trim().isNotEmpty ?? false)
-        ? agent.authorName!
-        : '用户';
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor:
-                    AiBrandTokens.secondary.withValues(alpha: 0.15),
-                child: Text(
-                  agent.name.isNotEmpty ? agent.name[0] : '?',
-                  style: const TextStyle(
-                    color: AiBrandTokens.secondary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      agent.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$author · ${agent.modelName}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton(
-                onPressed: () => _applyCard(agent),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AiBrandTokens.secondary,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  minimumSize: const Size(0, 36),
-                ),
-                child: const Text('套用'),
-              ),
-            ],
-          ),
+class _Mark extends StatelessWidget {
+  const _Mark(this.name);
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final letter = name.trim().isEmpty ? '?' : name.trim().substring(0, 1);
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: MoeTokens.softChipBg,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+      ),
+      child: Text(
+        letter,
+        style: const TextStyle(
+          color: MoeTokens.primary,
+          fontWeight: FontWeight.w800,
+          fontSize: 16,
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyNote extends StatelessWidget {
+  const _EmptyNote({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 28, color: MoeTokens.hintText),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: MoeTokens.titleText,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: MoeTokens.hintText,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }
