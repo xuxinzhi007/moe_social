@@ -983,9 +983,9 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             : _InlineThink(item.thinking, item.content);
         final showThink = _modelCanThink && _thinkEnabled;
         final rawThinking = [
-          item.thinking.trim(),
+          item.isStreaming ? item.thinking : item.thinking.trim(),
           split.thinking,
-        ].where((part) => part.isNotEmpty).join('\n\n');
+        ].where((part) => part.trim().isNotEmpty).join('\n\n');
         final awaitingAnswer = item.isStreaming && split.answer.isEmpty;
         // 链路只跟思考开关走。正文里的 <think> 由后端拆成 thinking 事件。
         final visibleThinking = showThink ? rawThinking : '';
@@ -1911,6 +1911,8 @@ class _ThinkingTrace extends StatefulWidget {
 
 class _ThinkingTraceState extends State<_ThinkingTrace> {
   final _scroll = ScrollController();
+  Timer? _tick;
+  int _seconds = 0;
   bool _open = false;
   bool _userToggled = false;
 
@@ -1918,11 +1920,23 @@ class _ThinkingTraceState extends State<_ThinkingTrace> {
   void initState() {
     super.initState();
     _open = widget.streaming;
+    if (widget.streaming) _startTick();
+  }
+
+  void _startTick() {
+    _tick?.cancel();
+    _seconds = 0;
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !widget.streaming) return;
+      setState(() => _seconds++);
+    });
   }
 
   @override
   void didUpdateWidget(covariant _ThinkingTrace oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.streaming && !oldWidget.streaming) _startTick();
+    if (!widget.streaming && oldWidget.streaming) _tick?.cancel();
     if (!_userToggled && oldWidget.streaming != widget.streaming) {
       _open = widget.streaming;
     }
@@ -1936,6 +1950,7 @@ class _ThinkingTraceState extends State<_ThinkingTrace> {
 
   @override
   void dispose() {
+    _tick?.cancel();
     _scroll.dispose();
     super.dispose();
   }
@@ -1969,7 +1984,7 @@ class _ThinkingTraceState extends State<_ThinkingTrace> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      widget.streaming ? '正在思考' : '思考过程',
+                      widget.streaming ? '正在思考 · $_seconds 秒' : '思考过程',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -1992,7 +2007,7 @@ class _ThinkingTraceState extends State<_ThinkingTrace> {
               const Padding(
                 padding: EdgeInsets.fromLTRB(10, 0, 10, 8),
                 child: Text(
-                  '还没有收到第一个字',
+                  '思考的字会显示在这里',
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.45,

@@ -14,10 +14,11 @@ import (
 //
 // 结构：
 // [1] 角色人格（profile.persona + personality_traits）
-// [2] 当前状态（state.mood_thought + activity_label）
+// [2] 关系阶段
 // [3] 记忆上下文（最近 memories，按 importance 排序）
 // [4] 行为规则
 // [5] 用户自定义 system_prompt_override（如有）
+// 场景、时刻、心情和未完成话题不写进系统提示，只挂在当前这一句末尾。
 func buildSystemPrompt(profile *Profile, state *State, memories []Memory, forcedScene ...string) string {
 	return buildSystemPromptWithRelationshipEvents(
 		profile, state, memories, nil, forcedScene...,
@@ -60,17 +61,9 @@ func buildSystemPromptWithContext(
 	}
 	b.WriteString("\n\n[关系阶段]\n")
 	b.WriteString(relationshipGuidance(profile))
-	b.WriteString("\n\n[当前陪伴场景]\n")
-	b.WriteString(sceneGuidance(time.Now(), state, forcedScene...))
 
-	// [2] 当前状态
-	if state != nil {
-		b.WriteString("\n\n[当前状态]")
-		b.WriteString("\n你现在的心情：")
-		b.WriteString(state.MoodThought)
-		b.WriteString("\n你正在：")
-		b.WriteString(state.ActivityLabel)
-	}
+	// 场景、心情、时刻、未完成话题都挂在当前用户消息末尾。
+	// 写进系统提示会让小主机每轮重算记忆和全部聊天记录。
 
 	// [3] 记忆上下文（置顶优先且显式标注，聊天时更「记得牢」）
 	confirmedMemories := make([]Memory, 0, len(memories))
@@ -122,17 +115,6 @@ func buildSystemPromptWithContext(
 			}
 		}
 	}
-	if len(unfinishedTopics) > 0 {
-		b.WriteString("\n\n[未完成话题]")
-		b.WriteString("\n这些是用户明确表达过、适合自然延续的话题；不要强行追问，也不要把它们当作事实记忆。")
-		for _, topic := range unfinishedTopics {
-			if topic = strings.TrimSpace(topic); topic != "" {
-				b.WriteString("\n- ")
-				b.WriteString(topic)
-			}
-		}
-	}
-
 	// [4] 行为规则
 	b.WriteString("\n\n[行为规则]")
 	b.WriteString("\n- 说话简短、口语化，像朋友聊天一样")
@@ -144,7 +126,7 @@ func buildSystemPromptWithContext(
 	b.WriteString("\n- 「")
 	b.WriteString(profile.Name)
 	b.WriteString("」是你自己的名字，不是对方的名字。不要用这个名字称呼对方")
-	b.WriteString("\n- 问现在几点，用场景里给出的时间回答")
+	b.WriteString("\n- 问现在几点，用当前这句消息末尾给出的时间回答")
 	b.WriteString("\n- 不知道的事直接说不知道，不要装成已经会、已经做完")
 
 	// [5] 用户自定义覆盖
@@ -218,7 +200,7 @@ func sceneGuidance(now time.Time, state *State, forcedScene ...string) string {
 		}
 	}
 
-	guidance := fmt.Sprintf("现在是%d月%d日 %02d:%02d。当前场景：%s。", now.Month(), now.Day(), now.Hour(), now.Minute(), scene)
+	guidance := fmt.Sprintf("当前场景：%s。", scene)
 	switch scene {
 	case "情绪安抚":
 		guidance += "先承接用户的感受，少给空泛建议；只问一个温和的问题，给用户选择倾诉或安静陪伴的空间。"
@@ -304,21 +286,67 @@ func buildMessagesWithContext(
 		Content: systemPrompt,
 	})
 
-	// 聊天历史
+	// 聊天历史。旧回复里若混进思考标签，不送回模型，避免每轮重算整段思考。
 	for _, log := range history {
+		content := modelHistoryContent(log.Content)
+		if content == "" {
+			continue
+		}
 		msgs = append(msgs, llminference.Message{
 			Role:    log.Role,
-			Content: log.Content,
+			Content: content,
 		})
 	}
 
-	// 用户当前消息
-	msgs = append(msgs, llminference.Message{
-		Role:    "user",
-		Content: userMessage,
-	})
+	// 用户当前消息。空消息留给上下文估算，不附带时刻。
+	if strings.TrimSpace(userMessage) != "" {
+		msgs = append(msgs, llminference.Message{
+			Role:    "user",
+			Content: userMessage + "\n" + currentTurnNote(time.Now(), state, unfinishedTopics, forcedScene...),
+		})
+	}
 
 	return msgs
+}
+
+// currentTurnNote 只挂在当前这一句后面。系统提示保持稳定，模型才能复用已经算过的前缀。
+func currentTurnNote(now time.Time, state *State, topics []string, forcedScene ...string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "现在是%d月%d日 %02d:%02d。", now.Month(), now.Day(), now.Hour(), now.Minute())
+	b.WriteString(sceneGuidance(now, state, forcedScene...))
+	if state != nil {
+		if mood := strings.TrimSpace(state.MoodThought); mood != "" {
+			b.WriteString("你现在的心情：")
+			b.WriteString(mood)
+			b.WriteString("。")
+		}
+		if activity := strings.TrimSpace(state.ActivityLabel); activity != "" {
+			b.WriteString("你正在：")
+			b.WriteString(activity)
+			b.WriteString("。")
+		}
+	}
+	wroteTopic := false
+	for _, topic := range topics {
+		topic = strings.TrimSpace(topic)
+		if topic == "" {
+			continue
+		}
+		if !wroteTopic {
+			b.WriteString("可以自然延续、但不要强行追问的话题：")
+			wroteTopic = true
+		}
+		b.WriteString(topic)
+		b.WriteString("；")
+	}
+	b.WriteString("这行只给你自己用，不要复述。")
+	return b.String()
+}
+
+// modelHistoryContent 去掉历史正文里的思考标签，只把当时的回复送回模型。
+func modelHistoryContent(content string) string {
+	answer, _ := splitFinishedThink(content)
+	return strings.TrimSpace(answer)
 }
 
 type chatThinkContextKey struct{}
@@ -431,11 +459,12 @@ func streamChat(
 	if err == nil || strings.TrimSpace(answer) != "" {
 		return strings.TrimSpace(answer), err
 	}
+	// 思考模式不再改走非流式。非流式会把整段思考攒完才返回，页面上看不到逐字输出。
+	if think {
+		return "", err
+	}
 
 	fallbackTimeout := timeoutOrDefault(cfg.Timeout)
-	if think && fallbackTimeout < 10*time.Minute {
-		fallbackTimeout = 10 * time.Minute
-	}
 	fallbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), fallbackTimeout)
 	defer cancel()
 	fallbackCfg := cfg

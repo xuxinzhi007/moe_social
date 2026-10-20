@@ -42,6 +42,19 @@ func RegisterChatStreamRoute(s *khttp.Server, app *companionapp.AppService) {
 	})
 }
 
+func rootCause(err error) string {
+	if err == nil {
+		return ""
+	}
+	for {
+		next := errors.Unwrap(err)
+		if next == nil {
+			return err.Error()
+		}
+		err = next
+	}
+}
+
 func handleChatContext(ctx khttp.Context, app *companionapp.AppService) error {
 	userID, err := actorUserID(ctx.Request().Context())
 	if err != nil {
@@ -127,7 +140,7 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 		answerN.Add(int64(len(chunk)))
 		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
-	moelog.Infof("companion chat result user=%d think=%t thinking_bytes=%d answer_bytes=%d elapsed=%s err=%v", userID, req.Think, thinkingN.Load(), answerN.Load(), time.Since(started).Round(time.Millisecond), err)
+	moelog.Infof("companion chat result user=%d think=%t thinking_bytes=%d answer_bytes=%d elapsed=%s err=%v cause=%s", userID, req.Think, thinkingN.Load(), answerN.Load(), time.Since(started).Round(time.Millisecond), err, rootCause(err))
 	if err != nil {
 		if strings.TrimSpace(fullReply) != "" {
 			moelog.Errorf("companion chat history not saved user=%d err=%v", userID, err)

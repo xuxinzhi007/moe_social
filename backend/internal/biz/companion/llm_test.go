@@ -77,17 +77,23 @@ func TestSystemPromptIncludesRelationshipEvents(t *testing.T) {
 	}
 }
 
-func TestSystemPromptIncludesUnfinishedTopics(t *testing.T) {
-	prompt := buildSystemPromptWithContext(
+func TestUnfinishedTopicsStayOnCurrentTurn(t *testing.T) {
+	messages := buildMessagesWithContext(
 		&Profile{Name: "Mochi"},
+		&State{Mood: 10, Energy: 10, MoodThought: "有点累"},
 		nil,
 		nil,
 		nil,
 		[]string{"下次继续聊我的旅行计划"},
+		"在吗",
 	)
-	if !strings.Contains(prompt, "[未完成话题]") ||
-		!strings.Contains(prompt, "下次继续聊我的旅行计划") {
-		t.Fatalf("prompt omitted unfinished topic: %s", prompt)
+	system := messages[0].Content
+	if strings.Contains(system, "下次继续聊我的旅行计划") || strings.Contains(system, "当前场景") || strings.Contains(system, "有点累") {
+		t.Fatalf("volatile context leaked into system prompt: %s", system)
+	}
+	last := messages[len(messages)-1].Content
+	if !strings.Contains(last, "下次继续聊我的旅行计划") || !strings.Contains(last, "情绪安抚") {
+		t.Fatalf("current turn = %q", last)
 	}
 }
 
@@ -98,10 +104,30 @@ func TestSystemPromptStaysPersonalChat(t *testing.T) {
 			t.Fatalf("prompt still mentions community action %q", banned)
 		}
 	}
-	for _, want := range []string{"不要编造名字", "用场景里给出的时间回答"} {
+	for _, want := range []string{"不要编造名字", "用当前这句消息末尾给出的时间回答"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q", want)
 		}
+	}
+}
+
+func TestClockStaysOnCurrentTurn(t *testing.T) {
+	profile := &Profile{Name: "啾啾", RelationshipLevel: 3}
+	state := &State{MoodThought: "想聊天", ActivityLabel: "发呆"}
+	history := []ChatLog{{
+		Role:    "assistant",
+		Content: "<think>先想很久</think>在的",
+	}}
+	messages := buildMessagesWithContext(profile, state, nil, history, nil, nil, "在吗")
+	if strings.Contains(messages[0].Content, "现在是") || strings.Contains(messages[0].Content, "想聊天") || strings.Contains(messages[0].Content, "当前场景") {
+		t.Fatalf("volatile context leaked into system prompt: %s", messages[0].Content)
+	}
+	if messages[1].Content != "在的" {
+		t.Fatalf("history = %q", messages[1].Content)
+	}
+	last := messages[len(messages)-1].Content
+	if !strings.Contains(last, "在吗") || !strings.Contains(last, "现在是") || !strings.Contains(last, "想聊天") {
+		t.Fatalf("current turn = %q", last)
 	}
 }
 

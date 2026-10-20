@@ -15,8 +15,11 @@ func NewHTTPServer(addr string, deps HTTPServerDeps) (*khttp.Server, error) {
 	if strings.TrimSpace(addr) == "" {
 		return nil, fmt.Errorf("http address required")
 	}
+	// Kratos 默认 1 秒就会取消请求。伙伴聊天要等模型吐出第一个思考字，不能用这个截止时间。
+	// 客户端断开连接时，请求 context 仍会取消。
 	srv := khttp.NewServer(
 		khttp.Address(addr),
+		khttp.Timeout(0),
 		khttp.Filter(requestLogFilter, corsFilter, jwtAuthFilter),
 		khttp.ResponseEncoder(EnvelopeResponseEncoder),
 		khttp.ErrorEncoder(EnvelopeErrorEncoder),
