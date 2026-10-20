@@ -8,6 +8,7 @@ import '../../auth_service.dart';
 import '../../providers/companion_presence_provider.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../services/companion_service.dart';
+import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
@@ -287,7 +288,6 @@ class _CommunityHomePageState extends State<CommunityHomePage>
         ? identity.authorBotAgentKey
         : identity?.agentId;
     final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
-    final emoji = profile.emoji.trim().isNotEmpty ? profile.emoji.trim() : '🐾';
     final status = _companionStatusLine(state.greeting);
     final attention = _presence.attentionMessage.trim().isNotEmpty;
 
@@ -314,15 +314,12 @@ class _CommunityHomePageState extends State<CommunityHomePage>
             ),
             child: Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: MoeTokens.surface0,
-                    borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                CompanionAvatar(
+                  emoji: profile.emoji,
+                  avatarUrl: profile.avatarUrl,
+                  size: 40,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
+                  backgroundColor: MoeTokens.surface0,
                 ),
                 const SizedBox(width: 10),
                 Expanded(

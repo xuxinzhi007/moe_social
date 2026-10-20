@@ -47,6 +47,7 @@ func (e *Engine) ChatContextUsage(ctx context.Context, userID uint) (ContextUsag
 		snapshot.RelationshipEvents,
 		snapshot.UnfinishedTopics,
 		"",
+		"",
 		snapshot.Scene,
 	)
 	messages = dropEmptyTrailingUser(messages)

@@ -29,8 +29,8 @@ func TestGetProfileCreatesStableLifeBinding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile() error = %v", err)
 	}
-	if profile.LifeEntityID != 2 || profile.Name != "Two" {
-		t.Fatalf("GetProfile() binding = (%d, %q), want (2, Two)", profile.LifeEntityID, profile.Name)
+	if profile.LifeEntityID != 2 || profile.Name != "小星" {
+		t.Fatalf("GetProfile() binding = (%d, %q), want (2, 小星)", profile.LifeEntityID, profile.Name)
 	}
 
 	again, err := engine.GetProfile(context.Background(), 7)
@@ -39,6 +39,47 @@ func TestGetProfileCreatesStableLifeBinding(t *testing.T) {
 	}
 	if again.LifeEntityID != profile.LifeEntityID {
 		t.Fatalf("GetProfile() binding changed from %d to %d", profile.LifeEntityID, again.LifeEntityID)
+	}
+}
+
+func TestGetProfileRenamesLegacyJiujiuToXiaoxing(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		Name:      "啾啾",
+		Emoji:     "🐥",
+		Persona:   legacyCompanionPersona,
+		AvatarURL: "",
+	})
+	engine := NewEngine(store, &fakeLifeStore{}, llminference.Config{}, "")
+
+	profile, err := engine.GetProfile(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("GetProfile() error = %v", err)
+	}
+	if profile.Name != defaultCompanionName || profile.Emoji != defaultCompanionEmoji {
+		t.Fatalf("name=%q emoji=%q", profile.Name, profile.Emoji)
+	}
+	if profile.AvatarURL != defaultCompanionAvatarURL || profile.Persona != defaultCompanionPersona {
+		t.Fatalf("avatar=%q persona=%q", profile.AvatarURL, profile.Persona)
+	}
+}
+
+func TestGetProfileKeepsCustomCompanionName(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		Name:      "小花",
+		Emoji:     "🐰",
+		AvatarURL: "https://example.com/a.png",
+		Persona:   "自己写的",
+	})
+	engine := NewEngine(store, &fakeLifeStore{}, llminference.Config{}, "")
+
+	profile, err := engine.GetProfile(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("GetProfile() error = %v", err)
+	}
+	if profile.Name != "小花" || profile.Emoji != "🐰" || profile.AvatarURL != "https://example.com/a.png" || profile.Persona != "自己写的" {
+		t.Fatalf("custom identity changed: %+v", profile)
 	}
 }
 

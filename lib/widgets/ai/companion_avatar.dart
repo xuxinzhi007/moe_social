@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../utils/media_url.dart';
 
-/// 关系层伙伴头像：优先 [avatarUrl]，否则 emoji 回退。
+/// 关系层伙伴头像：优先 [avatarUrl]。没有图、或还是默认表情时，用小星。
 class CompanionAvatar extends StatelessWidget {
+  static const defaultAsset = 'assets/branding/xiaoxing_mascot.png';
+
   const CompanionAvatar({
     super.key,
     required this.emoji,
@@ -23,7 +25,18 @@ class CompanionAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = borderRadius ?? BorderRadius.circular(size * 0.32);
     final url = resolveMediaUrl(avatarUrl);
-    final face = emoji.trim().isNotEmpty ? emoji.trim() : '🐾';
+    final mascot = _usesMascot(emoji);
+    final fallback = mascot
+        ? Image.asset(
+            defaultAsset,
+            fit: BoxFit.contain,
+            width: size,
+            height: size,
+          )
+        : Text(
+            emoji.trim(),
+            style: TextStyle(fontSize: size * 0.48),
+          );
     return Container(
       width: size,
       height: size,
@@ -34,16 +47,29 @@ class CompanionAvatar extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
       child: url.isEmpty
-          ? Text(face, style: TextStyle(fontSize: size * 0.48))
+          ? fallback
           : Image.network(
               url,
-              fit: BoxFit.cover,
+              fit: url.contains('xiaoxing_mascot')
+                  ? BoxFit.contain
+                  : BoxFit.cover,
               width: size,
               height: size,
               excludeFromSemantics: true,
-              errorBuilder: (_, __, ___) =>
-                  Text(face, style: TextStyle(fontSize: size * 0.48)),
+              errorBuilder: (_, __, ___) => fallback,
             ),
     );
+  }
+
+  static bool _usesMascot(String emoji) {
+    switch (emoji.trim()) {
+      case '':
+      case '🐾':
+      case '🐥':
+      case '⭐':
+        return true;
+      default:
+        return false;
+    }
   }
 }

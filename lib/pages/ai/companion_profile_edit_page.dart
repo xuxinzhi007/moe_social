@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../services/ai_cloud_config_service.dart';
 import '../../services/companion_character_card_import.dart';
 import '../../services/companion_service.dart';
+import '../../services/llm_api_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
@@ -24,13 +28,16 @@ class CompanionProfileEditPage extends StatefulWidget {
 class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
   late final TextEditingController _nameController;
   late final TextEditingController _emojiController;
-  late final TextEditingController _personaController;
-  late final TextEditingController _agentIdController;
-  late final TextEditingController _traitsController;
-  late final TextEditingController _systemPromptController;
-  late String _greetingStyle;
+  late final TextEditingController _modelPromptController;
   late String _avatarUrl;
   bool _uploadingAvatar = false;
+  bool _promptLoading = true;
+  bool _promptEditable = false;
+  bool _saving = false;
+  String _modelName = '';
+  String _promptNote = '正在读取当前模型的系统提示词';
+  String _loadedPrompt = '';
+  LlmManagedModel? _managed;
 
   @override
   void initState() {
@@ -38,28 +45,68 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
     final current = widget.initial;
     _nameController = TextEditingController(text: current.name);
     _emojiController = TextEditingController(text: current.emoji);
-    _personaController = TextEditingController(text: current.persona);
-    _agentIdController = TextEditingController(text: current.agentId);
-    _traitsController = TextEditingController(
-      text: current.personalityTraits.join('，'),
-    );
-    _systemPromptController = TextEditingController(
-      text: current.systemPromptOverride,
-    );
-    _greetingStyle =
-        current.greetingStyle.isNotEmpty ? current.greetingStyle : 'warm';
+    _modelPromptController = TextEditingController();
     _avatarUrl = current.avatarUrl;
+    unawaited(_loadModelPrompt());
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emojiController.dispose();
-    _personaController.dispose();
-    _agentIdController.dispose();
-    _traitsController.dispose();
-    _systemPromptController.dispose();
+    _modelPromptController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadModelPrompt() async {
+    try {
+      final snapshot = await AiCloudConfigService().fetch();
+      final model =
+          snapshot?.preferences['builtin_chat_model']?.toString().trim() ?? '';
+      final catalog = await LlmApiService.fetchCatalog();
+      LlmCatalogModel? current;
+      for (final item in catalog) {
+        if (item.name == model) {
+          current = item;
+          break;
+        }
+      }
+      final derived = current?.derived == true;
+      LlmManagedModel? managed;
+      if (derived) {
+        final owned = await LlmApiService.listManagedModels();
+        for (final item in owned) {
+          if (item.modelName == model && item.state == 'ready') {
+            managed = item;
+            break;
+          }
+        }
+      }
+      final card = model.isEmpty
+          ? const LlmModelCard(systemPrompt: '', parameters: {})
+          : await LlmApiService.fetchModelCard(model);
+      if (!mounted) return;
+      setState(() {
+        _modelName = model;
+        _managed = managed;
+        _promptEditable = managed != null;
+        _loadedPrompt = card.systemPrompt;
+        _modelPromptController.text = card.systemPrompt;
+        _promptLoading = false;
+        _promptNote = model.isEmpty
+            ? '还没有选模型。到聊天页顶栏切换。'
+            : _promptEditable
+                ? '这是你的派生模型，可以改。换模型在聊天页。'
+                : '这是当前模型自带的系统提示词，这里不能改。换模型在聊天页。';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _promptLoading = false;
+        _promptEditable = false;
+        _promptNote = '提示词没有读到：$error';
+      });
+    }
   }
 
   Future<void> _editName() async {
@@ -89,14 +136,11 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
 
   Future<void> _applyCardDraft(CompanionCardImportDraft draft) async {
     _nameController.text = draft.name;
-    if (draft.persona.isNotEmpty) {
-      _personaController.text = draft.persona;
-    }
-    if (draft.personalityTraits.isNotEmpty) {
-      _traitsController.text = draft.personalityTraits.join('，');
-    }
-    if (draft.systemPromptOverride.isNotEmpty) {
-      _systemPromptController.text = draft.systemPromptOverride;
+    final imported = draft.systemPromptOverride.trim().isNotEmpty
+        ? draft.systemPromptOverride.trim()
+        : draft.persona.trim();
+    if (_promptEditable && imported.isNotEmpty) {
+      _modelPromptController.text = imported;
     }
     setState(() {});
 
@@ -118,7 +162,7 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
         setState(() => _uploadingAvatar = false);
         MoeToast.error(
           context,
-          '人设已填入，但头像上传失败：${e.toString().replaceFirst('Exception: ', '')}',
+          '名字已填入，但头像上传失败：${e.toString().replaceFirst('Exception: ', '')}',
         );
         return;
       }
@@ -208,7 +252,7 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '仅写入名字 / 人设 / 性格 / 提示词；不导入世界书，不创建酒馆角色。',
+                  '只更新名字和头像。派生模型才会把角色卡写进提示词。',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
@@ -239,26 +283,33 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
     }
   }
 
-  void _save() {
-    if (_uploadingAvatar) return;
-    final traits = _traitsController.text
-        .split(RegExp(r'[，,;\n]'))
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList(growable: false);
+  Future<void> _save() async {
+    if (_uploadingAvatar || _saving) return;
+    final nextPrompt = _modelPromptController.text.trim();
+    if (_promptEditable &&
+        _managed != null &&
+        nextPrompt != _loadedPrompt.trim()) {
+      setState(() => _saving = true);
+      try {
+        await LlmApiService.upsertAgentPrompt(
+          agentId: _managed!.agentId,
+          requestId: DateTime.now().microsecondsSinceEpoch.toString(),
+          baseModel: _managed!.baseModel,
+          systemPrompt: nextPrompt,
+        );
+      } catch (error) {
+        if (!mounted) return;
+        setState(() => _saving = false);
+        MoeToast.error(context, '提示词没有保存：$error');
+        return;
+      }
+    }
+    if (!mounted) return;
     Navigator.pop(
       context,
       widget.initial.copyWith(
         name: _nameController.text.trim(),
-        emoji: _emojiController.text.trim().isEmpty
-            ? '🐾'
-            : _emojiController.text.trim(),
         avatarUrl: _avatarUrl.trim(),
-        persona: _personaController.text.trim(),
-        agentId: _agentIdController.text.trim(),
-        personalityTraits: traits,
-        greetingStyle: _greetingStyle,
-        systemPromptOverride: _systemPromptController.text.trim(),
       ),
     );
   }
@@ -303,61 +354,61 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               children: [
                 _SectionCard(
-                  title: '怎么相处',
+                  title: '模型提示词',
                   children: [
-                    _ProfileField(
-                      controller: _emojiController,
-                      label: '表情',
-                      hint: '没有头像时显示',
-                      onChanged: (_) => setState(() {}),
+                    Text(
+                      _modelName.isEmpty ? '当前没有选中的模型' : _modelName,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: MoeTokens.titleText,
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    _ProfileField(
-                      controller: _personaController,
-                      label: '人设',
-                      hint: '一句话描述气质',
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      '问候风格',
-                      style: TextStyle(
+                    const SizedBox(height: 6),
+                    Text(
+                      _promptNote,
+                      style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        height: 1.4,
                         color: MoeTokens.hintText,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    _GreetingChoices(
-                      value: _greetingStyle,
-                      onChanged: (value) =>
-                          setState(() => _greetingStyle = value),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _SectionCard(
-                  title: '进阶',
-                  children: [
-                    _ProfileField(
-                      controller: _traitsController,
-                      label: '性格标签',
-                      hint: '温暖，好奇，幽默',
-                    ),
                     const SizedBox(height: 12),
-                    _ProfileField(
-                      controller: _agentIdController,
-                      label: 'Agent ID',
-                      hint: '可选',
-                      maxLength: 64,
-                    ),
-                    const SizedBox(height: 12),
-                    _ProfileField(
-                      controller: _systemPromptController,
-                      label: '提示词',
-                      hint: '留空则使用默认',
-                      maxLines: 4,
-                    ),
+                    if (_promptLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 18),
+                        child: Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    else
+                      TextField(
+                        controller: _modelPromptController,
+                        readOnly: !_promptEditable,
+                        maxLines: 8,
+                        minLines: 4,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.45,
+                          color: _promptEditable
+                              ? MoeTokens.titleText
+                              : MoeTokens.hintText,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '这个模型没有写系统提示词',
+                          filled: true,
+                          fillColor: MoeTokens.softChipBg,
+                          border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusLg),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -368,23 +419,31 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: MoePressable(
-                onTap: _save,
+                onTap: (_uploadingAvatar || _saving) ? null : _save,
                 borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                 child: AnimatedContainer(
                   duration: MoeTokens.motionFast,
                   height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    gradient:
-                        _uploadingAvatar ? null : MoeTokens.gradientPrimary,
-                    color: _uploadingAvatar ? MoeTokens.softChipBg : null,
+                    gradient: (_uploadingAvatar || _saving)
+                        ? null
+                        : MoeTokens.gradientPrimary,
+                    color: (_uploadingAvatar || _saving)
+                        ? MoeTokens.softChipBg
+                        : null,
                     borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                   ),
                   child: Text(
-                    _uploadingAvatar ? '头像上传中…' : '保存',
+                    _saving
+                        ? '保存中…'
+                        : _uploadingAvatar
+                            ? '头像上传中…'
+                            : '保存',
                     style: TextStyle(
-                      color:
-                          _uploadingAvatar ? MoeTokens.hintText : Colors.white,
+                      color: (_uploadingAvatar || _saving)
+                          ? MoeTokens.hintText
+                          : Colors.white,
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
                     ),
@@ -526,7 +585,7 @@ class _NameDialogState extends State<_NameDialog> {
                 color: MoeTokens.titleText,
               ),
               decoration: InputDecoration(
-                hintText: '例如：啾啾',
+                hintText: '例如：小星',
                 isDense: true,
                 filled: true,
                 fillColor: MoeTokens.softChipBg,
@@ -580,130 +639,6 @@ class _SectionCard extends StatelessWidget {
           ...children,
         ],
       ),
-    );
-  }
-}
-
-class _GreetingChoices extends StatelessWidget {
-  const _GreetingChoices({required this.value, required this.onChanged});
-
-  final String value;
-  final ValueChanged<String> onChanged;
-
-  static const _options = <(String, String)>[
-    ('warm', '温暖'),
-    ('playful', '俏皮'),
-    ('calm', '沉静'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var i = 0; i < _options.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(
-            child: MoePressable(
-              onTap: () => onChanged(_options[i].$1),
-              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-              child: AnimatedContainer(
-                duration: MoeTokens.motionFast,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: value == _options[i].$1
-                      ? MoeTokens.gradientPrimary
-                      : null,
-                  color: value == _options[i].$1 ? null : MoeTokens.softChipBg,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                ),
-                child: Text(
-                  _options[i].$2,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: value == _options[i].$1
-                        ? Colors.white
-                        : MoeTokens.hintText,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _ProfileField extends StatelessWidget {
-  const _ProfileField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    this.maxLines = 1,
-    this.maxLength,
-    this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final int maxLines;
-  final int? maxLength;
-  final ValueChanged<String>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: MoeTokens.hintText,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          maxLength: maxLength,
-          onChanged: onChanged,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: MoeTokens.titleText,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            counterText: '',
-            hintStyle: const TextStyle(
-              color: MoeTokens.hintText,
-              fontWeight: FontWeight.w500,
-            ),
-            filled: true,
-            fillColor: MoeTokens.softChipBg,
-            isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-              borderSide: const BorderSide(color: MoeTokens.primary),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

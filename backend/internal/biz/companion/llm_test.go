@@ -85,15 +85,23 @@ func TestUnfinishedTopicsStayOnCurrentTurn(t *testing.T) {
 		nil,
 		nil,
 		[]string{"下次继续聊我的旅行计划"},
+		"",
 		"在吗",
 	)
 	system := messages[0].Content
 	if strings.Contains(system, "下次继续聊我的旅行计划") || strings.Contains(system, "当前场景") || strings.Contains(system, "有点累") {
 		t.Fatalf("volatile context leaked into system prompt: %s", system)
 	}
-	last := messages[len(messages)-1].Content
-	if !strings.Contains(last, "下次继续聊我的旅行计划") || !strings.Contains(last, "情绪安抚") {
-		t.Fatalf("current turn = %q", last)
+	last := messages[len(messages)-1]
+	if last.Role != "user" || last.Content != "在吗" {
+		t.Fatalf("user message = %#v", last)
+	}
+	note := messages[len(messages)-2]
+	if note.Role != "system" || strings.Contains(note.Content, "下次继续聊我的旅行计划") || strings.Contains(note.Content, "情绪安抚") {
+		t.Fatalf("turn note should not carry topic or scene: %#v", note)
+	}
+	if strings.Contains(messages[0].Content, "下次继续聊我的旅行计划") {
+		t.Fatalf("topic leaked into system prompt: %s", messages[0].Content)
 	}
 }
 
@@ -104,7 +112,7 @@ func TestSystemPromptStaysPersonalChat(t *testing.T) {
 			t.Fatalf("prompt still mentions community action %q", banned)
 		}
 	}
-	for _, want := range []string{"不要编造名字", "用当前这句消息末尾给出的时间回答"} {
+	for _, want := range []string{"不要编造名字", "用聊天记录后面那条时间说明回答"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q", want)
 		}
@@ -118,16 +126,20 @@ func TestClockStaysOnCurrentTurn(t *testing.T) {
 		Role:    "assistant",
 		Content: "<think>先想很久</think>在的",
 	}}
-	messages := buildMessagesWithContext(profile, state, nil, history, nil, nil, "在吗")
+	messages := buildMessagesWithContext(profile, state, nil, history, nil, nil, "", "在吗")
 	if strings.Contains(messages[0].Content, "现在是") || strings.Contains(messages[0].Content, "想聊天") || strings.Contains(messages[0].Content, "当前场景") {
 		t.Fatalf("volatile context leaked into system prompt: %s", messages[0].Content)
 	}
 	if messages[1].Content != "在的" {
 		t.Fatalf("history = %q", messages[1].Content)
 	}
-	last := messages[len(messages)-1].Content
-	if !strings.Contains(last, "在吗") || !strings.Contains(last, "现在是") || !strings.Contains(last, "想聊天") {
-		t.Fatalf("current turn = %q", last)
+	note := messages[len(messages)-2]
+	last := messages[len(messages)-1]
+	if note.Role != "system" || !strings.Contains(note.Content, "现在是") || strings.Contains(note.Content, "想聊天") || strings.Contains(note.Content, "当前场景") {
+		t.Fatalf("turn note = %#v", note)
+	}
+	if last.Role != "user" || last.Content != "在吗" {
+		t.Fatalf("user message = %#v", last)
 	}
 }
 
@@ -139,31 +151,17 @@ func TestLegacyMessageBuilderRemainsCompatible(t *testing.T) {
 	}
 }
 
-func TestSceneGuidanceSupportsComfortAndRepair(t *testing.T) {
-	guidance := sceneGuidance(
-		time.Date(2026, time.December, 25, 23, 0, 0, 0, time.Local),
-		&State{Mood: 30, Energy: 20},
-	)
-	for _, want := range []string{"情绪安抚", "承接用户的感受", "具体道歉", "圣诞节"} {
-		if !strings.Contains(guidance, want) {
-			t.Fatalf("scene guidance does not contain %q: %s", want, guidance)
-		}
+func TestTrimChatHistoryKeepsNewestBudget(t *testing.T) {
+	history := []ChatLog{
+		{Role: "user", Content: strings.Repeat("早", 200)},
+		{Role: "assistant", Content: strings.Repeat("嗯", 200)},
+		{Role: "user", Content: "只回答数字2"},
+		{Role: "assistant", Content: "2"},
+		{Role: "user", Content: "你现在在会什么"},
 	}
-}
-
-func TestHolidayLabelOnlyUsesSupportedFixedDates(t *testing.T) {
-	if got := holidayLabel(time.Date(2026, time.July, 7, 12, 0, 0, 0, time.Local)); got != "" {
-		t.Fatalf("holidayLabel() = %q, want empty for unsupported date", got)
-	}
-	if got := holidayLabel(time.Date(2026, time.October, 1, 12, 0, 0, 0, time.Local)); got != "国庆节" {
-		t.Fatalf("holidayLabel() = %q, want 国庆节", got)
-	}
-}
-
-func TestSceneGuidanceMapsUserSceneIds(t *testing.T) {
-	guidance := sceneGuidance(time.Date(2026, time.August, 3, 14, 0, 0, 0, time.Local), nil, "study")
-	if !strings.Contains(guidance, "专注学习") || !strings.Contains(guidance, "小步骤") {
-		t.Fatalf("scene guidance = %s", guidance)
+	trimmed := trimChatHistory(history, 4, 20)
+	if len(trimmed) != 3 || trimmed[0].Content != "只回答数字2" || trimmed[2].Content != "你现在在会什么" {
+		t.Fatalf("trimmed = %#v", trimmed)
 	}
 }
 

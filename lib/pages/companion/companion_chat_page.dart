@@ -1215,25 +1215,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _profile.emoji.isNotEmpty ? _profile.emoji : '🐾',
-                  style: const TextStyle(fontSize: 44),
-                ),
+              CompanionAvatar(
+                emoji: _profile.emoji,
+                avatarUrl: _profile.avatarUrl,
+                size: 88,
+                borderRadius: BorderRadius.circular(28),
               ),
               const SizedBox(height: 16),
               Text(
@@ -1286,23 +1272,32 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       MoeToast.error(context, '模型列表读取失败：$error');
       return;
     }
-    models =
-        models.where((item) => item.name.isNotEmpty && !item.derived).toList();
+    models = models.where((item) => item.name.isNotEmpty).toList();
     if (!mounted) return;
     if (models.isEmpty) {
       MoeToast.error(context, '小主机上没有可读到的模型');
       return;
     }
+    final bases = models.where((item) => !item.derived).toList();
+    final mine = models.where((item) => item.derived).toList();
     final selected = await AiSheet.show<String>(
       context: context,
       title: '切换模型',
-      subtitle: '这是小主机上现在的模型',
+      subtitle: '在聊天里换。基座提示词只能看，自己的模型可以改。',
       initialChildSize: 0.62,
       minChildSize: 0.32,
       maxChildSize: 0.9,
       child: Column(
         children: [
-          for (final model in models)
+          if (bases.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(4, 4, 4, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('小主机上的模型'),
+              ),
+            ),
+          for (final model in bases)
             MoeActionRow(
               icon: Icons.memory_rounded,
               title: model.name,
@@ -1311,6 +1306,28 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 [
                   if (model.contextLength > 0) '上下文 ${model.contextLength}',
                   model.thinking ? '可以思考' : '没有思考能力',
+                  '提示词只能看',
+                ].join(' · '),
+              ),
+              onTap: () => Navigator.of(context).pop(model.name),
+            ),
+          if (mine.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(4, 12, 4, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('我的模型'),
+              ),
+            ),
+          for (final model in mine)
+            MoeActionRow(
+              icon: Icons.tune_rounded,
+              title: model.name,
+              selected: model.name == _chatModel,
+              subtitle: Text(
+                [
+                  if (model.contextLength > 0) '上下文 ${model.contextLength}',
+                  '可以改提示词',
                 ].join(' · '),
               ),
               onTap: () => Navigator.of(context).pop(model.name),

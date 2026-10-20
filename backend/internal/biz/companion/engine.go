@@ -37,7 +37,7 @@ type Engine struct {
 	model     string
 
 	// 配置参数
-	MaxHistoryTurns int           // 聊天历史注入条数，默认 10
+	MaxHistoryTurns int           // 送进模型的最近消息条数，默认 6
 	MaxMemories     int           // 记忆注入条数，默认 5
 	CleanupInterval time.Duration // 记忆清理周期，默认 1h
 
@@ -74,7 +74,7 @@ func NewEngine(store Store, lifeStore LifeStore, llmCfg llminference.Config, mod
 		lifeStore:       lifeStore,
 		llmCfg:          llmCfg,
 		model:           model,
-		MaxHistoryTurns: 10,
+		MaxHistoryTurns: companionHistoryMessages,
 		MaxMemories:     5,
 		CleanupInterval: time.Hour,
 		lastProactive:   make(map[uint]proactiveDelivery),
@@ -565,6 +565,9 @@ func (e *Engine) GetProfile(ctx context.Context, userID uint) (*Profile, error) 
 	}
 	if row != nil {
 		profile := modelToProfile(row)
+		if err := e.persistProjectIdentity(ctx, userID, profile); err != nil {
+			return nil, err
+		}
 		if err := e.resolveWorldBind(ctx, profile); err != nil {
 			return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
 		}
@@ -583,6 +586,9 @@ func (e *Engine) GetProfile(ctx context.Context, userID uint) (*Profile, error) 
 		return nil, fmt.Errorf("reload companion profile for user %d: %w", userID, err)
 	}
 	created := modelToProfile(row)
+	if err := e.persistProjectIdentity(ctx, userID, created); err != nil {
+		return nil, err
+	}
 	if err := e.resolveWorldBind(ctx, created); err != nil {
 		return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
 	}
@@ -1197,7 +1203,7 @@ func (e *Engine) ChatStreamWithInputMode(
 		return "", fmt.Errorf("companion: persist user chat message: %w", err)
 	}
 
-	// 5. 构建 messages
+	// 5. 构建 messages。模型自带的 SYSTEM 放在短规则前面，换模型后重新读取。
 	msgs := buildMessagesWithContext(
 		profile,
 		state,
@@ -1205,6 +1211,7 @@ func (e *Engine) ChatStreamWithInputMode(
 		history,
 		companionContext.RelationshipEvents,
 		companionContext.UnfinishedTopics,
+		modelSystemPrompt(ctx, config, modelName),
 		userMessage,
 		companionContext.Scene,
 	)
@@ -1741,8 +1748,6 @@ func (e *Engine) defaultBoundProfile(ctx context.Context, userID uint) (*Profile
 	}
 	sort.Slice(entities, func(i, j int) bool { return entities[i].ID < entities[j].ID })
 	profile.LifeEntityID = int(entities[0].ID)
-	profile.Name = entities[0].Name
-	profile.Emoji = entities[0].Emoji
 	return profile, nil
 }
 
@@ -1805,13 +1810,22 @@ func (e *Engine) resolveWorldBindOnUpsert(ctx context.Context, profile *Profile)
 	return nil
 }
 
-// defaultProfile 无 profile 时的默认伙伴。
+const (
+	defaultCompanionName      = "小星"
+	defaultCompanionEmoji     = "⭐"
+	defaultCompanionPersona   = "轻快、短句，像朋友聊天。"
+	legacyCompanionPersona    = "一个温暖、好奇的AI朋友，喜欢聊天"
+	defaultCompanionAvatarURL = "/api/images/0_brand__avatar__xiaoxing_mascot.png"
+)
+
+// defaultProfile 无 profile 时的默认伙伴。名字用旗舰形象小星，不借用世界居民的名字。
 func defaultProfile(userID uint) *Profile {
 	return &Profile{
 		UserID:              userID,
-		Name:                "小伙伴",
-		Emoji:               "🐾",
-		Persona:             "一个温暖、好奇的AI朋友，喜欢聊天",
+		Name:                defaultCompanionName,
+		Emoji:               defaultCompanionEmoji,
+		AvatarURL:           defaultCompanionAvatarURL,
+		Persona:             defaultCompanionPersona,
 		PersonalityTraits:   []string{"温暖", "好奇", "幽默"},
 		GreetingStyle:       "warm",
 		RelationshipLevel:   1,
@@ -1821,6 +1835,37 @@ func defaultProfile(userID uint) *Profile {
 		ProactiveQuietEnd:   450,
 		AgentID:             fmt.Sprintf("companion-%d", userID),
 	}
+}
+
+// persistProjectIdentity 把自动填上的旧名字收成小星，并补上默认头像。
+// 用户改过的名字和已经上传的头像保持不动。
+func (e *Engine) persistProjectIdentity(ctx context.Context, userID uint, profile *Profile) error {
+	if profile == nil || !adoptProjectCompanionIdentity(profile) {
+		return nil
+	}
+	if err := e.store.UpsertProfile(ctx, profileToModel(userID, profile)); err != nil {
+		return fmt.Errorf("save companion identity for user %d: %w", userID, err)
+	}
+	return nil
+}
+
+func adoptProjectCompanionIdentity(profile *Profile) bool {
+	changed := false
+	switch strings.TrimSpace(profile.Name) {
+	case "", "啾啾", "小伙伴":
+		profile.Name = defaultCompanionName
+		profile.Emoji = defaultCompanionEmoji
+		changed = true
+	}
+	if strings.TrimSpace(profile.AvatarURL) == "" {
+		profile.AvatarURL = defaultCompanionAvatarURL
+		changed = true
+	}
+	if strings.TrimSpace(profile.Persona) == legacyCompanionPersona {
+		profile.Persona = defaultCompanionPersona
+		changed = true
+	}
+	return changed
 }
 
 // ── 类型转换 ──

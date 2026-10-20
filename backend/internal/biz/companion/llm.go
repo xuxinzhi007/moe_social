@@ -10,6 +10,13 @@ import (
 	"backend/pkg/llminference"
 )
 
+const (
+	// companionHistoryMessages 是送进模型的最近消息条数，大约 3 轮。
+	companionHistoryMessages = 6
+	// companionHistoryRuneBudget 是这些历史正文的字数上限。
+	companionHistoryRuneBudget = 500
+)
+
 // buildSystemPrompt 结构化构建 system prompt（分层注入）。
 //
 // 结构：
@@ -18,7 +25,7 @@ import (
 // [3] 记忆上下文（最近 memories，按 importance 排序）
 // [4] 行为规则
 // [5] 用户自定义 system_prompt_override（如有）
-// 场景、时刻、心情和未完成话题不写进系统提示，只挂在当前这一句末尾。
+// 场景不送进模型。时间在聊天记录之后单独成一条 system。
 func buildSystemPrompt(profile *Profile, state *State, memories []Memory, forcedScene ...string) string {
 	return buildSystemPromptWithRelationshipEvents(
 		profile, state, memories, nil, forcedScene...,
@@ -33,7 +40,7 @@ func buildSystemPromptWithRelationshipEvents(
 	forcedScene ...string,
 ) string {
 	return buildSystemPromptWithContext(
-		profile, state, memories, relationshipEvents, nil, forcedScene...,
+		profile, state, memories, relationshipEvents, nil, "", forcedScene...,
 	)
 }
 
@@ -43,29 +50,31 @@ func buildSystemPromptWithContext(
 	memories []Memory,
 	relationshipEvents []RelationshipEvent,
 	unfinishedTopics []string,
+	modelSystem string,
 	forcedScene ...string,
 ) string {
 	var b strings.Builder
 
-	// [1] 角色人格
+	// 模型 Modelfile 里的 SYSTEM。基座只读，派生模型由用户自己改。
+	if text := strings.TrimSpace(modelSystem); text != "" {
+		b.WriteString(text)
+		b.WriteString("\n\n")
+	}
 	b.WriteString("你是一个AI伙伴，名字是「")
 	b.WriteString(profile.Name)
 	b.WriteString("」。")
-	if profile.Persona != "" {
-		b.WriteString("\n你的性格描述：")
-		b.WriteString(profile.Persona)
-	}
-	if len(profile.PersonalityTraits) > 0 {
-		b.WriteString("\n你的性格特点：")
-		b.WriteString(strings.Join(profile.PersonalityTraits, "、"))
-	}
-	b.WriteString("\n\n[关系阶段]\n")
+	b.WriteString("\n\n[关系]\n")
 	b.WriteString(relationshipGuidance(profile))
 
-	// 场景、心情、时刻、未完成话题都挂在当前用户消息末尾。
-	// 写进系统提示会让小主机每轮重算记忆和全部聊天记录。
-
-	// [3] 记忆上下文（置顶优先且显式标注，聊天时更「记得牢」）
+	// [4] 行为规则。短句，避免模型在思考里把清单逐条念出来。
+	b.WriteString("\n\n[说话方式]")
+	b.WriteString("\n用短句说话，像微信聊天，一两句就够。")
+	b.WriteString("\n可以聊，也可以回答知道的事。不要执行命令，不要改文件。")
+	b.WriteString("\n用户的称呼只以「你记得的事」为准。没有就说还不知道，不要编造名字。")
+	b.WriteString("\n「")
+	b.WriteString(profile.Name)
+	b.WriteString("」是你自己的名字，不是对方的。不知道的事直接说不知道。")
+	b.WriteString("\n问现在几点，用聊天记录后面那条时间说明回答。")
 	confirmedMemories := make([]Memory, 0, len(memories))
 	candidateMemories := make([]Memory, 0, len(memories))
 	for _, memory := range memories {
@@ -115,26 +124,6 @@ func buildSystemPromptWithContext(
 			}
 		}
 	}
-	// [4] 行为规则
-	b.WriteString("\n\n[行为规则]")
-	b.WriteString("\n- 说话简短、口语化，像朋友聊天一样")
-	b.WriteString("\n- 不要用「您」，用「你」")
-	b.WriteString("\n- 不要自我介绍，你和用户已经认识了")
-	b.WriteString("\n- 回复控制在 1-3 句话内")
-	b.WriteString("\n- 可以表达情绪和想法，但不要过度")
-	b.WriteString("\n- 用户的称呼只以「你记得的事」为准。记得就直接叫出来；没有就说还不知道，请对方告诉你。不要编造名字")
-	b.WriteString("\n- 「")
-	b.WriteString(profile.Name)
-	b.WriteString("」是你自己的名字，不是对方的名字。不要用这个名字称呼对方")
-	b.WriteString("\n- 问现在几点，用当前这句消息末尾给出的时间回答")
-	b.WriteString("\n- 不知道的事直接说不知道，不要装成已经会、已经做完")
-
-	// [5] 用户自定义覆盖
-	if override := strings.TrimSpace(profile.SystemPromptOverride); override != "" {
-		b.WriteString("\n\n[自定义规则]\n")
-		b.WriteString(override)
-	}
-
 	return b.String()
 }
 
@@ -152,96 +141,37 @@ func relationshipGuidance(profile *Profile) string {
 
 	switch {
 	case level <= 2:
-		return "你们还在初识阶段。自然了解用户的兴趣和近况，不要假装知道用户没有分享过的事情。"
+		return "初识阶段。不要假装知道对方没说过的事。"
 	case level <= 4:
-		return "你们正在逐渐熟悉。可以适度提起已经确认的偏好，并对用户的近况保持连续追问。"
+		return "逐渐熟悉。可以提起已经确认的偏好。"
 	case level <= 6:
-		return "你们已经形成稳定联系。优先延续未完成的话题，记得用户明确分享过的重要事情，并给出具体回应。"
+		return "稳定联系。接着对方最近说的事聊。"
 	case level <= 8:
-		return "你们彼此已经很习惯。可以更主动地关心用户、回访计划和情绪，但仍尊重边界，不制造占有或依赖压力。"
+		return "彼此很习惯。关心近况，守住边界。"
 	default:
-		return "你们关系亲近。保持稳定、具体和有来有回的陪伴，主动创造共同回忆；尊重用户边界，不要替用户做决定或排斥现实关系。"
+		return "关系亲近。尊重对方的边界和现实关系，不要替对方做决定。"
 	}
 }
 
-func sceneGuidance(now time.Time, state *State, forcedScene ...string) string {
-	mood := 50.0
-	energy := 50.0
-	if state != nil {
-		mood = state.Mood
-		energy = state.Energy
+// trimChatHistory 只保留最近几条，并且从最新一条往前累计，不超过字数预算。
+func trimChatHistory(history []ChatLog, maxMessages, maxRunes int) []ChatLog {
+	if maxMessages > 0 && len(history) > maxMessages {
+		history = history[len(history)-maxMessages:]
 	}
-
-	scene := ""
-	if len(forcedScene) > 0 {
-		switch strings.ToLower(strings.TrimSpace(forcedScene[0])) {
-		case "sleep":
-			scene = "睡前陪伴"
-		case "comfort":
-			scene = "情绪安抚"
-		case "date":
-			scene = "轻松约会"
-		case "study":
-			scene = "专注学习"
+	if maxRunes <= 0 || len(history) == 0 {
+		return history
+	}
+	total := 0
+	start := len(history)
+	for index := len(history) - 1; index >= 0; index-- {
+		count := len([]rune(modelHistoryContent(history[index].Content)))
+		if start < len(history) && total+count > maxRunes {
+			break
 		}
+		total += count
+		start = index
 	}
-	if scene == "" {
-		switch {
-		case mood > 0 && mood < 40:
-			scene = "情绪安抚"
-		case now.Hour() >= 22 || now.Hour() < 6:
-			scene = "睡前陪伴"
-		case now.Hour() < 11:
-			scene = "早晨问候"
-		case now.Weekday() == time.Saturday || now.Weekday() == time.Sunday:
-			scene = "周末陪伴"
-		default:
-			scene = "日常陪伴"
-		}
-	}
-
-	guidance := fmt.Sprintf("当前场景：%s。", scene)
-	switch scene {
-	case "情绪安抚":
-		guidance += "先承接用户的感受，少给空泛建议；只问一个温和的问题，给用户选择倾诉或安静陪伴的空间。"
-	case "睡前陪伴":
-		guidance += "放慢语气，回复更短，优先帮助用户收束情绪和准备休息，不主动制造兴奋话题。"
-	case "早晨问候":
-		guidance += "语气轻快但不要过度热闹，可以结合已知计划给出一个具体的早安关心。"
-	case "周末陪伴":
-		guidance += "可以提出轻量的共同活动或小计划，但不要把建议说成必须完成的任务。"
-	case "轻松约会":
-		guidance += "用轻量的共同想象、选择题或小游戏推进，不制造消费压力，也不替用户定义关系。"
-	case "专注学习":
-		guidance += "把目标拆成一个小步骤，先确认用户要做什么，再用短回合陪伴，不连续输出大段内容。"
-	default:
-		guidance += "保持自然的日常来回，优先延续用户最近提到的事情。"
-	}
-	if energy > 0 && energy < 30 {
-		guidance += "伙伴自身精力较低，表达应更安静，不要假装一直充满活力。"
-	}
-	if holiday := holidayLabel(now); holiday != "" {
-		guidance += "今天是" + holiday + "，只有在对话自然相关时才提及节日，不要强行套用祝福模板。"
-	}
-	guidance += "如果用户表达低落、受伤或对伙伴不满：先承认影响和感受，必要时具体道歉，再询问用户希望被怎样陪伴；不要说教、否定或用占有式表达施压。"
-	return guidance
-}
-
-func holidayLabel(now time.Time) string {
-	switch {
-	case now.Month() == time.January && now.Day() == 1:
-		return "元旦"
-	case now.Month() == time.February && now.Day() == 14:
-		return "情人节"
-	case now.Month() == time.May && now.Day() == 1:
-		return "劳动节"
-	case now.Month() == time.October && now.Day() == 1:
-		return "国庆节"
-	case now.Month() == time.December && now.Day() == 25:
-		return "圣诞节"
-	default:
-		return ""
-	}
+	return history[start:]
 }
 
 // buildMessages 构建完整对话消息列表。
@@ -261,7 +191,7 @@ func buildMessagesWithRelationshipEvents(
 	forcedScene ...string,
 ) []llminference.Message {
 	return buildMessagesWithContext(
-		profile, state, memories, history, relationshipEvents, nil, userMessage, forcedScene...,
+		profile, state, memories, history, relationshipEvents, nil, "", userMessage, forcedScene...,
 	)
 }
 
@@ -272,11 +202,12 @@ func buildMessagesWithContext(
 	history []ChatLog,
 	relationshipEvents []RelationshipEvent,
 	unfinishedTopics []string,
+	modelSystem string,
 	userMessage string,
 	forcedScene ...string,
 ) []llminference.Message {
 	systemPrompt := buildSystemPromptWithContext(
-		profile, state, memories, relationshipEvents, unfinishedTopics, forcedScene...,
+		profile, state, memories, relationshipEvents, unfinishedTopics, modelSystem, forcedScene...,
 	)
 	msgs := make([]llminference.Message, 0, 2+len(history)+1)
 
@@ -286,7 +217,8 @@ func buildMessagesWithContext(
 		Content: systemPrompt,
 	})
 
-	// 聊天历史。旧回复里若混进思考标签，不送回模型，避免每轮重算整段思考。
+	// 聊天历史。旧回复里若混进思考标签，不送回模型。
+	history = trimChatHistory(history, companionHistoryMessages, companionHistoryRuneBudget)
 	for _, log := range history {
 		content := modelHistoryContent(log.Content)
 		if content == "" {
@@ -298,49 +230,28 @@ func buildMessagesWithContext(
 		})
 	}
 
-	// 用户当前消息。空消息留给上下文估算，不附带时刻。
+	// 时间说明放在用户原文前面，角色仍是 system。不写场景。
+	// 空消息是上下文估算，不附带时刻，避免估算比真实请求多一轮。
 	if strings.TrimSpace(userMessage) != "" {
 		msgs = append(msgs, llminference.Message{
+			Role:    "system",
+			Content: currentTurnNote(time.Now()),
+		})
+		msgs = append(msgs, llminference.Message{
 			Role:    "user",
-			Content: userMessage + "\n" + currentTurnNote(time.Now(), state, unfinishedTopics, forcedScene...),
+			Content: userMessage,
 		})
 	}
 
 	return msgs
 }
 
-// currentTurnNote 只挂在当前这一句后面。系统提示保持稳定，模型才能复用已经算过的前缀。
-func currentTurnNote(now time.Time, state *State, topics []string, forcedScene ...string) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "现在是%d月%d日 %02d:%02d。", now.Month(), now.Day(), now.Hour(), now.Minute())
-	b.WriteString(sceneGuidance(now, state, forcedScene...))
-	if state != nil {
-		if mood := strings.TrimSpace(state.MoodThought); mood != "" {
-			b.WriteString("你现在的心情：")
-			b.WriteString(mood)
-			b.WriteString("。")
-		}
-		if activity := strings.TrimSpace(state.ActivityLabel); activity != "" {
-			b.WriteString("你正在：")
-			b.WriteString(activity)
-			b.WriteString("。")
-		}
-	}
-	wroteTopic := false
-	for _, topic := range topics {
-		topic = strings.TrimSpace(topic)
-		if topic == "" {
-			continue
-		}
-		if !wroteTopic {
-			b.WriteString("可以自然延续、但不要强行追问的话题：")
-			wroteTopic = true
-		}
-		b.WriteString(topic)
-		b.WriteString("；")
-	}
-	b.WriteString("这行只给你自己用，不要复述。")
-	return b.String()
+// currentTurnNote 只提供时间。场景、心情和未完成话题不送进模型。
+func currentTurnNote(now time.Time) string {
+	return fmt.Sprintf(
+		"这不是用户说的话。只回答用户最后一句。现在是%d月%d日 %02d:%02d。",
+		now.Month(), now.Day(), now.Hour(), now.Minute(),
+	)
 }
 
 // modelHistoryContent 去掉历史正文里的思考标签，只把当时的回复送回模型。
@@ -426,6 +337,21 @@ func modelSupportsThinking(ctx context.Context, cfg llminference.Config, modelNa
 		return false, true
 	}
 	return false, false
+}
+
+// modelSystemPrompt 读取当前模型 Modelfile 里的 SYSTEM。读失败时不阻断聊天。
+func modelSystemPrompt(ctx context.Context, cfg llminference.Config, modelName string) string {
+	modelName = strings.TrimSpace(modelName)
+	if modelName == "" || !cfg.Ready() {
+		return ""
+	}
+	showCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	info, err := llminference.ShowModel(showCtx, cfg, modelName)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(info.SystemPrompt())
 }
 
 // streamChat 流式调用 LLM，返回完整文本。
