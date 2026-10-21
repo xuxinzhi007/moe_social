@@ -11,6 +11,7 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/gift_animation_manager.dart';
 import '../../widgets/gift_icon_widget.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 
 class LivePkRoomPage extends StatefulWidget {
@@ -179,8 +180,7 @@ class _LivePkRoomPageState extends State<LivePkRoomPage> {
       await _loadBalance();
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('送礼失败，请检查余额后重试')));
+        MoeToast.error(context, '送礼失败，请检查余额后重试');
       }
     }
   }

@@ -144,6 +144,20 @@ class ThemeProvider with ChangeNotifier {
           color: isDark ? Colors.white : MoeTokens.titleText,
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        shape: StadiumBorder(
+          side: BorderSide(color: MoeTokens.primary.withValues(alpha: 0.16)),
+        ),
+        backgroundColor: isDark ? const Color(0xFF2A3142) : MoeTokens.surface1,
+        contentTextStyle: TextStyle(
+          color: isDark ? Colors.white : MoeTokens.titleText,
+          fontSize: MoeTokens.textSm,
+          fontWeight: FontWeight.w600,
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 48, vertical: 12),
+      ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         selectedItemColor: _primaryColor,

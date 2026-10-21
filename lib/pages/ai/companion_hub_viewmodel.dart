@@ -437,9 +437,14 @@ class CompanionHubViewModel extends ChangeNotifier {
   static List<CompanionDailyItem> _memoryDailyItems(
     List<CompanionMemoryData> memories,
   ) {
-    return memories.where((m) => m.content.trim().isNotEmpty).take(3).map(
-      (m) {
-        final text = m.content.trim();
+    return memories
+        .map((m) => (m, _readableMemory(m.content)))
+        .where((pair) => pair.$2.isNotEmpty)
+        .take(3)
+        .map(
+      (pair) {
+        final m = pair.$1;
+        final text = pair.$2;
         return CompanionDailyItem(
           kind: 'memory',
           title: '记得的事',
@@ -450,6 +455,17 @@ class CompanionHubViewModel extends ChangeNotifier {
         );
       },
     ).toList(growable: false);
+  }
+
+  /// 机器键不是给人看的记忆，例如 `memory deleted`、`partner_ability_range`。
+  static String _readableMemory(String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return '';
+    final hasWords = RegExp(r'[\u4e00-\u9fff]').hasMatch(text);
+    final machineKey = text.contains('_') && !hasWords;
+    final statusLine = text.toLowerCase().startsWith('memory ');
+    if (machineKey || statusLine) return '';
+    return text;
   }
 
   static List<CompanionDailyItem> _unifiedEventDailyItems(

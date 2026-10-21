@@ -7,6 +7,7 @@ import '../../constants/feature_flags.dart';
 import '../../models/post.dart';
 import '../../providers/companion_presence_provider.dart';
 import '../../services/companion_chat_launcher.dart';
+import '../../services/companion_model_presence.dart';
 import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/post_navigation.dart';
@@ -51,6 +52,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     _presence.addListener(_onPresenceChanged);
     _presence.setViewingCompanion(true);
     unawaited(_hub.loadDashboard());
+    unawaited(CompanionModelPresence.instance.refresh());
   }
 
   void _onHubChanged() {
@@ -152,10 +154,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     await Navigator.of(context).pushNamed('/game/arena');
   }
 
-  Future<void> _openJourney() async {
-    await Navigator.of(context).pushNamed('/companion-journey');
-  }
-
   Future<void> _editProfile() async {
     final saved = await Navigator.of(context).push<CompanionProfileData>(
       MaterialPageRoute(
@@ -188,6 +186,10 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: AiBrandTokens.titleColor,
         elevation: 0,
+        actions: const [
+          _IdentityCardAction(),
+          SizedBox(width: 12),
+        ],
       ),
       body: Stack(
         children: [
@@ -201,7 +203,12 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
             const Center(child: MoeLoading())
           else
             RefreshIndicator(
-              onRefresh: _hub.loadDashboard,
+              onRefresh: () async {
+                await Future.wait([
+                  _hub.loadDashboard(),
+                  CompanionModelPresence.instance.refresh(),
+                ]);
+              },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
@@ -228,15 +235,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       );
                     },
                   ),
-                  const SizedBox(height: 12),
-                  _QuickAction(
-                    icon: Icons.favorite_rounded,
-                    label: '历程',
-                    tint: MoeTokens.pastelPink,
-                    onTap: _openJourney,
-                  ),
-                  const SizedBox(height: 12),
-                  const _CharacterCardEntry(),
                   if (shouldShowCompanionDailyPanels(
                     arenaGamePrototype: FeatureFlags.arenaGamePrototype,
                   )) ...[
@@ -531,28 +529,7 @@ class _HeroCard extends StatelessWidget {
                   border:
                       Border.all(color: Colors.white.withValues(alpha: 0.8)),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: MoeTokens.success,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
-                      '在这里',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AiBrandTokens.companionInkMuted,
-                      ),
-                    ),
-                  ],
-                ),
+                child: const CompanionModelStatusChip(),
               ),
             ],
           ),
@@ -569,43 +546,76 @@ class _HeroCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 8),
-          _CompanionSummaryBlock(
-            pulse: pulse,
-            profile: profile,
-            state: state,
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           MoePressable(
             onTap: onChat,
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
             child: Semantics(
               button: true,
-              label: '开始聊天',
+              label: isAttention ? '回复 TA' : '开始聊天',
               child: Container(
                 width: double.infinity,
-                height: 46,
+                padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
                 decoration: BoxDecoration(
-                  gradient: MoeTokens.primaryGradient,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: MoeTokens.primary.withValues(alpha: 0.28),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: MoeTokens.surface1,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                  border: Border.all(
+                    color: MoeTokens.primary.withValues(alpha: 0.16),
+                  ),
+                  boxShadow: MoeTokens.shadowSm(),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.chat_bubble_rounded, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      isAttention ? '回复 TA' : '开始聊天',
-                      style: const TextStyle(
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        gradient: MoeTokens.primaryGradient,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.chat_bubble_rounded,
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isAttention ? '回复 TA' : '开始聊天',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: MoeTokens.titleText,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isAttention ? 'TA 有话想跟你说' : '接着刚才的话，继续聊',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: MoeTokens.hintText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: MoeTokens.primary.withValues(alpha: 0.10),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 16,
+                        color: MoeTokens.primary,
                       ),
                     ),
                   ],
@@ -619,268 +629,43 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-class _CompanionSummaryBlock extends StatelessWidget {
-  const _CompanionSummaryBlock({
-    required this.pulse,
-    required this.profile,
-    required this.state,
-  });
-
-  final CompanionPulseData pulse;
-  final CompanionProfileData profile;
-  final CompanionStateData state;
+class _IdentityCardAction extends StatelessWidget {
+  const _IdentityCardAction();
 
   @override
   Widget build(BuildContext context) {
-    final isAttention = pulse.kind == 'attention';
-    final accent = isAttention ? MoeTokens.pastelPink : AiBrandTokens.primary;
-    final stage = profile.relationshipStageLabel;
-    final progress = profile.relationshipProgress;
-    final progressLabel = profile.relationshipProgressLabel;
-    IconData icon = Icons.auto_awesome_rounded;
-    if (pulse.kind == 'attention') {
-      icon = Icons.favorite_rounded;
-    } else if (pulse.kind == 'memory') {
-      icon = Icons.psychology_alt_rounded;
-    } else if (pulse.kind == 'world' || pulse.kind == 'moment') {
-      icon = Icons.public_rounded;
-    } else if (pulse.kind == 'post') {
-      icon = Icons.article_rounded;
-    } else if (pulse.kind == 'chat') {
-      icon = Icons.chat_bubble_rounded;
-    }
-
-    final reduceMotion = moeReduceMotion(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withValues(alpha: 0.12)),
-        boxShadow: const [
-          BoxShadow(
-            color: MoeTokens.surfaceBorder,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.92, end: 1),
-            duration: reduceMotion
-                ? Duration.zero
-                : const Duration(milliseconds: 900),
-            curve: Curves.easeOutBack,
-            builder: (context, scale, child) {
-              return Transform.scale(scale: scale, child: child);
-            },
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.16),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-                ],
+    return Center(
+      child: MoePressable(
+        onTap: () => Navigator.pushNamed(context, '/character-card-plaza'),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        child: Semantics(
+          button: true,
+          label: '身份卡',
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: MoeTokens.surface1,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+              border: Border.all(
+                color: MoeTokens.primary.withValues(alpha: 0.16),
               ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: accent, size: 16),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        pulse.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AiBrandTokens.titleColor,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      stage,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: accent,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                AnimatedSwitcher(
-                  duration: reduceMotion
-                      ? Duration.zero
-                      : const Duration(milliseconds: 240),
-                  child: Align(
-                    key: ValueKey(pulse.body),
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      pulse.body,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        height: 1.2,
-                        color: MoeTokens.inkMuted,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(
-                    minHeight: 4,
-                    value: progress,
-                    backgroundColor: MoeTokens.lineSoft,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      MoeTokens.pastelPink,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 3),
+                Icon(Icons.style_rounded, color: MoeTokens.primary, size: 16),
+                SizedBox(width: 4),
                 Text(
-                  state.activityLabel.trim().isNotEmpty
-                      ? '$progressLabel · ${state.activityLabel.trim()}'
-                      : '$progressLabel · 关系在持续生长中',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  '身份卡',
                   style: TextStyle(
-                    fontSize: 10,
-                    height: 1.2,
-                    color: MoeTokens.inkMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: MoeTokens.titleText,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CharacterCardEntry extends StatelessWidget {
-  const _CharacterCardEntry();
-
-  @override
-  Widget build(BuildContext context) {
-    return MoePressable(
-      onTap: () => Navigator.pushNamed(context, '/character-card-plaza'),
-      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: MoeTokens.surface1,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-          border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.style_rounded, color: MoeTokens.primary, size: 22),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '身份卡',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: MoeTokens.titleText,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    '官方样板和你保存的卡，套到自己的模型上',
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.3,
-                      color: MoeTokens.hintText,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: MoeTokens.hintText),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.tint,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color tint;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: tint.withValues(alpha: 0.16)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x147F7FD5),
-                blurRadius: 8,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: tint),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: tint,
-                ),
-              ),
-            ],
           ),
         ),
       ),

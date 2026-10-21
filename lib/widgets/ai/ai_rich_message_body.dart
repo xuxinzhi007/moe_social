@@ -86,9 +86,7 @@ class _MarkdownSegment extends StatelessWidget {
         fontWeight: FontWeight.w700,
       ),
       em: TextStyle(
-        color: isUser
-            ? textColor.withValues(alpha: 0.9)
-            : Colors.grey.shade600,
+        color: isUser ? textColor.withValues(alpha: 0.9) : Colors.grey.shade600,
         fontStyle: FontStyle.italic,
         height: 1.5,
       ),
@@ -115,14 +113,17 @@ class _MarkdownSegment extends StatelessWidget {
         ),
       ),
       listBullet: TextStyle(color: textColor, fontSize: 15),
-      h1: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.w800),
-      h2: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700),
-      h3: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w700),
+      h1: TextStyle(
+          color: textColor, fontSize: 20, fontWeight: FontWeight.w800),
+      h2: TextStyle(
+          color: textColor, fontSize: 18, fontWeight: FontWeight.w700),
+      h3: TextStyle(
+          color: textColor, fontSize: 16, fontWeight: FontWeight.w700),
     );
 
     return MarkdownBody(
       data: text,
-      selectable: true,
+      selectable: false,
       styleSheet: sheet,
       shrinkWrap: true,
       softLineBreak: true,
@@ -192,7 +193,8 @@ class _CodeFenceBlockState extends State<_CodeFenceBlock> {
                   child: Text(
                     _copied ? '已复制' : '复制',
                     style: TextStyle(
-                      color: _copied ? Colors.greenAccent : Colors.grey.shade400,
+                      color:
+                          _copied ? Colors.greenAccent : Colors.grey.shade400,
                       fontSize: 12,
                     ),
                   ),

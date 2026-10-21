@@ -107,6 +107,19 @@ class AiTtsHelper {
     return '${hz >= 0 ? '+' : ''}${hz}Hz';
   }
 
+  /// Edge 朗读直连微软语音 WebSocket。连不上时不要把异常原文抛到界面上。
+  String _speechFailureMessage(Object error) {
+    final raw = error.toString().toLowerCase();
+    if (raw.contains('websocket') ||
+        raw.contains('socket') ||
+        raw.contains('connection') ||
+        raw.contains('timed out') ||
+        raw.contains('handshake')) {
+      return '朗读服务暂时连不上，这条先看文字就好';
+    }
+    return '朗读没有合成成功，请稍后再试';
+  }
+
   String get _volumeTag {
     final pct = ((_volume - 1.0) * 100).round().clamp(-50, 100);
     return '${pct >= 0 ? '+' : ''}$pct%';
@@ -155,10 +168,7 @@ class AiTtsHelper {
       bytes = await communicate.toBytes();
     } catch (e) {
       if (gen != _generation) return false;
-      final msg = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
-      throw Exception(
-        msg.isEmpty ? '朗读合成失败，请检查网络' : '朗读合成失败：$msg',
-      );
+      throw Exception(_speechFailureMessage(e));
     }
 
     if (gen != _generation) return false;
