@@ -803,7 +803,7 @@ class _CharacterCardEntry extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '角色卡',
+                    '身份卡',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/moe_theme_extension.dart';
 import '../theme/moe_tokens.dart';
+import '../widgets/moe_input_field.dart';
 
 class ThemeProvider with ChangeNotifier {
   // 主题模式：light、dark、system
@@ -124,13 +125,7 @@ class ThemeProvider with ChangeNotifier {
           elevation: 0,
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-        filled: true,
-        fillColor: isDark ? Colors.grey[800] : MoeTokens.softChipBg,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      ),
+      inputDecorationTheme: MoeFieldDecoration.theme(isDark: isDark),
       scaffoldBackgroundColor: scaffoldBg,
       // cardTheme: CardTheme(
       //   color: isDark ? Colors.grey[800] : Colors.white,

@@ -113,14 +113,6 @@ class _CommunityPostSearchPageState extends State<CommunityPostSearchPage> {
             _search(keyword);
           },
         ),
-        actions: [
-          if (_query.text.isNotEmpty)
-            IconButton(
-              tooltip: '清除',
-              onPressed: _query.clear,
-              icon: const Icon(Icons.close_rounded),
-            ),
-        ],
       ),
       body: _buildBody(),
     );

@@ -143,24 +143,17 @@ func (s *store) FindAllConfigs(ctx context.Context) ([]model.AiUserConfig, error
 	return configs, err
 }
 
+// GetUserDisplayName 返回广场上的账号用户名。飞书、微信等第三方显示名不出现在这里。
 func (s *store) GetUserDisplayName(ctx context.Context, userID uint) string {
 	var user model.User
-	if err := s.db.WithContext(ctx).Select("id", "username", "email", "feishu_name").First(&user, userID).Error; err != nil {
+	if err := s.db.WithContext(ctx).Select("id", "username", "email").First(&user, userID).Error; err != nil {
 		return fmt.Sprintf("user#%d", userID)
 	}
-	username := strings.TrimSpace(user.Username)
-	feishuName := strings.TrimSpace(user.FeishuName)
-	if username != "" && feishuName != "" && username != feishuName {
-		return username + "（飞书：" + feishuName + "）"
-	}
-	if username != "" {
+	if username := strings.TrimSpace(user.Username); username != "" {
 		return username
 	}
-	if feishuName != "" {
-		return feishuName
-	}
-	if strings.TrimSpace(user.Email) != "" {
-		return user.Email
+	if email := strings.TrimSpace(user.Email); email != "" {
+		return email
 	}
 	return fmt.Sprintf("user#%d", userID)
 }

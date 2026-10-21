@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/moe_tokens.dart';
+import '../moe_input_field.dart';
 import 'ai_brand_tokens.dart';
 
 /// AI 酒馆模块：间距、圆角、阴影、文字样式（色彩见 [AiBrandTokens]）。
@@ -80,28 +81,10 @@ abstract final class AiTheme {
     String? hintText,
     bool alignLabelWithHint = false,
   }) {
-    return InputDecoration(
+    return MoeFieldDecoration.decorate(
       labelText: labelText,
       hintText: hintText,
       alignLabelWithHint: alignLabelWithHint,
-      filled: true,
-      fillColor: const Color(0xFFF7F8FC),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusAiCard),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusAiCard),
-        borderSide: BorderSide(color: Colors.grey.shade200),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusAiCard),
-        borderSide: const BorderSide(color: AiBrandTokens.primary, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: MoeTokens.spaceLg - 2, // 14
-        vertical: MoeTokens.spaceMd, // 12
-      ),
     );
   }
 

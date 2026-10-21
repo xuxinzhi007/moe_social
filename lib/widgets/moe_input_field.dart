@@ -1,6 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/theme/moe_tokens.dart';
 
+/// 表单输入的统一外观。主题、[MoeInputField] 和各页装饰都从这里取。
+class MoeFieldDecoration {
+  static const BorderRadius radius =
+      BorderRadius.all(Radius.circular(MoeTokens.radiusMd));
+
+  static OutlineInputBorder _box(BorderSide side) {
+    return OutlineInputBorder(borderRadius: radius, borderSide: side);
+  }
+
+  static BorderSide _idle({bool emphasize = false, bool isDark = false}) {
+    return BorderSide(
+      color: MoeTokens.primary.withValues(
+        alpha: isDark ? 0.35 : (emphasize ? 0.22 : 0.16),
+      ),
+    );
+  }
+
+  static const BorderSide _focused = BorderSide(
+    color: MoeTokens.primary,
+    width: 1.4,
+  );
+
+  static InputDecorationTheme theme({required bool isDark}) {
+    final idle = _box(_idle(isDark: isDark));
+    final focused = _box(
+      BorderSide(
+        color: MoeTokens.primary.withValues(alpha: isDark ? 0.85 : 0.55),
+        width: 1.4,
+      ),
+    );
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: isDark ? const Color(0xFF2A3142) : MoeTokens.pageBackground,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      hintStyle: const TextStyle(
+        color: MoeTokens.hintText,
+        fontSize: MoeTokens.textSm,
+        fontWeight: FontWeight.w500,
+      ),
+      labelStyle: const TextStyle(
+        color: MoeTokens.inkMuted,
+        fontSize: MoeTokens.textSm,
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: MoeTokens.primary,
+        fontSize: MoeTokens.textSm,
+        fontWeight: FontWeight.w600,
+      ),
+      border: idle,
+      enabledBorder: idle,
+      focusedBorder: focused,
+      errorBorder: _box(const BorderSide(color: MoeTokens.danger)),
+      focusedErrorBorder:
+          _box(const BorderSide(color: MoeTokens.danger, width: 1.4)),
+    );
+  }
+
+  static InputDecoration decorate({
+    String? hintText,
+    String? labelText,
+    bool alignLabelWithHint = false,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+    String? errorText,
+    TextStyle? hintStyle,
+    bool emphasize = false,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      labelText: labelText,
+      alignLabelWithHint: alignLabelWithHint,
+      errorText: errorText,
+      filled: true,
+      fillColor: MoeTokens.pageBackground,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      hintStyle: hintStyle ??
+          TextStyle(
+            color: MoeTokens.hintText,
+            fontSize: emphasize ? MoeTokens.textMd : MoeTokens.textSm,
+            fontWeight: emphasize ? FontWeight.w600 : FontWeight.w500,
+          ),
+      border: _box(_idle(emphasize: emphasize)),
+      enabledBorder: _box(_idle(emphasize: emphasize)),
+      focusedBorder: _box(_focused),
+      errorBorder: _box(const BorderSide(color: MoeTokens.danger)),
+      focusedErrorBorder:
+          _box(const BorderSide(color: MoeTokens.danger, width: 1.4)),
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+    );
+  }
+}
+
 /// 萌社交统一输入框组件 — 渐变背景 + 聚焦发光 + 图标渐变圆圈。
 ///
 /// 作为项目唯一标准输入框，覆盖登录/注册/发帖/搜索等全部场景。
@@ -101,45 +196,28 @@ class _MoeInputFieldState extends State<MoeInputField> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: MoeTokens.motionMedium,
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(MoeTokens.radiusInput + 4),
-        boxShadow: _isFocused
-            ? [
-                BoxShadow(
-                  color: widget.primaryColor.withValues(alpha: 0.12),
-                  blurRadius: 16,
-                  spreadRadius: 1,
-                ),
-              ]
-            : [],
-      ),
-      child: TextFormField(
-        controller: widget.controller,
-        maxLines: widget.maxLines ?? (widget.isPassword ? 1 : null),
-        minLines: widget.minLines,
-        readOnly: widget.readOnly,
-        onTap: widget.onTap,
-        focusNode: _focusNode,
-        textInputAction: widget.textInputAction ??
-            (widget.isPassword ? TextInputAction.done : TextInputAction.next),
-        keyboardType: widget.keyboardType ??
-            (widget.isPassword ? TextInputType.visiblePassword : null),
-        onFieldSubmitted: widget.onFieldSubmitted,
-        onEditingComplete: widget.onEditingComplete,
-        validator: widget.validator,
-        autovalidateMode:
-            widget.autovalidateMode ?? AutovalidateMode.disabled,
-        obscureText: widget.isPassword && _obscurePassword,
-        style: widget.style ??
-            TextStyle(
-              fontSize: MoeTokens.textBase,
-              color: MoeTokens.titleText,
-            ),
-        decoration: _buildDecoration(),
-      ),
+    return TextFormField(
+      controller: widget.controller,
+      maxLines: widget.maxLines ?? (widget.isPassword ? 1 : null),
+      minLines: widget.minLines,
+      readOnly: widget.readOnly,
+      onTap: widget.onTap,
+      focusNode: _focusNode,
+      textInputAction: widget.textInputAction ??
+          (widget.isPassword ? TextInputAction.done : TextInputAction.next),
+      keyboardType: widget.keyboardType ??
+          (widget.isPassword ? TextInputType.visiblePassword : null),
+      onFieldSubmitted: widget.onFieldSubmitted,
+      onEditingComplete: widget.onEditingComplete,
+      validator: widget.validator,
+      autovalidateMode: widget.autovalidateMode ?? AutovalidateMode.disabled,
+      obscureText: widget.isPassword && _obscurePassword,
+      style: widget.style ??
+          TextStyle(
+            fontSize: MoeTokens.textBase,
+            color: MoeTokens.titleText,
+          ),
+      decoration: _buildDecoration(),
     );
   }
 
@@ -165,7 +243,9 @@ class _MoeInputFieldState extends State<MoeInputField> {
         ),
         child: Icon(
           widget.icon,
-          color: _isFocused ? Colors.white : widget.primaryColor.withValues(alpha: 0.6),
+          color: _isFocused
+              ? Colors.white
+              : widget.primaryColor.withValues(alpha: 0.6),
           size: 16,
         ),
       );
@@ -182,56 +262,14 @@ class _MoeInputFieldState extends State<MoeInputField> {
           color: Colors.grey[400],
           size: 20,
         ),
-        onPressed: () =>
-            setState(() => _obscurePassword = !_obscurePassword),
+        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
       );
     }
 
-    return InputDecoration(
-      filled: widget.filled,
-      fillColor: widget.fillColor ?? Colors.white.withValues(alpha: 0.6),
-
-      // 默认状态：半透明边框
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
-        borderSide: BorderSide(color: MoeTokens.surfaceBorder.withAlpha(20)),
-      ),
-
-      // 聚焦状态：渐变边框色
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
-        borderSide: BorderSide(
-          color: widget.primaryColor.withValues(alpha: 0.5),
-          width: 1.5,
-        ),
-      ),
-
-      // 错误状态：红色 1.5px 边框
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-
-      // 聚焦+错误：红色 1.5px 边框
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: MoeTokens.spaceLg,
-        vertical: MoeTokens.spaceMd,
-      ),
-
+    return MoeFieldDecoration.decorate(
       hintText: widget.hintText,
-      hintStyle: widget.hintStyle ??
-          TextStyle(color: MoeTokens.hintText, fontSize: MoeTokens.textBase),
-
+      hintStyle: widget.hintStyle,
       prefixIcon: prefix,
-      prefixIconConstraints: const BoxConstraints(
-        minWidth: 42,
-        minHeight: 42,
-      ),
       suffixIcon: suffix,
     );
   }

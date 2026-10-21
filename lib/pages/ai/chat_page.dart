@@ -16,6 +16,7 @@ import '../../models/ai_provider_profile.dart';
 import '../../widgets/motion/moe_reveal_once.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_search_bar.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
@@ -236,7 +237,6 @@ class _ChatPageState extends State<ChatPage> {
               maxLines: 8,
               decoration: const InputDecoration(
                 hintText: '例如：我是一个偏理性但容易焦虑的产品经理，希望对方叫我阿栀，回答尽量直接一点。',
-                border: OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
             ),
@@ -1471,14 +1471,12 @@ class _ChatPageState extends State<ChatPage> {
             )
           : null,
       title: searching
-          ? TextField(
+          ? MoeSearchBar(
               controller: _searchController,
               autofocus: true,
-              decoration: const InputDecoration(
-                hintText: '搜索消息...',
-                border: InputBorder.none,
-              ),
-              onChanged: _performSearch,
+              hintText: '搜索消息',
+              onSearch: _performSearch,
+              onClear: () => _performSearch(''),
             )
           : Column(
               mainAxisSize: MainAxisSize.min,

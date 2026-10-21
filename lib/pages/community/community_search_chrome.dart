@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_search_bar.dart';
 
-/// 兴趣社区搜索框。圈子和讨论共用这一套，避免两套输入样式。
+/// 兴趣社区搜索框。圈子和讨论共用 [MoeSearchBar]。
 class CommunitySearchField extends StatelessWidget {
   const CommunitySearchField({
     super.key,
@@ -17,26 +18,16 @@ class CommunitySearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      autofocus: true,
-      textInputAction: TextInputAction.search,
-      style: const TextStyle(
-        color: MoeTokens.titleText,
-        fontSize: MoeTokens.textBase,
-        fontWeight: FontWeight.w600,
-      ),
-      decoration: InputDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: MoeSearchBar(
+        controller: controller,
         hintText: hintText,
-        hintStyle: const TextStyle(
-          color: MoeTokens.hintText,
-          fontSize: MoeTokens.textBase,
-          fontWeight: FontWeight.w600,
-        ),
-        border: InputBorder.none,
-        isCollapsed: true,
+        autofocus: true,
+        onSubmitted: onSubmitted,
+        onSearch: (_) {},
+        onClear: () {},
       ),
-      onSubmitted: onSubmitted,
     );
   }
 }

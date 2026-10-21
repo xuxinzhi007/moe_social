@@ -10,6 +10,7 @@ import '../../theme/moe_tokens.dart';
 import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_pressable.dart';
@@ -433,24 +434,19 @@ class _CreateInterestGroupSheetState extends State<_CreateInterestGroupSheet> {
               const SizedBox(height: 16),
               MoeReveal(
                 delay: const Duration(milliseconds: 60),
-                child: TextField(
+                child: MoeInputField(
                   controller: _nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: '群组名称',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: '群组名称',
                 ),
               ),
               const SizedBox(height: 12),
               MoeReveal(
                 delay: const Duration(milliseconds: 90),
-                child: TextField(
+                child: MoeInputField(
                   controller: _descCtrl,
+                  hintText: '简介',
+                  minLines: 3,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: '简介',
-                    border: OutlineInputBorder(),
-                  ),
                 ),
               ),
               const SizedBox(height: 8),

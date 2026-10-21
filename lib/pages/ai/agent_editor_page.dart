@@ -1,31 +1,22 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_lorebook.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../services/ai_agent_cloud_service.dart';
-import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../services/ai_agent_draft_factory.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_api_service.dart';
 import '../../theme/moe_tokens.dart';
-import '../../widgets/ai/ai_brand_tokens.dart';
-import '../../widgets/ai/ai_chip.dart';
 import '../../widgets/ai/ai_scaffold.dart';
-import '../../widgets/ai/ai_section_header.dart';
-import '../../widgets/ai/ai_surface_card.dart';
-import '../../widgets/ai/ai_theme.dart';
-import '../../widgets/moe_action_row.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/app_message_widget.dart';
 import '../../providers/loading_provider.dart';
-import '../../widgets/moe_input_field.dart';
 import '../../widgets/motion/moe_reveal.dart';
-import 'ai_provider_profiles_page.dart';
 
 class AgentEditorPage extends StatefulWidget {
   final AiAgent? agent;
@@ -46,18 +37,19 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   late TextEditingController _scenarioController;
   late TextEditingController _openingMessageController;
   late TextEditingController _exampleDialoguesController;
-  List<String> _models = [];
   List<AiProviderProfile> _providerProfiles = [
     AiProviderProfile.builtinBackend(),
   ];
   List<AiLorebook> _lorebooks = [];
   String _providerProfileId = AiProviderProfile.builtinBackendId;
   String? _lorebookId;
-  bool _isLoadingModels = false;
   bool _createRealModel = false;
   bool _syncModelOnEdit = false;
-  bool _showAdvancedFields = false;
   bool _publishToPlaza = false;
+  int _facet = 0;
+  String? _templateId;
+  int _cardPop = 0;
+  final FocusNode _writingFocus = FocusNode();
   bool _pageActive = true;
   bool _supportsModelManagement = false;
   final String _newAgentId = LlmApiService.newRequestId();
@@ -72,9 +64,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     }
     return AiProviderProfile.builtinBackend();
   }
-
-  bool get _selectedProviderIsBackend =>
-      (_selectedProvider ?? AiProviderProfile.builtinBackend()).isBackendOllama;
 
   @override
   void initState() {
@@ -97,7 +86,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         TextEditingController(text: agent?.openingMessage ?? '');
     _exampleDialoguesController =
         TextEditingController(text: agent?.exampleDialogues ?? '');
-    _modelNameController.addListener(() {
+    _writingFocus.addListener(() {
       if (mounted) setState(() {});
     });
     if (agent != null) {
@@ -105,10 +94,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           agent.providerProfileId ?? AiProviderProfile.builtinBackendId;
       _lorebookId = agent.lorebookId;
       _publishToPlaza = agent.isPublic;
-      final modelSeed = agent.modelName.trim();
-      if (modelSeed.isNotEmpty) {
-        _models = [modelSeed];
-      }
     }
     _loadProviders();
     _loadLorebooks();
@@ -137,6 +122,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     _scenarioController.dispose();
     _openingMessageController.dispose();
     _exampleDialoguesController.dispose();
+    _writingFocus.dispose();
     super.dispose();
   }
 
@@ -147,41 +133,14 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     } catch (_) {
       return;
     }
-    final lastSelected = await AiProviderService().readLastSelectedProfileId();
-    if (!mounted) return;
-    final profile = profiles.firstWhere(
-      (item) => item.id == _providerProfileId,
-      orElse: () => AiProviderProfile.builtinBackend(),
-    );
     if (!mounted || !_pageActive) return;
     setState(() {
       _providerProfiles = profiles;
-      if (widget.agent == null &&
-          lastSelected != null &&
-          profiles.any((item) => item.id == lastSelected)) {
-        _providerProfileId = lastSelected;
-      }
       final exists = profiles.any((item) => item.id == _providerProfileId);
       if (!exists) {
         _providerProfileId = AiProviderProfile.builtinBackendId;
       }
-      final selected = profiles.firstWhere(
-        (item) => item.id == _providerProfileId,
-        orElse: () => AiProviderProfile.builtinBackend(),
-      );
-      if (_models.isEmpty && selected.effectiveModelIds.isNotEmpty) {
-        _models = selected.effectiveModelIds;
-      }
-      final bound = _modelNameController.text.trim();
-      if (bound.isEmpty) {
-        if (selected.defaultModel.trim().isNotEmpty) {
-          _modelNameController.text = selected.defaultModel.trim();
-        } else if (selected.effectiveModelIds.isNotEmpty) {
-          _modelNameController.text = selected.effectiveModelIds.first;
-        }
-      }
     });
-    unawaited(_loadModels(background: profile.isBackendOllama));
   }
 
   Future<void> _loadLorebooks() async {
@@ -200,48 +159,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     }
   }
 
-  Future<void> _applyStarterTemplate() async {
-    final result = await showModalBottomSheet<AiStarterAgentTemplate>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(MoeTokens.spaceLg),
-            children: [
-              const Text(
-                '选择角色模板',
-                style: TextStyle(
-                    fontSize: MoeTokens.textLg, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: MoeTokens.spaceSm),
-              Text(
-                '模板会填充角色结构，便于你继续改成自己的风格。',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: MoeTokens.spaceLg),
-              ...AiStarterTemplates.agentTemplates.map(
-                (template) => Card(
-                  child: MoeActionRow(
-                    icon: Icons.auto_awesome_rounded,
-                    iconColor: AiBrandTokens.primary,
-                    title: template.name,
-                    subtitle: Text(
-                      '${template.tagline}\n${template.description}',
-                      style: const TextStyle(height: 1.4),
-                    ),
-                    onTap: () => Navigator.pop(ctx, template),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (result == null || !mounted || !_pageActive) return;
+  void _fillTemplate(AiStarterAgentTemplate result) {
     setState(() {
+      _templateId = result.id;
+      _cardPop += 1;
+      _facet = 0;
       _nameController.text = result.name;
       _descController.text = result.description;
       _promptController.text = result.systemPrompt;
@@ -250,180 +172,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       _openingMessageController.text = result.openingMessage;
       _exampleDialoguesController.text = result.exampleDialogues;
     });
-  }
-
-  Future<void> _loadModels({bool background = false}) async {
-    final profile = _selectedProvider ?? AiProviderProfile.builtinBackend();
-    final localIds = profile.effectiveModelIds;
-    if (!background && mounted && localIds.isNotEmpty) {
-      setState(() => _models = localIds);
-    }
-
-    // 中转站已配置模型 ID 时不必阻塞页面等 /models。
-    if (!profile.isBackendOllama && localIds.isNotEmpty && !background) {
-      return;
-    }
-
-    if (mounted && _pageActive) setState(() => _isLoadingModels = true);
-    try {
-      final models = await AiChatGatewayService()
-          .fetchModelsForProfile(profile)
-          .timeout(const Duration(seconds: 5));
-      if (!mounted || !_pageActive) return;
-      setState(() {
-        if (models.isNotEmpty) {
-          _models = models;
-        } else if (localIds.isNotEmpty) {
-          _models = localIds;
-        }
-        final current = _modelNameController.text.trim();
-        if (current.isEmpty && _models.isNotEmpty) {
-          _modelNameController.text = _models.first;
-        }
-      });
-      if (_selectedProviderIsBackend &&
-          widget.agent != null &&
-          !background &&
-          _promptController.text.trim().isEmpty &&
-          _modelNameController.text.trim().isNotEmpty) {
-        unawaited(_refreshPromptFromBackend(_modelNameController.text.trim()));
-      }
-    } catch (_) {
-      if (mounted && _pageActive && _models.isEmpty && localIds.isNotEmpty) {
-        setState(() => _models = localIds);
-      }
-    } finally {
-      if (mounted && _pageActive) setState(() => _isLoadingModels = false);
-    }
-  }
-
-  /// 从后端 AI 网关获取模型实际系统提示词
-  Future<String> _fetchBackendModelSystemPrompt(String modelName) =>
-      LlmApiService.fetchBackendModelSystemPrompt(modelName);
-
-  Widget _buildPromptPreview(String localPrompt, String modelName) {
-    return Material(
-      color: Colors.blue.shade50.withValues(alpha: 0.4),
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.blue.shade100),
-        borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          key: ValueKey('prompt-preview-$modelName'),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
-          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-          leading: const Icon(Icons.visibility_outlined,
-              size: 18, color: Colors.blueGrey),
-          title: const Text(
-            '查看当前提示词（含后端模型内置）',
-            style: TextStyle(
-                fontSize: 13,
-                color: Colors.blueGrey,
-                fontWeight: FontWeight.w500),
-          ),
-          children: [
-            FutureBuilder<String>(
-              future: _fetchBackendModelSystemPrompt(modelName),
-              builder: (ctx, snap) {
-                final ollamaPrompt = snap.data;
-                final effectivePrompt =
-                    (ollamaPrompt != null && ollamaPrompt.isNotEmpty)
-                        ? ollamaPrompt
-                        : localPrompt;
-                final isLoading =
-                    snap.connectionState == ConnectionState.waiting;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 8),
-                            Text('正在从后端读取...',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
-                          ],
-                        ),
-                      )
-                    else ...[
-                      if (ollamaPrompt != null && ollamaPrompt.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.check_circle_outline_rounded,
-                                  size: 13, color: Colors.green),
-                              const SizedBox(width: 4),
-                              Text('来自后端模型配置',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.green.shade700)),
-                            ],
-                          ),
-                        ),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(MoeTokens.spaceMd),
-                        decoration: BoxDecoration(
-                          color: MoeTokens.cardBackground,
-                          borderRadius:
-                              BorderRadius.circular(MoeTokens.radiusSm),
-                        ),
-                        child: effectivePrompt.isEmpty
-                            ? Text(
-                                '暂未设置提示词',
-                                style: TextStyle(
-                                    color: Colors.grey.shade400,
-                                    fontStyle: FontStyle.italic,
-                                    fontSize: 13),
-                              )
-                            : SelectableText(
-                                effectivePrompt,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    height: 1.6,
-                                    color: Colors.black87),
-                              ),
-                      ),
-                      if (effectivePrompt.isNotEmpty)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap),
-                            icon: const Icon(Icons.copy_rounded, size: 13),
-                            label: const Text('复制',
-                                style: TextStyle(fontSize: 12)),
-                            onPressed: () async {
-                              await Clipboard.setData(
-                                  ClipboardData(text: effectivePrompt));
-                              if (!ctx.mounted) return;
-                              MoeToast.success(ctx, '提示词已复制');
-                            },
-                          ),
-                        ),
-                    ],
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   String _userFacingSaveError(Object e) {
@@ -457,11 +205,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       final prompt = _promptController.text.trim();
       final provider = _selectedProvider ?? AiProviderProfile.builtinBackend();
 
-      // 身份卡：modelName 仅为聊天时传给 API 的模型 ID，与 Ollama 是否「创建模型」无关。
-      final modelForChat = _modelNameController.text.trim();
-      if (modelForChat.isEmpty) {
-        throw Exception('请输入绑定模型 ID');
-      }
+      // 新建卡不记模型。旧卡上已有的模型名原样留着，真正绑定发生在广场「使用」。
+      final modelForChat = isNewAgent ? '' : _modelNameController.text.trim();
 
       final shouldCreateOllamaModel =
           provider.isBackendOllama && isNewAgent && _createRealModel;
@@ -512,11 +257,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
 
       if (mounted && _pageActive) {
         if (syncError != null) {
-          MoeToast.error(context, '角色卡已保存；$syncError');
+          MoeToast.error(context, '身份卡已保存；$syncError');
         } else {
           MoeToast.success(
             context,
-            syncResult?.outcomeMessage ?? (isNewAgent ? '角色卡已保存' : '修改已保存'),
+            syncResult?.outcomeMessage ?? (isNewAgent ? '身份卡已保存' : '修改已保存'),
           );
         }
         _pageActive = false;
@@ -553,51 +298,499 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     );
   }
 
-  Future<void> _refreshPromptFromBackend(String modelName) async {
-    final prompt = await LlmApiService.fetchBackendModelSystemPrompt(modelName);
-    if (!mounted || prompt.trim().isEmpty || prompt.startsWith('（读取失败')) {
-      return;
-    }
-    _promptController.text = prompt.trim();
+  static const _facets = [
+    (label: '人设', hint: '这个角色是什么样的人'),
+    (label: '场景', hint: '现在处在什么场合'),
+    (label: '开场', hint: '见面第一句'),
+    (label: '提示词', hint: '真正交给模型的说法'),
+    (label: '示例', hint: '一两段示范对话'),
+  ];
+
+  TextEditingController get _facetController {
+    return switch (_facet) {
+      0 => _personaController,
+      1 => _scenarioController,
+      2 => _openingMessageController,
+      3 => _promptController,
+      _ => _exampleDialoguesController,
+    };
   }
 
-  Widget _buildModelChips() {
-    if (_models.isEmpty) return const SizedBox.shrink();
-    final selected = _modelNameController.text.trim();
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: _models.map((model) {
-          return AiChip(
-            label: model,
-            selected: model == selected,
-            icon: Icons.memory_rounded,
-            onTap: () => setState(() => _modelNameController.text = model),
-          );
-        }).toList(),
+  Duration _motion(BuildContext context) {
+    return MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : MoeTokens.motionFast;
+  }
+
+  Widget _tinyChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    IconData? icon,
+  }) {
+    return MoePressable(
+      onTap: onTap,
+      pressedScale: MoeTokens.motionPressScaleStrong,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+      child: AnimatedContainer(
+        duration: _motion(context),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected
+              ? MoeTokens.primary.withValues(alpha: 0.12)
+              : MoeTokens.softChipBg,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 12, color: MoeTokens.primary),
+              const SizedBox(width: 3),
+            ],
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 108),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: MoeTokens.textXs,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? MoeTokens.primary : MoeTokens.inkMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildFieldSection({
-    required String title,
-    required String? subtitle,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AiSectionHeader(title: title, subtitle: subtitle),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AiTheme.pagePadding),
-          child: AiSurfaceCard(
-            padding: const EdgeInsets.all(AiTheme.cardPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: MoeTokens.textXs,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.6,
+          color: MoeTokens.inkMuted,
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _insetField(String hint, {bool emphasize = false}) {
+    return MoeFieldDecoration.decorate(
+      hintText: hint,
+      emphasize: emphasize,
+    );
+  }
+
+  Widget _buildStudioCard() {
+    final card = Container(
+      decoration: BoxDecoration(
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        boxShadow: MoeTokens.shadowCard(),
+        border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.08)),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                '身份',
+                style: TextStyle(
+                  fontSize: MoeTokens.textXs,
+                  fontWeight: FontWeight.w700,
+                  color: MoeTokens.primary.withValues(alpha: 0.8),
+                ),
+              ),
+              const Spacer(),
+              _tinyChip(
+                label: _publishToPlaza ? '广场可见' : '仅自己',
+                icon: _publishToPlaza
+                    ? Icons.public_rounded
+                    : Icons.lock_outline_rounded,
+                selected: _publishToPlaza,
+                onTap: () => setState(() => _publishToPlaza = !_publishToPlaza),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _nameMark(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _nameController,
+                      style: const TextStyle(
+                        fontSize: MoeTokens.textMd,
+                        height: 1.2,
+                        fontWeight: FontWeight.w700,
+                        color: MoeTokens.titleText,
+                      ),
+                      decoration: _insetField('角色名字', emphasize: true),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? '写一个名字'
+                              : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _descController,
+                      minLines: 1,
+                      maxLines: 2,
+                      style: const TextStyle(
+                        fontSize: MoeTokens.textSm,
+                        height: 1.35,
+                        color: MoeTokens.inkMuted,
+                      ),
+                      decoration: _insetField('一句话介绍'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          ListenableBuilder(
+            listenable: _openingMessageController,
+            builder: (context, _) {
+              final line = _openingMessageController.text.trim();
+              return AnimatedSize(
+                duration: _motion(context) == Duration.zero
+                    ? Duration.zero
+                    : MoeTokens.motionMedium,
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topLeft,
+                child: line.isEmpty
+                    ? const SizedBox(width: double.infinity)
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: MoeTokens.softChipBg,
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusMd),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.format_quote_rounded,
+                                  size: 14,
+                                  color: MoeTokens.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    line,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: MoeTokens.textXs,
+                                      height: 1.35,
+                                      color: MoeTokens.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MoeTokens.spaceLg,
+        MoeTokens.spaceSm,
+        MoeTokens.spaceLg,
+        0,
+      ),
+      child: _cardPop == 0
+          ? card
+          : TweenAnimationBuilder<double>(
+              key: ValueKey(_cardPop),
+              tween: Tween(begin: 0.96, end: 1),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : MoeTokens.motionMedium,
+              curve: Curves.easeOutBack,
+              builder: (context, scale, child) {
+                return Transform.scale(scale: scale, child: child);
+              },
+              child: card,
             ),
+    );
+  }
+
+  Widget _nameMark() {
+    return ListenableBuilder(
+      listenable: _nameController,
+      builder: (context, _) {
+        final name = _nameController.text.trim();
+        final letter = name.isEmpty ? '卡' : name.substring(0, 1);
+        return Container(
+          width: 56,
+          height: 56,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: MoeTokens.surface1,
+            boxShadow: MoeTokens.shadowSm(),
+            border: Border.all(
+              color: MoeTokens.primary.withValues(alpha: 0.22),
+            ),
+          ),
+          child: Container(
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              gradient: MoeTokens.gradientSoft,
+              shape: BoxShape.circle,
+            ),
+            child: AnimatedSwitcher(
+              duration: _motion(context),
+              child: Text(
+                letter,
+                key: ValueKey(letter),
+                style: const TextStyle(
+                  fontSize: MoeTokens.textXl,
+                  fontWeight: FontWeight.w800,
+                  color: MoeTokens.inkDark,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTemplateStrip() {
+    final templates = AiStarterTemplates.agentTemplates;
+    return SizedBox(
+      height: 60,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+        itemCount: templates.length,
+        separatorBuilder: (_, __) => const SizedBox(width: MoeTokens.spaceSm),
+        itemBuilder: (context, index) {
+          final template = templates[index];
+          final selected = _templateId == template.id;
+          return Align(
+            alignment: Alignment.center,
+            child: MoePressable(
+              onTap: () => _fillTemplate(template),
+              pressedScale: MoeTokens.motionPressScaleStrong,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+              child: AnimatedScale(
+                scale: selected ? 1 : 0.97,
+                duration: _motion(context),
+                curve: Curves.easeOutCubic,
+                child: AnimatedContainer(
+                  duration: _motion(context),
+                  curve: Curves.easeOutCubic,
+                  width: 124,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? MoeTokens.primary.withValues(alpha: 0.10)
+                        : MoeTokens.surface1,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                    boxShadow: MoeTokens.shadowSm(),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        template.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: MoeTokens.textSm,
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? MoeTokens.primary
+                              : MoeTokens.titleText,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        template.tagline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: MoeTokens.textXs,
+                          color: MoeTokens.hintText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFacetEditor() {
+    final facet = _facets[_facet];
+    final motion = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : MoeTokens.motionMedium;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var index = 0; index < _facets.length; index++) ...[
+                  if (index > 0) const SizedBox(width: 6),
+                  _tinyChip(
+                    label: _facets[index].label,
+                    selected: _facet == index,
+                    onTap: () => setState(() => _facet = index),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: MoeTokens.spaceSm),
+          AnimatedContainer(
+            duration: motion,
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              color: MoeTokens.surface1,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+              border: Border.all(
+                color: _writingFocus.hasFocus
+                    ? MoeTokens.primary.withValues(alpha: 0.55)
+                    : MoeTokens.lineSoft,
+                width: _writingFocus.hasFocus ? 1.4 : 1,
+              ),
+              boxShadow: _writingFocus.hasFocus
+                  ? MoeTokens.shadowSm()
+                  : const <BoxShadow>[],
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: MoeTokens.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    AnimatedSwitcher(
+                      duration: motion,
+                      child: Text(
+                        facet.label,
+                        key: ValueKey(facet.label),
+                        style: const TextStyle(
+                          fontSize: MoeTokens.textSm,
+                          fontWeight: FontWeight.w700,
+                          color: MoeTokens.primary,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Flexible(
+                      child: Text(
+                        facet.hint,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          fontSize: MoeTokens.textXs,
+                          color: MoeTokens.hintText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  focusNode: _writingFocus,
+                  controller: _facetController,
+                  minLines: 4,
+                  maxLines: 6,
+                  style: const TextStyle(
+                    fontSize: MoeTokens.textSm,
+                    height: 1.5,
+                    color: MoeTokens.titleText,
+                  ),
+                  decoration: _insetField('写在这里'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoreRow() {
+    if (_lorebooks.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: MoeTokens.spaceLg),
+        _sectionLabel('世界书'),
+        const SizedBox(height: MoeTokens.spaceSm),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+          child: Wrap(
+            spacing: MoeTokens.spaceSm,
+            runSpacing: MoeTokens.spaceSm,
+            children: [
+              _tinyChip(
+                label: '不绑',
+                selected: _lorebookId == null,
+                onTap: () => setState(() => _lorebookId = null),
+              ),
+              for (final book in _lorebooks)
+                _tinyChip(
+                  label: book.name,
+                  selected: _lorebookId == book.id,
+                  onTap: () => setState(() => _lorebookId = book.id),
+                ),
+            ],
           ),
         ),
       ],
@@ -606,30 +799,41 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
 
   Widget _buildSaveBar(bool isCreate) {
     return Material(
-      color: AiBrandTokens.pageBackground,
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
+      color: MoeTokens.pageBackground.withValues(alpha: 0.92),
       child: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-            AiTheme.pagePadding,
+            MoeTokens.spaceLg,
             8,
-            AiTheme.pagePadding,
-            12,
+            MoeTokens.spaceLg,
+            10,
           ),
-          child: LoadingButton(
-            operationKey: LoadingKeys.saveAgent,
-            onPressed: _save,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AiBrandTokens.primary,
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
-              ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: MoeTokens.gradientPrimary,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+              boxShadow: MoeTokens.shadowSm(),
             ),
-            child: Text(isCreate ? '保存角色卡' : '保存修改'),
+            child: LoadingButton(
+              operationKey: LoadingKeys.saveAgent,
+              onPressed: _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                elevation: 0,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(42),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: MoeTokens.textSm,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              child: Text(isCreate ? '保存身份卡' : '保存修改'),
+            ),
           ),
         ),
       ),
@@ -641,357 +845,39 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     final isCreate = widget.agent == null || _isEphemeralDraft;
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     return AiScaffold(
-      title: isCreate ? '创建角色卡' : '编辑角色卡',
-      subtitle: '保存到账号（服务器）',
+      title: isCreate ? '创建身份卡' : '编辑身份卡',
+      subtitle: '人设写在这张卡上',
       bottomNavigationBar: _buildSaveBar(isCreate),
       body: Form(
         key: _formKey,
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.only(bottom: 16 + bottomInset),
+          padding: EdgeInsets.only(bottom: 20 + bottomInset),
           children: [
-            MoeReveal(
-              delay: Duration.zero,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AiTheme.pagePadding,
-                  8,
-                  AiTheme.pagePadding,
-                  0,
-                ),
-                child: AiSurfaceCard(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AiBrandTokens.primary.withValues(alpha: 0.08),
-                      AiBrandTokens.secondary.withValues(alpha: 0.06),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.badge_outlined,
-                        color: AiBrandTokens.primary,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _selectedProviderIsBackend
-                              ? '角色卡会保存你的人设与绑定模型，并同步到你的账号。默认不会在服务器新建 Ollama 模型。'
-                              : '角色卡保存人设与模型绑定；开始聊天时将使用你选择的 API 与模型。',
-                          style: AiTheme.body.copyWith(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            MoeReveal(delay: Duration.zero, child: _buildStudioCard()),
+            const SizedBox(height: MoeTokens.spaceMd),
             MoeReveal(
               delay: MoeTokens.motionStaggerStep,
-              child: _buildFieldSection(
-                title: '基础信息',
-                subtitle: '名称与一句话介绍',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  MoeInputField(
-                    controller: _nameController,
-                    hintText: '角色名称',
-                    style: AiTheme.title.copyWith(fontSize: 16),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? '请输入名称' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  MoeInputField(
-                    controller: _descController,
-                    hintText: '简介',
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Consumer<LoadingProvider>(
-                      builder: (context, loading, _) => FilledButton.tonalIcon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor:
-                              AiBrandTokens.primary.withValues(alpha: 0.1),
-                          foregroundColor: AiBrandTokens.primary,
-                        ),
-                        onPressed:
-                            loading.isOperationLoading(LoadingKeys.saveAgent)
-                                ? null
-                                : _applyStarterTemplate,
-                        icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                        label: const Text('套用角色模板'),
-                      ),
-                    ),
-                  ),
+                  _sectionLabel('模板'),
+                  const SizedBox(height: 6),
+                  _buildTemplateStrip(),
                 ],
               ),
             ),
+            const SizedBox(height: MoeTokens.spaceMd),
             MoeReveal(
               delay: MoeTokens.motionStaggerStep * 2,
-              child: _buildFieldSection(
-                title: '模型与来源',
-                subtitle: '选择 API 并填写要调用的模型 ID',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: AiProviderProfile.selectableId(
-                            AiProviderProfile.uniqueWithBuiltin(
-                                _providerProfiles),
-                            _providerProfileId,
-                          ),
-                          isExpanded: true,
-                          decoration:
-                              AiTheme.inputDecoration(labelText: 'API 来源'),
-                          items: AiProviderProfile.uniqueWithBuiltin(
-                                  _providerProfiles)
-                              .map(
-                                (item) => DropdownMenuItem(
-                                  value: item.id,
-                                  child: Text(
-                                    item.name,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) async {
-                            if (value == null) return;
-                            final profile = _providerProfiles.firstWhere(
-                              (item) => item.id == value,
-                              orElse: () => AiProviderProfile.builtinBackend(),
-                            );
-                            final knownModels = profile.effectiveModelIds;
-                            final currentModel =
-                                _modelNameController.text.trim();
-                            final modelStillValid = currentModel.isNotEmpty &&
-                                knownModels.contains(currentModel);
-                            setState(() {
-                              _providerProfileId = value;
-                              if (!profile.isBackendOllama) {
-                                _createRealModel = false;
-                                _syncModelOnEdit = false;
-                              }
-                              _models = knownModels;
-                              if (!modelStillValid) {
-                                _modelNameController.text =
-                                    profile.defaultModel.trim();
-                              }
-                            });
-                            unawaited(_loadModels(background: true));
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filledTonal(
-                        tooltip: '管理 Provider',
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AiProviderProfilesPage(),
-                            ),
-                          );
-                          await _loadProviders();
-                        },
-                        icon: const Icon(Icons.tune_rounded),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  MoeInputField(
-                    controller: _modelNameController,
-                    hintText: '绑定模型 ID',
-                    style: AiTheme.mono,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? '请输入绑定模型 ID' : null,
-                  ),
-                  if (_isLoadingModels)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color:
-                                  AiBrandTokens.primary.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text('后台刷新模型列表…', style: AiTheme.caption),
-                        ],
-                      ),
-                    ),
-                  _buildModelChips(),
-                  const SizedBox(height: 12),
-                  MoeActionRow(
-                    icon: Icons.public_rounded,
-                    title: '发布到角色卡广场',
-                    subtitle: const Text('开启后，其他用户可在角色卡广场发现并使用这个角色'),
-                    onTap: () =>
-                        setState(() => _publishToPlaza = !_publishToPlaza),
-                    showDefaultTrailing: false,
-                    iconColor: AiBrandTokens.primary,
-                    trailing: Switch.adaptive(
-                      value: _publishToPlaza,
-                      activeThumbColor: AiBrandTokens.primary,
-                      onChanged: (v) => setState(() => _publishToPlaza = v),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String?>(
-                    value: _lorebooks.any((item) => item.id == _lorebookId)
-                        ? _lorebookId
-                        : null,
-                    isExpanded: true,
-                    decoration: AiTheme.inputDecoration(labelText: '世界书（可选）'),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('不绑定世界书'),
-                      ),
-                      ..._lorebooks.map(
-                        (item) => DropdownMenuItem<String?>(
-                          value: item.id,
-                          child: Text(
-                            item.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) => setState(() => _lorebookId = value),
-                  ),
+                  _sectionLabel('写法'),
+                  const SizedBox(height: 6),
+                  _buildFacetEditor(),
+                  _buildLoreRow(),
                 ],
-              ),
-            ),
-            MoeReveal(
-              delay: MoeTokens.motionStaggerStep * 3,
-              child: _buildFieldSection(
-                title: '扮演设定',
-                subtitle: '人设与场景决定聊天时的身份感',
-                children: [
-                  MoeInputField(
-                    controller: _personaController,
-                    hintText: '角色人设',
-                    maxLines: 5,
-                  ),
-                  const SizedBox(height: 12),
-                  MoeInputField(
-                    controller: _scenarioController,
-                    hintText: '场景设定',
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 12),
-                  MoeInputField(
-                    controller: _openingMessageController,
-                    hintText: '开场白',
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-            ),
-            MoeReveal(
-              delay: MoeTokens.motionStaggerStep * 4,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AiTheme.pagePadding),
-                child: AiSurfaceCard(
-                  child: Column(
-                    children: [
-                      MoeActionRow(
-                        icon: Icons.tune_rounded,
-                        title: '高级选项',
-                        titleStyle: AiTheme.title.copyWith(fontSize: 16),
-                        subtitle: Text(
-                          _selectedProviderIsBackend
-                              ? '系统提示词、示例对话；可选同步到服务器模型'
-                              : '系统提示词、示例对话等进阶设定',
-                          style: AiTheme.caption,
-                        ),
-                        trailing: Icon(
-                          _showAdvancedFields
-                              ? Icons.expand_less_rounded
-                              : Icons.expand_more_rounded,
-                        ),
-                        showDefaultTrailing: false,
-                        onTap: () => setState(
-                          () => _showAdvancedFields = !_showAdvancedFields,
-                        ),
-                      ),
-                      if (_showAdvancedFields) ...[
-                        const Divider(height: 1),
-                        const SizedBox(height: 12),
-                        if (isCreate &&
-                            _selectedProviderIsBackend &&
-                            _supportsModelManagement)
-                          MoeActionRow(
-                            icon: Icons.precision_manufacturing_rounded,
-                            title: '【可选】创建本人专属模型',
-                            subtitle:
-                                const Text('先保存角色卡，再从所选基座创建；不会修改共享模型或自动下载基座'),
-                            onTap: () => setState(
-                                () => _createRealModel = !_createRealModel),
-                            showDefaultTrailing: false,
-                            iconColor: AiBrandTokens.primary,
-                            trailing: Switch.adaptive(
-                              value: _createRealModel,
-                              activeThumbColor: AiBrandTokens.primary,
-                              onChanged: (v) =>
-                                  setState(() => _createRealModel = v),
-                            ),
-                          ),
-                        if (!isCreate &&
-                            _selectedProviderIsBackend &&
-                            _supportsModelManagement)
-                          MoeActionRow(
-                            icon: Icons.sync_rounded,
-                            title: '创建 / 同步本人模型',
-                            subtitle:
-                                const Text('先保存角色卡，再等待同步结果；未决操作请到本人模型管理重查'),
-                            onTap: () => setState(
-                                () => _syncModelOnEdit = !_syncModelOnEdit),
-                            showDefaultTrailing: false,
-                            iconColor: AiBrandTokens.primary,
-                            trailing: Switch.adaptive(
-                              value: _syncModelOnEdit,
-                              activeThumbColor: AiBrandTokens.primary,
-                              onChanged: (v) =>
-                                  setState(() => _syncModelOnEdit = v),
-                            ),
-                          ),
-                        if (widget.agent != null &&
-                            _selectedProviderIsBackend) ...[
-                          _buildPromptPreview(
-                            widget.agent!.systemPrompt,
-                            widget.agent!.modelName,
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        MoeInputField(
-                          controller: _promptController,
-                          hintText: '系统提示词',
-                          maxLines: 6,
-                        ),
-                        const SizedBox(height: 12),
-                        MoeInputField(
-                          controller: _exampleDialoguesController,
-                          hintText: '示例对话',
-                          maxLines: 5,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
               ),
             ),
           ],

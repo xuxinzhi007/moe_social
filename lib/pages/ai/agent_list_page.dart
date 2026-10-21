@@ -488,45 +488,16 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   Widget _buildHeroSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: TextField(
-        onChanged: (value) {
-          _updateTavernState(() => _searchQuery = value);
-          _filterAgents();
-        },
-        style: TextStyle(fontSize: MoeTokens.textBase, height: 1.4),
-        decoration: InputDecoration(
-          hintText: '搜索角色、描述或模型...',
-          hintStyle: TextStyle(
-              color: Colors.grey.shade400, fontSize: MoeTokens.textBase),
-          prefixIcon:
-              Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 22),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear_rounded,
-                      color: Colors.grey.shade400, size: 20),
-                  onPressed: () {
-                    _updateTavernState(() => _searchQuery = '');
-                    _filterAgents();
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-              horizontal: MoeTokens.spaceLg, vertical: MoeTokens.spaceMd),
-        ),
-      ),
+    return MoeSearchBar(
+      hintText: '搜索角色、描述或模型',
+      onSearch: (value) {
+        _updateTavernState(() => _searchQuery = value);
+        _filterAgents();
+      },
+      onClear: () {
+        _updateTavernState(() => _searchQuery = '');
+        _filterAgents();
+      },
     );
   }
 
@@ -934,7 +905,6 @@ class _AgentListPageState extends State<AgentListPage>
               decoration: const InputDecoration(
                 labelText: '模型 ID',
                 hintText: 'gpt-4o-mini',
-                border: OutlineInputBorder(),
               ),
               autofocus: true,
               onSubmitted: (v) {
