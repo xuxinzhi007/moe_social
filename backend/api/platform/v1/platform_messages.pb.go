@@ -1087,142 +1087,6 @@ func (x *VoiceSimpleResp) GetSuccess() bool {
 	return false
 }
 
-type GetVoiceTokenReq struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelName   string                 `protobuf:"bytes,1,opt,name=channel_name,json=channelName,proto3" json:"channel_name,omitempty"`
-	Role          uint32                 `protobuf:"varint,2,opt,name=role,proto3" json:"role,omitempty"`
-	UserAccount   string                 `protobuf:"bytes,3,opt,name=user_account,json=userAccount,proto3" json:"user_account,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetVoiceTokenReq) Reset() {
-	*x = GetVoiceTokenReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetVoiceTokenReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetVoiceTokenReq) ProtoMessage() {}
-
-func (x *GetVoiceTokenReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetVoiceTokenReq.ProtoReflect.Descriptor instead.
-func (*GetVoiceTokenReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{20}
-}
-
-func (x *GetVoiceTokenReq) GetChannelName() string {
-	if x != nil {
-		return x.ChannelName
-	}
-	return ""
-}
-
-func (x *GetVoiceTokenReq) GetRole() uint32 {
-	if x != nil {
-		return x.Role
-	}
-	return 0
-}
-
-func (x *GetVoiceTokenReq) GetUserAccount() string {
-	if x != nil {
-		return x.UserAccount
-	}
-	return ""
-}
-
-type GetVoiceTokenResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Success       bool                   `protobuf:"varint,3,opt,name=success,proto3" json:"success,omitempty"`
-	Token         string                 `protobuf:"bytes,4,opt,name=token,proto3" json:"token,omitempty"`
-	AppId         string                 `protobuf:"bytes,5,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetVoiceTokenResp) Reset() {
-	*x = GetVoiceTokenResp{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[21]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetVoiceTokenResp) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetVoiceTokenResp) ProtoMessage() {}
-
-func (x *GetVoiceTokenResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[21]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetVoiceTokenResp.ProtoReflect.Descriptor instead.
-func (*GetVoiceTokenResp) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{21}
-}
-
-func (x *GetVoiceTokenResp) GetCode() int32 {
-	if x != nil {
-		return x.Code
-	}
-	return 0
-}
-
-func (x *GetVoiceTokenResp) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *GetVoiceTokenResp) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *GetVoiceTokenResp) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-func (x *GetVoiceTokenResp) GetAppId() string {
-	if x != nil {
-		return x.AppId
-	}
-	return ""
-}
-
 type LlmMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
@@ -1233,7 +1097,7 @@ type LlmMessage struct {
 
 func (x *LlmMessage) Reset() {
 	*x = LlmMessage{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[22]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1245,7 +1109,7 @@ func (x *LlmMessage) String() string {
 func (*LlmMessage) ProtoMessage() {}
 
 func (x *LlmMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[22]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1258,7 +1122,7 @@ func (x *LlmMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LlmMessage.ProtoReflect.Descriptor instead.
 func (*LlmMessage) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{22}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *LlmMessage) GetRole() string {
@@ -1290,7 +1154,7 @@ type LlmCreateAgentReq struct {
 
 func (x *LlmCreateAgentReq) Reset() {
 	*x = LlmCreateAgentReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[23]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1302,7 +1166,7 @@ func (x *LlmCreateAgentReq) String() string {
 func (*LlmCreateAgentReq) ProtoMessage() {}
 
 func (x *LlmCreateAgentReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[23]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1315,7 +1179,7 @@ func (x *LlmCreateAgentReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LlmCreateAgentReq.ProtoReflect.Descriptor instead.
 func (*LlmCreateAgentReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{23}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *LlmCreateAgentReq) GetName() string {
@@ -1378,7 +1242,7 @@ type LlmManagedModelResp struct {
 
 func (x *LlmManagedModelResp) Reset() {
 	*x = LlmManagedModelResp{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[24]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1390,7 +1254,7 @@ func (x *LlmManagedModelResp) String() string {
 func (*LlmManagedModelResp) ProtoMessage() {}
 
 func (x *LlmManagedModelResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[24]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1403,7 +1267,7 @@ func (x *LlmManagedModelResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LlmManagedModelResp.ProtoReflect.Descriptor instead.
 func (*LlmManagedModelResp) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{24}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *LlmManagedModelResp) GetCode() int32 {
@@ -1484,7 +1348,7 @@ type ListLlmManagedModelsReq struct {
 
 func (x *ListLlmManagedModelsReq) Reset() {
 	*x = ListLlmManagedModelsReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[25]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1496,7 +1360,7 @@ func (x *ListLlmManagedModelsReq) String() string {
 func (*ListLlmManagedModelsReq) ProtoMessage() {}
 
 func (x *ListLlmManagedModelsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[25]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1373,7 @@ func (x *ListLlmManagedModelsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLlmManagedModelsReq.ProtoReflect.Descriptor instead.
 func (*ListLlmManagedModelsReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{25}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{23}
 }
 
 type ListLlmManagedModelsResp struct {
@@ -1524,7 +1388,7 @@ type ListLlmManagedModelsResp struct {
 
 func (x *ListLlmManagedModelsResp) Reset() {
 	*x = ListLlmManagedModelsResp{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[26]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1536,7 +1400,7 @@ func (x *ListLlmManagedModelsResp) String() string {
 func (*ListLlmManagedModelsResp) ProtoMessage() {}
 
 func (x *ListLlmManagedModelsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[26]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1549,7 +1413,7 @@ func (x *ListLlmManagedModelsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLlmManagedModelsResp.ProtoReflect.Descriptor instead.
 func (*ListLlmManagedModelsResp) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{26}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ListLlmManagedModelsResp) GetCode() int32 {
@@ -1589,7 +1453,7 @@ type GetLlmManagedModelReq struct {
 
 func (x *GetLlmManagedModelReq) Reset() {
 	*x = GetLlmManagedModelReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[27]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1601,7 +1465,7 @@ func (x *GetLlmManagedModelReq) String() string {
 func (*GetLlmManagedModelReq) ProtoMessage() {}
 
 func (x *GetLlmManagedModelReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[27]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1614,7 +1478,7 @@ func (x *GetLlmManagedModelReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLlmManagedModelReq.ProtoReflect.Descriptor instead.
 func (*GetLlmManagedModelReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{27}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GetLlmManagedModelReq) GetAgentId() string {
@@ -1634,7 +1498,7 @@ type DeleteLlmManagedModelReq struct {
 
 func (x *DeleteLlmManagedModelReq) Reset() {
 	*x = DeleteLlmManagedModelReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[28]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1646,7 +1510,7 @@ func (x *DeleteLlmManagedModelReq) String() string {
 func (*DeleteLlmManagedModelReq) ProtoMessage() {}
 
 func (x *DeleteLlmManagedModelReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[28]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1659,7 +1523,7 @@ func (x *DeleteLlmManagedModelReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteLlmManagedModelReq.ProtoReflect.Descriptor instead.
 func (*DeleteLlmManagedModelReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{28}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DeleteLlmManagedModelReq) GetAgentId() string {
@@ -1697,7 +1561,7 @@ type LlmChatReq struct {
 
 func (x *LlmChatReq) Reset() {
 	*x = LlmChatReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[29]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1709,7 +1573,7 @@ func (x *LlmChatReq) String() string {
 func (*LlmChatReq) ProtoMessage() {}
 
 func (x *LlmChatReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[29]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1722,7 +1586,7 @@ func (x *LlmChatReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LlmChatReq.ProtoReflect.Descriptor instead.
 func (*LlmChatReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{29}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *LlmChatReq) GetModel() string {
@@ -1823,7 +1687,7 @@ type LlmChatResp struct {
 
 func (x *LlmChatResp) Reset() {
 	*x = LlmChatResp{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[30]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1835,7 +1699,7 @@ func (x *LlmChatResp) String() string {
 func (*LlmChatResp) ProtoMessage() {}
 
 func (x *LlmChatResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[30]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1848,7 +1712,7 @@ func (x *LlmChatResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LlmChatResp.ProtoReflect.Descriptor instead.
 func (*LlmChatResp) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{30}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *LlmChatResp) GetCode() int32 {
@@ -1906,7 +1770,7 @@ type AnnouncementItem struct {
 
 func (x *AnnouncementItem) Reset() {
 	*x = AnnouncementItem{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[31]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1918,7 +1782,7 @@ func (x *AnnouncementItem) String() string {
 func (*AnnouncementItem) ProtoMessage() {}
 
 func (x *AnnouncementItem) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[31]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1931,7 +1795,7 @@ func (x *AnnouncementItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnnouncementItem.ProtoReflect.Descriptor instead.
 func (*AnnouncementItem) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{31}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *AnnouncementItem) GetId() string {
@@ -1972,7 +1836,7 @@ type GetLatestAppReleaseReq struct {
 
 func (x *GetLatestAppReleaseReq) Reset() {
 	*x = GetLatestAppReleaseReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[32]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1984,7 +1848,7 @@ func (x *GetLatestAppReleaseReq) String() string {
 func (*GetLatestAppReleaseReq) ProtoMessage() {}
 
 func (x *GetLatestAppReleaseReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[32]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1997,7 +1861,7 @@ func (x *GetLatestAppReleaseReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLatestAppReleaseReq.ProtoReflect.Descriptor instead.
 func (*GetLatestAppReleaseReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{32}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetLatestAppReleaseReq) GetPlatform() string {
@@ -2022,7 +1886,7 @@ type GetLatestAppReleaseResp struct {
 
 func (x *GetLatestAppReleaseResp) Reset() {
 	*x = GetLatestAppReleaseResp{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[33]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2034,7 +1898,7 @@ func (x *GetLatestAppReleaseResp) String() string {
 func (*GetLatestAppReleaseResp) ProtoMessage() {}
 
 func (x *GetLatestAppReleaseResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[33]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2047,7 +1911,7 @@ func (x *GetLatestAppReleaseResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLatestAppReleaseResp.ProtoReflect.Descriptor instead.
 func (*GetLatestAppReleaseResp) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{33}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *GetLatestAppReleaseResp) GetAvailable() bool {
@@ -2109,7 +1973,7 @@ type ListAnnouncementsReq struct {
 
 func (x *ListAnnouncementsReq) Reset() {
 	*x = ListAnnouncementsReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[34]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2121,7 +1985,7 @@ func (x *ListAnnouncementsReq) String() string {
 func (*ListAnnouncementsReq) ProtoMessage() {}
 
 func (x *ListAnnouncementsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[34]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2134,7 +1998,7 @@ func (x *ListAnnouncementsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAnnouncementsReq.ProtoReflect.Descriptor instead.
 func (*ListAnnouncementsReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{34}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ListAnnouncementsReq) GetPage() int32 {
@@ -2161,7 +2025,7 @@ type ListAnnouncementsResp struct {
 
 func (x *ListAnnouncementsResp) Reset() {
 	*x = ListAnnouncementsResp{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[35]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2173,7 +2037,7 @@ func (x *ListAnnouncementsResp) String() string {
 func (*ListAnnouncementsResp) ProtoMessage() {}
 
 func (x *ListAnnouncementsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[35]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2186,7 +2050,7 @@ func (x *ListAnnouncementsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAnnouncementsResp.ProtoReflect.Descriptor instead.
 func (*ListAnnouncementsResp) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{35}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ListAnnouncementsResp) GetItems() []*AnnouncementItem {
@@ -2212,7 +2076,7 @@ type GetAnnouncementReq struct {
 
 func (x *GetAnnouncementReq) Reset() {
 	*x = GetAnnouncementReq{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[36]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2224,7 +2088,7 @@ func (x *GetAnnouncementReq) String() string {
 func (*GetAnnouncementReq) ProtoMessage() {}
 
 func (x *GetAnnouncementReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[36]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2237,7 +2101,7 @@ func (x *GetAnnouncementReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAnnouncementReq.ProtoReflect.Descriptor instead.
 func (*GetAnnouncementReq) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{36}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetAnnouncementReq) GetAnnouncementId() string {
@@ -2256,7 +2120,7 @@ type GetAnnouncementResp struct {
 
 func (x *GetAnnouncementResp) Reset() {
 	*x = GetAnnouncementResp{}
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[37]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2268,7 +2132,7 @@ func (x *GetAnnouncementResp) String() string {
 func (*GetAnnouncementResp) ProtoMessage() {}
 
 func (x *GetAnnouncementResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[37]
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2281,7 +2145,7 @@ func (x *GetAnnouncementResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAnnouncementResp.ProtoReflect.Descriptor instead.
 func (*GetAnnouncementResp) Descriptor() ([]byte, []int) {
-	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{37}
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GetAnnouncementResp) GetItem() *AnnouncementItem {
@@ -2360,17 +2224,7 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\x0fVoiceSimpleResp\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x18\n" +
-	"\asuccess\x18\x03 \x01(\bR\asuccess\"l\n" +
-	"\x10GetVoiceTokenReq\x12!\n" +
-	"\fchannel_name\x18\x01 \x01(\tR\vchannelName\x12\x12\n" +
-	"\x04role\x18\x02 \x01(\rR\x04role\x12!\n" +
-	"\fuser_account\x18\x03 \x01(\tR\vuserAccount\"\x88\x01\n" +
-	"\x11GetVoiceTokenResp\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12\x18\n" +
-	"\asuccess\x18\x03 \x01(\bR\asuccess\x12\x14\n" +
-	"\x05token\x18\x04 \x01(\tR\x05token\x12\x15\n" +
-	"\x06app_id\x18\x05 \x01(\tR\x05appId\":\n" +
+	"\asuccess\x18\x03 \x01(\bR\asuccess\":\n" +
 	"\n" +
 	"LlmMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
@@ -2461,7 +2315,7 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\x12GetAnnouncementReq\x12'\n" +
 	"\x0fannouncement_id\x18\x01 \x01(\tR\x0eannouncementId\"H\n" +
 	"\x13GetAnnouncementResp\x121\n" +
-	"\x04item\x18\x01 \x01(\v2\x1d.platform.v1.AnnouncementItemR\x04item2\xf2\x10\n" +
+	"\x04item\x18\x01 \x01(\v2\x1d.platform.v1.AnnouncementItemR\x04item2\x88\x10\n" +
 	"\bPlatform\x12\x89\x01\n" +
 	"\x15GetPublicClientConfig\x12%.platform.v1.GetPublicClientConfigReq\x1a&.platform.v1.GetPublicClientConfigResp\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/public/client-config\x12d\n" +
 	"\fGetLlmConfig\x12\x1c.platform.v1.GetLlmConfigReq\x1a\x1d.platform.v1.GetLlmConfigResp\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/llm/config\x12t\n" +
@@ -2470,8 +2324,7 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\vVoiceAnswer\x12\x1b.platform.v1.VoiceAnswerReq\x1a\x1c.platform.v1.VoiceAnswerResp\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/api/voice/answer\x12^\n" +
 	"\tVoiceCall\x12\x19.platform.v1.VoiceCallReq\x1a\x1a.platform.v1.VoiceCallResp\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/voice/call\x12f\n" +
 	"\vVoiceCancel\x12\x1b.platform.v1.VoiceCancelReq\x1a\x1c.platform.v1.VoiceSimpleResp\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/api/voice/cancel\x12f\n" +
-	"\vVoiceReject\x12\x1b.platform.v1.VoiceRejectReq\x1a\x1c.platform.v1.VoiceSimpleResp\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/api/voice/reject\x12h\n" +
-	"\rGetVoiceToken\x12\x1d.platform.v1.GetVoiceTokenReq\x1a\x1e.platform.v1.GetVoiceTokenResp\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/voice/token\x12n\n" +
+	"\vVoiceReject\x12\x1b.platform.v1.VoiceRejectReq\x1a\x1c.platform.v1.VoiceSimpleResp\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/api/voice/reject\x12n\n" +
 	"\x0eLlmCreateAgent\x12\x1e.platform.v1.LlmCreateAgentReq\x1a .platform.v1.LlmManagedModelResp\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/llm/agents\x12\x84\x01\n" +
 	"\x14ListLlmManagedModels\x12$.platform.v1.ListLlmManagedModelsReq\x1a%.platform.v1.ListLlmManagedModelsResp\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/llm/managed-models\x12\x86\x01\n" +
 	"\x12GetLlmManagedModel\x12\".platform.v1.GetLlmManagedModelReq\x1a .platform.v1.LlmManagedModelResp\"*\x82\xd3\xe4\x93\x02$\x12\"/api/llm/managed-models/{agent_id}\x12\x99\x01\n" +
@@ -2494,7 +2347,7 @@ func file_api_platform_v1_platform_messages_proto_rawDescGZIP() []byte {
 	return file_api_platform_v1_platform_messages_proto_rawDescData
 }
 
-var file_api_platform_v1_platform_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_api_platform_v1_platform_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_api_platform_v1_platform_messages_proto_goTypes = []any{
 	(*BaseResp)(nil),                  // 0: platform.v1.BaseResp
 	(*GetPublicClientConfigReq)(nil),  // 1: platform.v1.GetPublicClientConfigReq
@@ -2516,38 +2369,36 @@ var file_api_platform_v1_platform_messages_proto_goTypes = []any{
 	(*VoiceCancelReq)(nil),            // 17: platform.v1.VoiceCancelReq
 	(*VoiceRejectReq)(nil),            // 18: platform.v1.VoiceRejectReq
 	(*VoiceSimpleResp)(nil),           // 19: platform.v1.VoiceSimpleResp
-	(*GetVoiceTokenReq)(nil),          // 20: platform.v1.GetVoiceTokenReq
-	(*GetVoiceTokenResp)(nil),         // 21: platform.v1.GetVoiceTokenResp
-	(*LlmMessage)(nil),                // 22: platform.v1.LlmMessage
-	(*LlmCreateAgentReq)(nil),         // 23: platform.v1.LlmCreateAgentReq
-	(*LlmManagedModelResp)(nil),       // 24: platform.v1.LlmManagedModelResp
-	(*ListLlmManagedModelsReq)(nil),   // 25: platform.v1.ListLlmManagedModelsReq
-	(*ListLlmManagedModelsResp)(nil),  // 26: platform.v1.ListLlmManagedModelsResp
-	(*GetLlmManagedModelReq)(nil),     // 27: platform.v1.GetLlmManagedModelReq
-	(*DeleteLlmManagedModelReq)(nil),  // 28: platform.v1.DeleteLlmManagedModelReq
-	(*LlmChatReq)(nil),                // 29: platform.v1.LlmChatReq
-	(*LlmChatResp)(nil),               // 30: platform.v1.LlmChatResp
-	(*AnnouncementItem)(nil),          // 31: platform.v1.AnnouncementItem
-	(*GetLatestAppReleaseReq)(nil),    // 32: platform.v1.GetLatestAppReleaseReq
-	(*GetLatestAppReleaseResp)(nil),   // 33: platform.v1.GetLatestAppReleaseResp
-	(*ListAnnouncementsReq)(nil),      // 34: platform.v1.ListAnnouncementsReq
-	(*ListAnnouncementsResp)(nil),     // 35: platform.v1.ListAnnouncementsResp
-	(*GetAnnouncementReq)(nil),        // 36: platform.v1.GetAnnouncementReq
-	(*GetAnnouncementResp)(nil),       // 37: platform.v1.GetAnnouncementResp
-	(*structpb.Struct)(nil),           // 38: google.protobuf.Struct
-	(*structpb.ListValue)(nil),        // 39: google.protobuf.ListValue
+	(*LlmMessage)(nil),                // 20: platform.v1.LlmMessage
+	(*LlmCreateAgentReq)(nil),         // 21: platform.v1.LlmCreateAgentReq
+	(*LlmManagedModelResp)(nil),       // 22: platform.v1.LlmManagedModelResp
+	(*ListLlmManagedModelsReq)(nil),   // 23: platform.v1.ListLlmManagedModelsReq
+	(*ListLlmManagedModelsResp)(nil),  // 24: platform.v1.ListLlmManagedModelsResp
+	(*GetLlmManagedModelReq)(nil),     // 25: platform.v1.GetLlmManagedModelReq
+	(*DeleteLlmManagedModelReq)(nil),  // 26: platform.v1.DeleteLlmManagedModelReq
+	(*LlmChatReq)(nil),                // 27: platform.v1.LlmChatReq
+	(*LlmChatResp)(nil),               // 28: platform.v1.LlmChatResp
+	(*AnnouncementItem)(nil),          // 29: platform.v1.AnnouncementItem
+	(*GetLatestAppReleaseReq)(nil),    // 30: platform.v1.GetLatestAppReleaseReq
+	(*GetLatestAppReleaseResp)(nil),   // 31: platform.v1.GetLatestAppReleaseResp
+	(*ListAnnouncementsReq)(nil),      // 32: platform.v1.ListAnnouncementsReq
+	(*ListAnnouncementsResp)(nil),     // 33: platform.v1.ListAnnouncementsResp
+	(*GetAnnouncementReq)(nil),        // 34: platform.v1.GetAnnouncementReq
+	(*GetAnnouncementResp)(nil),       // 35: platform.v1.GetAnnouncementResp
+	(*structpb.Struct)(nil),           // 36: google.protobuf.Struct
+	(*structpb.ListValue)(nil),        // 37: google.protobuf.ListValue
 }
 var file_api_platform_v1_platform_messages_proto_depIdxs = []int32{
-	38, // 0: platform.v1.GetLlmConfigResp.data:type_name -> google.protobuf.Struct
-	39, // 1: platform.v1.MoeToolSchemaData.tools:type_name -> google.protobuf.ListValue
+	36, // 0: platform.v1.GetLlmConfigResp.data:type_name -> google.protobuf.Struct
+	37, // 1: platform.v1.MoeToolSchemaData.tools:type_name -> google.protobuf.ListValue
 	6,  // 2: platform.v1.MoeToolSchemaResp.data:type_name -> platform.v1.MoeToolSchemaData
 	9,  // 3: platform.v1.MoeToolExecuteResp.data:type_name -> platform.v1.MoeToolExecuteData
 	12, // 4: platform.v1.VoiceCallResp.data:type_name -> platform.v1.VoiceCallData
 	15, // 5: platform.v1.VoiceAnswerResp.data:type_name -> platform.v1.VoiceAnswerData
-	24, // 6: platform.v1.ListLlmManagedModelsResp.models:type_name -> platform.v1.LlmManagedModelResp
-	22, // 7: platform.v1.LlmChatReq.messages:type_name -> platform.v1.LlmMessage
-	31, // 8: platform.v1.ListAnnouncementsResp.items:type_name -> platform.v1.AnnouncementItem
-	31, // 9: platform.v1.GetAnnouncementResp.item:type_name -> platform.v1.AnnouncementItem
+	22, // 6: platform.v1.ListLlmManagedModelsResp.models:type_name -> platform.v1.LlmManagedModelResp
+	20, // 7: platform.v1.LlmChatReq.messages:type_name -> platform.v1.LlmMessage
+	29, // 8: platform.v1.ListAnnouncementsResp.items:type_name -> platform.v1.AnnouncementItem
+	29, // 9: platform.v1.GetAnnouncementResp.item:type_name -> platform.v1.AnnouncementItem
 	1,  // 10: platform.v1.Platform.GetPublicClientConfig:input_type -> platform.v1.GetPublicClientConfigReq
 	3,  // 11: platform.v1.Platform.GetLlmConfig:input_type -> platform.v1.GetLlmConfigReq
 	8,  // 12: platform.v1.Platform.MoeExecuteTool:input_type -> platform.v1.MoeToolExecuteReq
@@ -2556,36 +2407,34 @@ var file_api_platform_v1_platform_messages_proto_depIdxs = []int32{
 	11, // 15: platform.v1.Platform.VoiceCall:input_type -> platform.v1.VoiceCallReq
 	17, // 16: platform.v1.Platform.VoiceCancel:input_type -> platform.v1.VoiceCancelReq
 	18, // 17: platform.v1.Platform.VoiceReject:input_type -> platform.v1.VoiceRejectReq
-	20, // 18: platform.v1.Platform.GetVoiceToken:input_type -> platform.v1.GetVoiceTokenReq
-	23, // 19: platform.v1.Platform.LlmCreateAgent:input_type -> platform.v1.LlmCreateAgentReq
-	25, // 20: platform.v1.Platform.ListLlmManagedModels:input_type -> platform.v1.ListLlmManagedModelsReq
-	27, // 21: platform.v1.Platform.GetLlmManagedModel:input_type -> platform.v1.GetLlmManagedModelReq
-	27, // 22: platform.v1.Platform.ReconcileLlmManagedModel:input_type -> platform.v1.GetLlmManagedModelReq
-	28, // 23: platform.v1.Platform.DeleteLlmManagedModel:input_type -> platform.v1.DeleteLlmManagedModelReq
-	29, // 24: platform.v1.Platform.LlmChat:input_type -> platform.v1.LlmChatReq
-	34, // 25: platform.v1.Platform.ListAnnouncements:input_type -> platform.v1.ListAnnouncementsReq
-	36, // 26: platform.v1.Platform.GetAnnouncement:input_type -> platform.v1.GetAnnouncementReq
-	32, // 27: platform.v1.Platform.GetLatestAppRelease:input_type -> platform.v1.GetLatestAppReleaseReq
-	2,  // 28: platform.v1.Platform.GetPublicClientConfig:output_type -> platform.v1.GetPublicClientConfigResp
-	4,  // 29: platform.v1.Platform.GetLlmConfig:output_type -> platform.v1.GetLlmConfigResp
-	10, // 30: platform.v1.Platform.MoeExecuteTool:output_type -> platform.v1.MoeToolExecuteResp
-	7,  // 31: platform.v1.Platform.MoeToolsSchema:output_type -> platform.v1.MoeToolSchemaResp
-	16, // 32: platform.v1.Platform.VoiceAnswer:output_type -> platform.v1.VoiceAnswerResp
-	13, // 33: platform.v1.Platform.VoiceCall:output_type -> platform.v1.VoiceCallResp
-	19, // 34: platform.v1.Platform.VoiceCancel:output_type -> platform.v1.VoiceSimpleResp
-	19, // 35: platform.v1.Platform.VoiceReject:output_type -> platform.v1.VoiceSimpleResp
-	21, // 36: platform.v1.Platform.GetVoiceToken:output_type -> platform.v1.GetVoiceTokenResp
-	24, // 37: platform.v1.Platform.LlmCreateAgent:output_type -> platform.v1.LlmManagedModelResp
-	26, // 38: platform.v1.Platform.ListLlmManagedModels:output_type -> platform.v1.ListLlmManagedModelsResp
-	24, // 39: platform.v1.Platform.GetLlmManagedModel:output_type -> platform.v1.LlmManagedModelResp
-	24, // 40: platform.v1.Platform.ReconcileLlmManagedModel:output_type -> platform.v1.LlmManagedModelResp
-	24, // 41: platform.v1.Platform.DeleteLlmManagedModel:output_type -> platform.v1.LlmManagedModelResp
-	30, // 42: platform.v1.Platform.LlmChat:output_type -> platform.v1.LlmChatResp
-	35, // 43: platform.v1.Platform.ListAnnouncements:output_type -> platform.v1.ListAnnouncementsResp
-	37, // 44: platform.v1.Platform.GetAnnouncement:output_type -> platform.v1.GetAnnouncementResp
-	33, // 45: platform.v1.Platform.GetLatestAppRelease:output_type -> platform.v1.GetLatestAppReleaseResp
-	28, // [28:46] is the sub-list for method output_type
-	10, // [10:28] is the sub-list for method input_type
+	21, // 18: platform.v1.Platform.LlmCreateAgent:input_type -> platform.v1.LlmCreateAgentReq
+	23, // 19: platform.v1.Platform.ListLlmManagedModels:input_type -> platform.v1.ListLlmManagedModelsReq
+	25, // 20: platform.v1.Platform.GetLlmManagedModel:input_type -> platform.v1.GetLlmManagedModelReq
+	25, // 21: platform.v1.Platform.ReconcileLlmManagedModel:input_type -> platform.v1.GetLlmManagedModelReq
+	26, // 22: platform.v1.Platform.DeleteLlmManagedModel:input_type -> platform.v1.DeleteLlmManagedModelReq
+	27, // 23: platform.v1.Platform.LlmChat:input_type -> platform.v1.LlmChatReq
+	32, // 24: platform.v1.Platform.ListAnnouncements:input_type -> platform.v1.ListAnnouncementsReq
+	34, // 25: platform.v1.Platform.GetAnnouncement:input_type -> platform.v1.GetAnnouncementReq
+	30, // 26: platform.v1.Platform.GetLatestAppRelease:input_type -> platform.v1.GetLatestAppReleaseReq
+	2,  // 27: platform.v1.Platform.GetPublicClientConfig:output_type -> platform.v1.GetPublicClientConfigResp
+	4,  // 28: platform.v1.Platform.GetLlmConfig:output_type -> platform.v1.GetLlmConfigResp
+	10, // 29: platform.v1.Platform.MoeExecuteTool:output_type -> platform.v1.MoeToolExecuteResp
+	7,  // 30: platform.v1.Platform.MoeToolsSchema:output_type -> platform.v1.MoeToolSchemaResp
+	16, // 31: platform.v1.Platform.VoiceAnswer:output_type -> platform.v1.VoiceAnswerResp
+	13, // 32: platform.v1.Platform.VoiceCall:output_type -> platform.v1.VoiceCallResp
+	19, // 33: platform.v1.Platform.VoiceCancel:output_type -> platform.v1.VoiceSimpleResp
+	19, // 34: platform.v1.Platform.VoiceReject:output_type -> platform.v1.VoiceSimpleResp
+	22, // 35: platform.v1.Platform.LlmCreateAgent:output_type -> platform.v1.LlmManagedModelResp
+	24, // 36: platform.v1.Platform.ListLlmManagedModels:output_type -> platform.v1.ListLlmManagedModelsResp
+	22, // 37: platform.v1.Platform.GetLlmManagedModel:output_type -> platform.v1.LlmManagedModelResp
+	22, // 38: platform.v1.Platform.ReconcileLlmManagedModel:output_type -> platform.v1.LlmManagedModelResp
+	22, // 39: platform.v1.Platform.DeleteLlmManagedModel:output_type -> platform.v1.LlmManagedModelResp
+	28, // 40: platform.v1.Platform.LlmChat:output_type -> platform.v1.LlmChatResp
+	33, // 41: platform.v1.Platform.ListAnnouncements:output_type -> platform.v1.ListAnnouncementsResp
+	35, // 42: platform.v1.Platform.GetAnnouncement:output_type -> platform.v1.GetAnnouncementResp
+	31, // 43: platform.v1.Platform.GetLatestAppRelease:output_type -> platform.v1.GetLatestAppReleaseResp
+	27, // [27:44] is the sub-list for method output_type
+	10, // [10:27] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -2602,7 +2451,7 @@ func file_api_platform_v1_platform_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_platform_v1_platform_messages_proto_rawDesc), len(file_api_platform_v1_platform_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   38,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

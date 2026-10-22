@@ -25,7 +25,6 @@ const OperationPlatformGetLatestAppRelease = "/platform.v1.Platform/GetLatestApp
 const OperationPlatformGetLlmConfig = "/platform.v1.Platform/GetLlmConfig"
 const OperationPlatformGetLlmManagedModel = "/platform.v1.Platform/GetLlmManagedModel"
 const OperationPlatformGetPublicClientConfig = "/platform.v1.Platform/GetPublicClientConfig"
-const OperationPlatformGetVoiceToken = "/platform.v1.Platform/GetVoiceToken"
 const OperationPlatformListAnnouncements = "/platform.v1.Platform/ListAnnouncements"
 const OperationPlatformListLlmManagedModels = "/platform.v1.Platform/ListLlmManagedModels"
 const OperationPlatformLlmChat = "/platform.v1.Platform/LlmChat"
@@ -45,7 +44,6 @@ type PlatformHTTPServer interface {
 	GetLlmConfig(context.Context, *GetLlmConfigReq) (*GetLlmConfigResp, error)
 	GetLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error)
 	GetPublicClientConfig(context.Context, *GetPublicClientConfigReq) (*GetPublicClientConfigResp, error)
-	GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error)
 	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
 	ListLlmManagedModels(context.Context, *ListLlmManagedModelsReq) (*ListLlmManagedModelsResp, error)
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
@@ -69,7 +67,6 @@ func RegisterPlatformHTTPServer(s *http.Server, srv PlatformHTTPServer) {
 	r.POST("/api/voice/call", _Platform_VoiceCall0_HTTP_Handler(srv))
 	r.POST("/api/voice/cancel", _Platform_VoiceCancel0_HTTP_Handler(srv))
 	r.POST("/api/voice/reject", _Platform_VoiceReject0_HTTP_Handler(srv))
-	r.GET("/api/voice/token", _Platform_GetVoiceToken0_HTTP_Handler(srv))
 	r.POST("/api/llm/agents", _Platform_LlmCreateAgent0_HTTP_Handler(srv))
 	r.GET("/api/llm/managed-models", _Platform_ListLlmManagedModels0_HTTP_Handler(srv))
 	r.GET("/api/llm/managed-models/{agent_id}", _Platform_GetLlmManagedModel0_HTTP_Handler(srv))
@@ -244,25 +241,6 @@ func _Platform_VoiceReject0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.C
 			return err
 		}
 		reply := out.(*VoiceSimpleResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Platform_GetVoiceToken0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in GetVoiceTokenReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationPlatformGetVoiceToken)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetVoiceToken(ctx, req.(*GetVoiceTokenReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*GetVoiceTokenResp)
 		return ctx.Result(200, reply)
 	}
 }
@@ -469,7 +447,6 @@ type PlatformHTTPClient interface {
 	GetLlmConfig(ctx context.Context, req *GetLlmConfigReq, opts ...http.CallOption) (rsp *GetLlmConfigResp, err error)
 	GetLlmManagedModel(ctx context.Context, req *GetLlmManagedModelReq, opts ...http.CallOption) (rsp *LlmManagedModelResp, err error)
 	GetPublicClientConfig(ctx context.Context, req *GetPublicClientConfigReq, opts ...http.CallOption) (rsp *GetPublicClientConfigResp, err error)
-	GetVoiceToken(ctx context.Context, req *GetVoiceTokenReq, opts ...http.CallOption) (rsp *GetVoiceTokenResp, err error)
 	ListAnnouncements(ctx context.Context, req *ListAnnouncementsReq, opts ...http.CallOption) (rsp *ListAnnouncementsResp, err error)
 	ListLlmManagedModels(ctx context.Context, req *ListLlmManagedModelsReq, opts ...http.CallOption) (rsp *ListLlmManagedModelsResp, err error)
 	LlmChat(ctx context.Context, req *LlmChatReq, opts ...http.CallOption) (rsp *LlmChatResp, err error)
@@ -561,19 +538,6 @@ func (c *PlatformHTTPClientImpl) GetPublicClientConfig(ctx context.Context, in *
 	pattern := "/api/public/client-config"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationPlatformGetPublicClientConfig))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *PlatformHTTPClientImpl) GetVoiceToken(ctx context.Context, in *GetVoiceTokenReq, opts ...http.CallOption) (*GetVoiceTokenResp, error) {
-	var out GetVoiceTokenResp
-	pattern := "/api/voice/token"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationPlatformGetVoiceToken))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

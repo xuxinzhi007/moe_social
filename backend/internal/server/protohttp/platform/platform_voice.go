@@ -2,10 +2,8 @@ package platformhttp
 
 import (
 	"context"
-	"strings"
 
 	platformv1 "backend/api/platform/v1"
-	voicebiz "backend/internal/biz/voice"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 )
@@ -78,30 +76,4 @@ func (s *Server) VoiceReject(ctx context.Context, in *platformv1.VoiceRejectReq)
 		return nil, kerrors.BadRequest("VOICE_REJECT_FAILED", err.Error())
 	}
 	return &platformv1.VoiceSimpleResp{Code: 0, Message: "success", Success: true}, nil
-}
-
-func (s *Server) GetVoiceToken(ctx context.Context, in *platformv1.GetVoiceTokenReq) (*platformv1.GetVoiceTokenResp, error) {
-	if !s.hasDeps() {
-		return nil, errPlatformUnavailable
-	}
-	if s.voiceApp == nil {
-		return nil, kerrors.BadRequest("VOICE_UNAVAILABLE", "voice app unavailable")
-	}
-	userAccount := strings.TrimSpace(in.GetUserAccount())
-	if userAccount == "" {
-		var err error
-		userAccount, err = actorUserIDString(ctx)
-		if err != nil {
-			return nil, kerrors.BadRequest("UNAUTHORIZED", err.Error())
-		}
-	}
-	role := uint8(in.GetRole())
-	if role == 0 {
-		role = 1
-	}
-	result, err := s.voiceApp.GetRtcToken(ctx, voicebiz.TokenInput{ChannelName: in.GetChannelName(), UserAccount: userAccount, Role: role})
-	if err != nil {
-		return nil, kerrors.BadRequest("VOICE_TOKEN_FAILED", err.Error())
-	}
-	return &platformv1.GetVoiceTokenResp{Code: 0, Message: "success", Success: true, Token: result.Token, AppId: result.AppID}, nil
 }

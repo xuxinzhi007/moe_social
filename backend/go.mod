@@ -3,7 +3,6 @@ module backend
 go 1.25.5
 
 require (
-	github.com/AgoraIO-Community/go-tokenbuilder v1.3.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/go-kratos/kratos/v2 v2.8.4
 	github.com/golang-jwt/jwt/v5 v5.3.0

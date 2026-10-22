@@ -91,67 +91,6 @@ class ApiService {
   // 获取当前 token
   static String? get token => _currentToken;
 
-  // 语音通话 Token
-  static Future<Map<String, dynamic>> getRtcToken(String channelName,
-      {int role = 1}) async {
-    final response = await _request(
-      '/api/voice/token?channel_name=$channelName&role=$role',
-      method: 'GET',
-    );
-    return _map(response);
-  }
-
-  // 发起语音呼叫
-  static Future<Map<String, dynamic>> initiateCall(String receiverId) async {
-    final response = await _request(
-      '/api/voice/call',
-      method: 'POST',
-      body: {'receiver_id': receiverId},
-    );
-    return _map(response);
-  }
-
-  // 接听语音呼叫
-  static Future<Map<String, dynamic>> answerCall(String callId) async {
-    final response = await _request(
-      '/api/voice/answer',
-      method: 'POST',
-      body: {'call_id': callId},
-    );
-    return response;
-  }
-
-  // 拒绝语音呼叫
-  static Future<Map<String, dynamic>> rejectCall(String callId) async {
-    final response = await _request(
-      '/api/voice/reject',
-      method: 'POST',
-      body: {'call_id': callId},
-    );
-    return response;
-  }
-
-  // 取消语音呼叫
-  static Future<Map<String, dynamic>> cancelCall() async {
-    final response = await _request(
-      '/api/voice/cancel',
-      method: 'POST',
-    );
-    return response;
-  }
-
-  // 发起语音通话（服务端生成 call_id / channel_name，并通过 WS 推送给被叫方）
-  static Future<Map<String, dynamic>> voiceCall(String receiverId) async {
-    final response = await _request(
-      '/api/voice/call',
-      method: 'POST',
-      body: {'receiver_id': receiverId},
-    );
-    final data = _map(response);
-    if (data.isNotEmpty) return data;
-    return response;
-  }
-
   // 环境配置（local / online）：**唯一来源** `lib/utils/config.dart` → [ApiEnvConfig]
   static const String _envLocal = 'local';
   static const String _envOnline = 'online';

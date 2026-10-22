@@ -46,7 +46,6 @@ type Config struct {
 	Feishu         Feishu         `mapstructure:"feishu"`
 	Wechat         Wechat         `mapstructure:"wechat"`
 	OAuth          OAuth          `mapstructure:"oauth"`
-	Agora          Agora          `mapstructure:"agora"`
 	Moe            Moe            `mapstructure:"moe"`
 }
 
@@ -67,12 +66,6 @@ type OAuth struct {
 	TicketTTLSeconds int64 `mapstructure:"ticket_ttl_seconds"`
 	// MaxPendingAuths 内存中并存的授权事务上限，缺省 4096；满时淘汰最早到期的一条。
 	MaxPendingAuths int `mapstructure:"max_pending_auths"`
-}
-
-// Agora RTC 凭证；缺失键保留 API 片段值，显式空值禁用对应凭证。
-type Agora struct {
-	AppID          string `mapstructure:"app_id"`
-	AppCertificate string `mapstructure:"app_certificate"`
 }
 
 // Runtime 进程运行时（对外端口、启动片段路径）。

@@ -109,20 +109,6 @@ message VoiceSimpleResp {
   bool success = 3;
 }
 
-message GetVoiceTokenReq {
-  string channel_name = 1;
-  uint32 role = 2;
-  string user_account = 3;
-}
-
-message GetVoiceTokenResp {
-  int32 code = 1;
-  string message = 2;
-  bool success = 3;
-  string token = 4;
-  string app_id = 5;
-}
-
 message LlmMessage {
   string role = 1;
   string content = 2;
@@ -259,9 +245,6 @@ service Platform {
   }
   rpc VoiceReject(VoiceRejectReq) returns (VoiceSimpleResp) {
     option (google.api.http) = { post: "/api/voice/reject" body: "*" };
-  }
-  rpc GetVoiceToken(GetVoiceTokenReq) returns (GetVoiceTokenResp) {
-    option (google.api.http) = { get: "/api/voice/token" };
   }
   rpc LlmCreateAgent(LlmCreateAgentReq) returns (LlmManagedModelResp) {
     option (google.api.http) = { post: "/api/llm/agents" body: "*" };

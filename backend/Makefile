@@ -96,11 +96,16 @@ build-moe-social:
 
 build: build-moe-social
 
-# 编 Linux 服务器用（amd64）。Windows 若失败可用 Git Bash / WSL 执行 make。
+# 编 Linux 服务器用（amd64）。Windows 的 make 走 cmd，不能写 VAR=value go build。
 build-linux:
 	@echo Building Linux amd64...
+ifeq ($(OS),Windows_NT)
+	@if not exist bin mkdir bin
+	set "CGO_ENABLED=0"&& set "GOOS=linux"&& set "GOARCH=amd64"&& go build -o bin/moe-social ./cmd/moe-social
+else
 	@mkdir -p bin
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/moe-social ./cmd/moe-social
+endif
 	@echo Done.
 
 # 看一眼本机 GOOS / GOARCH（排查用）
