@@ -73,6 +73,7 @@ func handleChatWSLoop(ctx context.Context, userID string, conn *websocket.Conn, 
 			}
 			break
 		}
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		moelog.WithContext(ctx).Debugf("chat ws raw from %s len=%d", userID, len(message))
 		handleChatWSMessage(ctx, userID, message, deps)
 	}
@@ -128,13 +129,6 @@ func handleChatWSPrivateMessage(
 		return
 	}
 
-	senderAvatar := ""
-	if avatar, ok := msg["sender_avatar"].(string); ok && avatar != "" {
-		senderAvatar = avatar
-	} else if avatar, ok := msg["senderAvatar"].(string); ok && avatar != "" {
-		senderAvatar = avatar
-	}
-
 	moelog.WithContext(ctx).Debugf("chat ws send from=%s to=%s", userID, targetID)
 
 	if deps.PM == nil {
@@ -161,11 +155,6 @@ func handleChatWSPrivateMessage(
 		})
 		return
 	}
-
-	senderName, senderAvatar := ResolvePrivateMessageSenderProfile(
-		ctx, deps.Delivery, userID, rpcResp.Message, senderAvatar,
-	)
-	DeliverPrivateMessageRealTime(ctx, deps.Delivery, userID, targetID, content, senderName, senderAvatar, rpcResp.Message)
 }
 
 func extractImagePathsFromWSMsg(msg map[string]interface{}) []string {

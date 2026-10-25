@@ -133,7 +133,6 @@ func DeliverPrivateMessageRealTime(
 			chatMsg["receiver_moe_no"] = protoMsg.ReceiverMoeNo
 		}
 	}
-	if !PushJSONToChatUser(recvKey, chatMsg) {
-		PersistOfflinePrivateChatNotification(ctx, deps, recvKey, senderKey, content, senderName)
-	}
+	PersistOfflinePrivateChatNotification(ctx, deps, recvKey, senderKey, content, senderName)
+	PushJSONToChatUser(recvKey, chatMsg)
 }

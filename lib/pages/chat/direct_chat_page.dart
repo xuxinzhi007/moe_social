@@ -260,6 +260,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
     // 对方新消息到达：触发新消息弹跳动效（定位在头像 / 气泡附近）。
     if (map['from']?.toString() == widget.userId) {
       _showMessagePopFx();
+      unawaited(
+        context
+            .read<NotificationProvider>()
+            .markDirectMessagesAsRead(widget.userId),
+      );
     }
   }
 

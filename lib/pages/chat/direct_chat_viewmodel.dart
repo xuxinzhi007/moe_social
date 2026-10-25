@@ -267,6 +267,10 @@ class DirectChatViewModel extends ChangeNotifier {
         time = DateTime.now();
       }
       final sid = _serverSlotFromWsId(map['server_message_id'], content);
+      if (sid != null && _messages.any((m) => m.serverId == sid)) {
+        ChatPushService.markSenderRead(peerUserId);
+        return;
+      }
       _messages.add(
         DirectChatMessage(
           senderId: from,

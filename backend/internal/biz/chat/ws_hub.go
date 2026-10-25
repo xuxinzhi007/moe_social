@@ -77,12 +77,17 @@ func SendRawToUser(userID string, data interface{}) bool {
 	return true
 }
 
-// PushToUser 向在线用户推送通知。
+// PushToUser 把站内事件推到用户正在用的 /ws/chat。
+// 聊天长连接不在时，再落到 /ws/remote 的旧信封。
 func PushToUser(in PushInput) bool {
-	return SendRawToUser(in.UserID, map[string]interface{}{
+	payload := map[string]interface{}{
 		"type": in.Type,
 		"data": in.Data,
-	})
+	}
+	if PushJSONToChatUser(in.UserID, payload) {
+		return true
+	}
+	return SendRawToUser(in.UserID, payload)
 }
 
 // PushBatch 批量推送，返回成功数。

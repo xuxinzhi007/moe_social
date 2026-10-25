@@ -111,7 +111,6 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       if (kIsWeb) return;
-      ChatPushService.stop();
       PresenceService.stop();
     }
   }

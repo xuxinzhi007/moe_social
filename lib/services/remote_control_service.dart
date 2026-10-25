@@ -10,7 +10,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../auth_service.dart';
 import 'api_service.dart';
-import 'push_notification_service.dart';
+import 'chat_push_service.dart';
 import 'ws_channel_connector.dart';
 import 'enhanced_logger.dart';
 
@@ -238,6 +238,13 @@ class RemoteControlService {
       return;
     }
     final type = map['type'] as String? ?? '';
+    if (type == 'notification' ||
+        type == 'friend_request' ||
+        type == 'system_notification' ||
+        type == 'announcement_published') {
+      ChatPushService.handlePushEnvelope(map);
+      return;
+    }
     final targetDeviceId = map['target_device_id'] as String? ?? '';
     final currentDeviceId = _deviceId;
     if (currentDeviceId == null || currentDeviceId.isEmpty) {
@@ -264,23 +271,6 @@ class RemoteControlService {
       await _handleIncomingCommand(map);
       return;
     }
-    if (type == 'notification') {
-      // 处理推送通知
-      await _handleNotification(map);
-      return;
-    }
-  }
-
-  static Future<void> _handleNotification(Map<String, dynamic> map) async {
-    // 处理推送通知，调用 PushNotificationService 来处理
-    EnhancedLogger().debug(
-      '收到远程推送通知',
-      category: LogCategory.network,
-    );
-    // 提取通知数据
-    final notificationData = map['data'] as Map<String, dynamic>? ?? {};
-    // 调用 PushNotificationService 处理通知
-    PushNotificationService.handleWebSocketNotification(notificationData);
   }
 
   static Future<void> _handleIncomingCommand(Map<String, dynamic> map) async {

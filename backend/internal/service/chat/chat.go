@@ -11,8 +11,9 @@ import (
 
 // AppService 私信应用层。
 type AppService struct {
-	pm chatbiz.PrivateMessageStore
-	db *gorm.DB
+	pm       chatbiz.PrivateMessageStore
+	db       *gorm.DB
+	delivery chatbiz.DeliveryDeps
 }
 
 // New 构造 AppService。
@@ -34,4 +35,12 @@ func (s *AppService) PrivateMessageStore() chatbiz.PrivateMessageStore {
 		return nil
 	}
 	return s.pm
+}
+
+// SetDelivery 绑定在线推送和离线站内通知。未绑定时只保存消息。
+func (s *AppService) SetDelivery(deps chatbiz.DeliveryDeps) {
+	if s == nil {
+		return
+	}
+	s.delivery = deps
 }

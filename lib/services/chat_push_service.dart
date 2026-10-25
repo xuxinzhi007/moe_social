@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
@@ -76,6 +77,7 @@ class ChatPushService {
   static Timer? _reconnectTimer;
   static Timer? _heartbeatTimer;
   static bool _connecting = false;
+  static bool _askedNotificationPermission = false;
   static GlobalKey<NavigatorState>? _navigatorKey;
   static BuildContext? _globalContext;
   static String? _activeIncomingCallId;
@@ -145,6 +147,23 @@ class ChatPushService {
   // Ensure the current user is considered online even if they never open a DM.
   // We keep the websocket connected, but also send a lightweight ping message
   // so the server-side handler has a read loop activity.
+  /// 主界面已经显示后再问。连上 WebSocket 时 Activity 往往还不能弹系统框。
+  static Future<void> ensureSystemNotificationPermission() async {
+    if (kIsWeb || _askedNotificationPermission) return;
+    if (!await NotificationPreferences.getEnabled()) return;
+    if (await NotificationPreferences.isSystemPermissionGranted()) {
+      _askedNotificationPermission = true;
+      return;
+    }
+    final status = await Permission.notification.status;
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      _askedNotificationPermission = true;
+      return;
+    }
+    _askedNotificationPermission = true;
+    await Permission.notification.request();
+  }
+
   static void ping() {
     try {
       _channel?.sink.add(json.encode({'type': 'ping'}));
@@ -292,6 +311,11 @@ class ChatPushService {
     });
   }
 
+  /// /ws/remote 上残留的通知信封转到聊天分发，避免站内事件只停在远程控制连接里。
+  static void handlePushEnvelope(Map<String, dynamic> map) {
+    _dispatch(map);
+  }
+
   static void _handleMessage(dynamic data) {
     if (data is! String) return;
     // 收到一条真实消息说明这条 WS 是健康的，重置退避计数。
@@ -308,15 +332,31 @@ class ChatPushService {
       return;
     }
 
+    _dispatch(map);
+  }
+
+  static void _dispatch(Map<String, dynamic> map) {
     final msgType = map['type']?.toString();
     if (msgType == 'notification') {
       final inner = map['data'];
       if (inner is Map) {
-        final sub = Map<String, dynamic>.from(inner)['type']?.toString() ?? '';
+        final nested = Map<String, dynamic>.from(inner);
+        final sub = nested['type']?.toString() ?? '';
+        if (sub == 'friend_request') {
+          final payload = nested['data'];
+          FriendRequestSync.onRealtimeEvent(
+            payload is Map ? Map<String, dynamic>.from(payload) : null,
+          );
+          return;
+        }
         if (sub == 'announcement_published' || sub == 'system_notification') {
           NotificationService.onRealtimeRefresh?.call();
         }
       }
+      return;
+    }
+    if (msgType == 'announcement_published' || msgType == 'system_notification') {
+      NotificationService.onRealtimeRefresh?.call();
       return;
     }
     if (msgType == 'friend_request') {

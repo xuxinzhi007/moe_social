@@ -70,6 +70,7 @@ func handleRemoteWSLoop(userID string, conn *websocket.Conn) {
 			}
 			break
 		}
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		handleRemoteWSMessage(userID, message)
 	}
 }

@@ -1,6 +1,7 @@
 package runserver
 
 import (
+	"backend/internal/platform/chatdelivery"
 	"backend/internal/platform/moewiring"
 	"backend/internal/platform/svc"
 )
@@ -70,6 +71,7 @@ func wireCommunityServices(rep *wireReporter, ctx *svc.ServiceContext) {
 		if err != nil {
 			rep.domainWarn("chat", "db", err.Error())
 		} else if chatApp != nil {
+			chatdelivery.BindChatDelivery(chatApp, ctx.UserApp)
 			ctx.ChatApp = chatApp
 		}
 	}

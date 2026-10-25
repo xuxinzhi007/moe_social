@@ -60,6 +60,21 @@ func (a *NotificationAdapter) CreateNotification(
 	return &userv1.CreateNotificationResp{}, nil
 }
 
+// BindChatDelivery 让 HTTP 发私信和 WebSocket 发私信共用同一条在线推送。
+func BindChatDelivery(chat *chatapp.AppService, user *userapp.AppService) {
+	if chat == nil || user == nil {
+		return
+	}
+	deps := chatbiz.DeliveryDeps{
+		UserReader:  &UserProfileAdapter{app: user},
+		NotifyStore: user.Notify(),
+	}
+	if deps.NotifyStore != nil {
+		deps.NotifyRPC = &NotificationAdapter{store: deps.NotifyStore}
+	}
+	chat.SetDelivery(deps)
+}
+
 // ChatWSDepsFrom builds chat WebSocket dependencies from ServiceContext.
 func ChatWSDepsFrom(svcCtx *svc.ServiceContext) chatbiz.ChatWSDeps {
 	deps := chatbiz.ChatWSDeps{

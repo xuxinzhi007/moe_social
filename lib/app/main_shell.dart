@@ -71,6 +71,7 @@ class _MainPageState extends State<MainPage> {
     // 主界面就绪后再静默检查更新（软更新可稍后；强制更新会拦截）。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scheduleCompanionAttentionSheet();
+      unawaited(ChatPushService.ensureSystemNotificationPermission());
       Future<void>.delayed(const Duration(milliseconds: 800), () {
         if (!mounted) return;
         unawaited(StartupUpdateService.tryLaunchUpdateCheck());

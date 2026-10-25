@@ -12,7 +12,17 @@ import (
 
 // SendPrivateMessage 发送私信。
 func (s *AppService) SendPrivateMessage(ctx context.Context, in *chatv1.SendPrivateMessageRequest) (*chatv1.SendPrivateMessageReply, error) {
-	return chatbiz.SendPrivateMessage(ctx, s.pm, in)
+	out, err := chatbiz.SendPrivateMessage(ctx, s.pm, in)
+	if err != nil {
+		return nil, err
+	}
+	msg := out.GetMessage()
+	if msg == nil {
+		return out, nil
+	}
+	senderName, senderAvatar := chatbiz.ResolvePrivateMessageSenderProfile(ctx, s.delivery, msg.GetSenderId(), msg, "")
+	chatbiz.DeliverPrivateMessageRealTime(ctx, s.delivery, msg.GetSenderId(), msg.GetReceiverId(), msg.GetBody(), senderName, senderAvatar, msg)
+	return out, nil
 }
 
 // ListPrivateMessages 私信历史。
