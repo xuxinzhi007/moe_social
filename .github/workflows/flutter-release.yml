@@ -17,7 +17,9 @@ permissions:
 jobs:
   build:
     name: Build APK
-    runs-on: ubuntu-latest
+    # 2026-10-19 起 ubuntu-latest 分批换成 Ubuntu 26.04，同样的包会在剥离 .so 时写满磁盘。
+    # 9 月还能过的是 24.04，先钉住它。
+    runs-on: ubuntu-24.04
     env:
       FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID || vars.FEISHU_APP_ID }}
       FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET || vars.FEISHU_APP_SECRET }}
@@ -31,6 +33,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.ref }}
+
+      # 1b. ubuntu-latest 预装了 .NET、模拟器镜像等，assembleRelease 剥离 .so 时会把磁盘写满。
+      #     只删打包用不到的目录，保留随后 Flutter 要装的 SDK。
+      - name: Free disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android/sdk/system-images
+          sudo rm -rf /usr/local/lib/android/sdk/emulator
+          sudo rm -rf /usr/local/lib/android/sdk/sources
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/local/share/chromium
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/share/swift
+          sudo docker image prune --all --force || true
+          df -h
 
       # 2. 配置 Java 环境 (Android 构建需要)
       - uses: actions/setup-java@v4

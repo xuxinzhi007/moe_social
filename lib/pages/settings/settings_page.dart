@@ -97,48 +97,10 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       body: Column(
         children: [
-          // 在Web平台上，搜索栏的样式和布局可能需要调整
-          if (isWeb)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: MoeTokens.surface1,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                  border: Border.all(color: MoeTokens.surfaceBorder),
-                ),
-                child: TextField(
-                  onChanged: _onSearch,
-                  decoration: InputDecoration(
-                    hintText: '搜索设置',
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: MoeTokens.hintText,
-                    ),
-                    suffixIcon: _isSearching
-                        ? IconButton(
-                            icon: const Icon(
-                              Icons.clear,
-                              color: MoeTokens.hintText,
-                            ),
-                            onPressed: () {
-                              _onClearSearch();
-                              _onSearch('');
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                  ),
-                ),
-              ),
-            )
-          else
-            SettingsSearchBar(
-              onSearch: _onSearch,
-              onClear: _onClearSearch,
-            ),
+          SettingsSearchBar(
+            onSearch: _onSearch,
+            onClear: _onClearSearch,
+          ),
           Expanded(
             child: ListView(
               controller: _scrollController,

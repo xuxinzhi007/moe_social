@@ -239,7 +239,7 @@ class _ChatModelSettingsState extends State<_ChatModelSettings> {
               : (value) {
                   if (value != null) _selectModel(value);
                 },
-          decoration: const InputDecoration(border: OutlineInputBorder()),
+          decoration: const InputDecoration(),
         ),
         const SizedBox(height: 8),
         Text(
@@ -265,9 +265,8 @@ class _ChatModelSettingsState extends State<_ChatModelSettings> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           key: ValueKey('base-$_baseModel'),
-          initialValue: _bases.any((item) => item.name == _baseModel)
-              ? _baseModel
-              : null,
+          initialValue:
+              _bases.any((item) => item.name == _baseModel) ? _baseModel : null,
           items: [
             for (final item in _bases)
               DropdownMenuItem(value: item.name, child: Text(item.name)),
@@ -281,7 +280,6 @@ class _ChatModelSettingsState extends State<_ChatModelSettings> {
                 },
           decoration: const InputDecoration(
             labelText: '基座',
-            border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 8),
@@ -291,7 +289,6 @@ class _ChatModelSettingsState extends State<_ChatModelSettings> {
           maxLines: 6,
           decoration: const InputDecoration(
             labelText: '系统提示词',
-            border: OutlineInputBorder(),
           ),
         ),
         SwitchListTile(

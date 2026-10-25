@@ -45,6 +45,12 @@ class _CompanionJourneyPageState extends State<CompanionJourneyPage> {
         backgroundColor: MoeTokens.surface1,
         foregroundColor: MoeTokens.titleText,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pushNamed('/ai-memories'),
+            child: const Text('记得的事'),
+          ),
+        ],
       ),
       body: AnimatedBuilder(
         animation: _vm,

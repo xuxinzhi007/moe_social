@@ -9,7 +9,6 @@ import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/moe_error_copy.dart';
-import '../../services/chat_service.dart';
 import '../../services/user_service.dart';
 import '../../services/voice_message_service.dart';
 import '../../widgets/avatar_image.dart';
@@ -28,7 +27,6 @@ import '../../widgets/motion/moe_chat_motion.dart';
 import '../../widgets/moe_action_row.dart';
 import 'direct_chat_viewmodel.dart';
 import 'chat_skin_picker_page.dart';
-import 'voice_call_launcher.dart';
 import 'widgets/chat_empty_illustration.dart';
 
 class DirectChatPage extends StatefulWidget {
@@ -172,29 +170,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
       return;
     }
     _startOnlinePolling();
-  }
-
-  Future<void> _startVoiceCall() async {
-    final currentUserId = _chat.currentUserId;
-    if (currentUserId == null || currentUserId.isEmpty) return;
-    try {
-      final callData = await ChatService.voiceCall(widget.userId);
-      final channelName = callData['channel_name']?.toString() ??
-          callData['call_id']?.toString();
-      if (channelName == null || channelName.isEmpty) {
-        throw Exception('invalid channel');
-      }
-      if (!mounted) return;
-      await openVoiceCallPage(
-        context,
-        channelName: channelName,
-        userName: widget.username,
-        userAvatar: widget.avatar,
-      );
-    } catch (_) {
-      if (!mounted) return;
-      MoeToast.error(context, '发起通话失败，请重试');
-    }
   }
 
   Future<void> _clearLocalChatHistory() async {
@@ -703,10 +678,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.phone_rounded, color: MoeTokens.primary),
-            onPressed: _startVoiceCall,
-          ),
           IconButton(
             icon:
                 const Icon(Icons.more_vert_rounded, color: MoeTokens.titleText),

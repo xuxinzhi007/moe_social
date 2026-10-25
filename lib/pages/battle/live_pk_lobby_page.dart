@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/battle_lobby_provider.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_toast.dart';
 
 /// Development-only entry for creating a V1 PK room with two existing users.
 class LivePkLobbyPage extends StatefulWidget {
@@ -113,16 +114,14 @@ class _LivePkLobbyPageState extends State<LivePkLobbyPage> {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.toString())));
+      MoeToast.error(context, error.toString());
     }
   }
 
   void _enterRoom(BuildContext context) {
     final roomId = _roomController.text.trim();
     if (int.tryParse(roomId) == null || int.parse(roomId) <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('请输入有效的 PK 房间 ID')));
+      MoeToast.info(context, '请输入有效的 PK 房间 ID');
       return;
     }
     Navigator.of(context)

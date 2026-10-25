@@ -6129,32 +6129,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.VoiceSimpleResp'
-    /api/voice/token:
-        get:
-            tags:
-                - Platform
-            operationId: Platform_GetVoiceToken
-            parameters:
-                - name: channelName
-                  in: query
-                  schema:
-                    type: string
-                - name: role
-                  in: query
-                  schema:
-                    type: integer
-                    format: uint32
-                - name: userAccount
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/platform.v1.GetVoiceTokenResp'
 components:
     schemas:
         achievement.v1.AchievementBadgeItem:
@@ -11130,20 +11104,6 @@ components:
             type: object
             properties:
                 apiBaseUrl:
-                    type: string
-        platform.v1.GetVoiceTokenResp:
-            type: object
-            properties:
-                code:
-                    type: integer
-                    format: int32
-                message:
-                    type: string
-                success:
-                    type: boolean
-                token:
-                    type: string
-                appId:
                     type: string
         platform.v1.ListAnnouncementsResp:
             type: object

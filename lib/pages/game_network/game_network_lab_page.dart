@@ -6,6 +6,7 @@ import '../../providers/game_network_provider.dart';
 import '../../services/game_network_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/moe_toast.dart';
 
 /// Android 异地联机网络实验页。
 class GameNetworkLabPage extends StatefulWidget {
@@ -146,9 +147,7 @@ class _GameNetworkLabPageState extends State<GameNetworkLabPage>
               ClipboardData(text: _roomController.text.trim()),
             );
             if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('房间号已复制')),
-            );
+            MoeToast.success(context, '房间号已复制');
           },
         ),
         border: OutlineInputBorder(
@@ -226,9 +225,7 @@ class _GameNetworkLabPageState extends State<GameNetworkLabPage>
                     ),
                   );
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('主机地址已复制')),
-                  );
+                  MoeToast.success(context, '主机地址已复制');
                 },
               ),
             ],

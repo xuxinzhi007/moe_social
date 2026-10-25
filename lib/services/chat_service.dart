@@ -46,26 +46,6 @@ class ChatService {
   }) =>
       ApiService.clearPrivateChatHistory(peerUserId: peerUserId);
 
-  static Future<Map<String, dynamic>> voiceCall(String receiverId) =>
-      ApiService.voiceCall(receiverId);
-
-  static Future<Map<String, dynamic>> initiateCall(String receiverId) =>
-      ApiService.initiateCall(receiverId);
-
-  static Future<Map<String, dynamic>> answerCall(String callId) =>
-      ApiService.answerCall(callId);
-
-  static Future<Map<String, dynamic>> rejectCall(String callId) =>
-      ApiService.rejectCall(callId);
-
-  static Future<Map<String, dynamic>> cancelCall() => ApiService.cancelCall();
-
-  static Future<Map<String, dynamic>> getRtcToken(
-    String channelName, {
-    int role = 1,
-  }) =>
-      ApiService.getRtcToken(channelName, role: role);
-
   static Future<String> uploadImage(File image) =>
       ApiClient.uploadImage(image, category: MediaCategory.chat);
 }

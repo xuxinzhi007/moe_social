@@ -12,7 +12,6 @@ type Config struct {
 	} `json:"Auth" yaml:"Auth"`
 
 	LLMInference LLMInferenceConf `json:"LLMInference" yaml:"LLMInference"`
-	Agora        AgoraConf        `json:"Agora" yaml:"Agora"`
 	Image        ImageConf        `json:"Image" yaml:"Image"`
 
 	// ClientPublicApiBaseUrl 由 wiring 从 config/config.yaml 写入；不参与 api/etc 解析。
@@ -27,11 +26,6 @@ type LLMInferenceConf struct {
 	MemorySummaryPrompt string `json:"MemorySummaryPrompt" yaml:"MemorySummaryPrompt"`
 	MemoryExtractPrompt string `json:"MemoryExtractPrompt" yaml:"MemoryExtractPrompt"`
 	ApiKey              string `json:"ApiKey" yaml:"ApiKey"`
-}
-
-type AgoraConf struct {
-	AppId          string `json:"AppId" yaml:"AppId"`
-	AppCertificate string `json:"AppCertificate" yaml:"AppCertificate"`
 }
 
 type ImageConf struct {

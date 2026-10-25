@@ -3,7 +3,6 @@ package runserver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,11 +13,9 @@ import (
 	mediav1 "backend/api/media/v1"
 	platformv1 "backend/api/platform/v1"
 	mediabiz "backend/internal/biz/media"
-	voicebiz "backend/internal/biz/voice"
 	"backend/internal/platform/apiconfig"
 	"backend/internal/platform/moewiring"
 	"backend/internal/platform/svc"
-	"backend/internal/platform/yamlconf"
 	"backend/internal/server"
 	mediahttp "backend/internal/server/protohttp/media"
 	platformhttp "backend/internal/server/protohttp/platform"
@@ -93,50 +90,6 @@ func TestOverridesApplyConfValuesOverFragment(t *testing.T) {
 	}
 	if c.Image.MaxBytes != 42 {
 		t.Errorf("Image.MaxBytes = %d, want 42", c.Image.MaxBytes)
-	}
-}
-
-func TestAgoraOverridesAndRtcToken(t *testing.T) {
-	const fragmentID = "11111111111111111111111111111111"
-	const fragmentCert = "22222222222222222222222222222222"
-	const mainID = "33333333333333333333333333333333"
-	const mainCert = "44444444444444444444444444444444"
-	fragmentPath := filepath.Join(t.TempDir(), "api.yaml")
-	if err := os.WriteFile(fragmentPath, []byte(fmt.Sprintf("Agora:\n  AppId: %q\n  AppCertificate: %q\n", fragmentID, fragmentCert)), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	for _, tt := range []struct {
-		name, body, id, certificate string
-	}{
-		{"absent preserves fragment", "{}", fragmentID, fragmentCert},
-		{"empty mapping preserves fragment", "agora: {}", fragmentID, fragmentCert},
-		{"main overrides both", fmt.Sprintf("agora: {app_id: %q, app_certificate: %q}", mainID, mainCert), mainID, mainCert},
-		{"per-key id", fmt.Sprintf("agora: {app_id: %q}", mainID), mainID, fragmentCert},
-		{"per-key certificate", fmt.Sprintf("agora: {app_certificate: %q}", mainCert), fragmentID, mainCert},
-		{"clear id", "agora: {app_id: ''}", "", fragmentCert},
-		{"clear certificate", "agora: {app_certificate: ''}", fragmentID, ""},
-		{"clear both", "agora: {app_id: '', app_certificate: ''}", "", ""},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			writeConf(t, tt.body)
-			var c apiconfig.Config
-			if err := yamlconf.Load(fragmentPath, &c); err != nil {
-				t.Fatal(err)
-			}
-			ApplyUnifiedConfigOverrides(&c)
-			if c.Agora.AppId != tt.id || c.Agora.AppCertificate != tt.certificate {
-				t.Fatal("Agora precedence mismatch")
-			}
-			deps := platformhttp.DepsFromServiceContext(&svc.ServiceContext{Config: c})
-			result, err := voicebiz.BuildRtcToken(deps.VoiceConfig, voicebiz.TokenInput{ChannelName: "fixture-channel", UserAccount: "7"})
-			if tt.id == "" || tt.certificate == "" {
-				if err == nil {
-					t.Fatal("cleared RTC credential must disable token generation")
-				}
-			} else if err != nil || result.Token == "" || result.AppID != tt.id {
-				t.Fatal("fake configured RTC credentials failed to generate a token")
-			}
-		})
 	}
 }
 

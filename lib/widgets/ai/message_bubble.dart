@@ -26,6 +26,7 @@ class AiMessageBubble extends StatefulWidget {
   final VoidCallback? onContentExpanded;
   final String? agentLabel;
   final Widget? assistantAvatar;
+  final Widget? userAvatar;
   final Widget? bubbleAction;
   final bool richFormat;
   final bool hideAvatar;
@@ -47,6 +48,7 @@ class AiMessageBubble extends StatefulWidget {
     this.onContentExpanded,
     this.agentLabel,
     this.assistantAvatar,
+    this.userAvatar,
     this.bubbleAction,
     this.richFormat = false,
     this.hideAvatar = false,
@@ -64,6 +66,14 @@ class AiMessageBubble extends StatefulWidget {
 class _AiMessageBubbleState extends State<AiMessageBubble> {
   bool _isExpanded = false;
   bool _isCopying = false;
+
+  Future<void> _copyMessage() async {
+    final text = widget.content.trim();
+    if (text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    MoeToast.success(context, '已复制');
+  }
 
   // 复制代码到剪贴板
   Future<void> _copyCode() async {
@@ -133,6 +143,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
 
     final textColor = widget.isUser ? Colors.white : MoeTokens.titleText;
     final text = widget.content;
+    final compact = widget.airyCompanion;
     // 助手长文默认全文展示（由外层 ListView 滚动）；仅用户侧保留「多行折叠 + 展开」省屏。
     final collapseUserLongText =
         widget.isUser && !_isExpanded && text.length > 200;
@@ -141,14 +152,15 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SelectableText(
+        Text(
           text,
           style: TextStyle(
             color: textColor,
-            fontSize: 15,
-            height: 1.5,
+            fontSize: compact ? 13 : 15,
+            height: compact ? 1.25 : 1.5,
           ),
           maxLines: maxLines,
+          overflow: collapseUserLongText ? TextOverflow.ellipsis : null,
         ),
         if (collapseUserLongText)
           GestureDetector(
@@ -223,7 +235,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
           ],
         ),
         const SizedBox(height: MoeTokens.spaceSm),
-        SelectableText(
+        Text(
           widget.content,
           style: AiTheme.body.copyWith(
             color: AiBrandTokens.titleColor.withValues(alpha: 0.82),
@@ -349,23 +361,26 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
         (isUser
             ? (widget.airyCompanion ? 0.74 : 0.78)
             : (widget.airyCompanion ? 0.80 : 0.82));
-    final showCompanionAccent = widget.airyCompanion &&
-        !isUser &&
+    final capsule = widget.airyCompanion &&
         !isError &&
         widget.contentType != MessageContentType.code;
-    final bubblePadding = isError
-        ? const EdgeInsets.fromLTRB(
-            MoeTokens.spaceMd,
-            MoeTokens.spaceMd,
-            MoeTokens.spaceSm,
-            MoeTokens.spaceSm,
-          )
-        : EdgeInsets.symmetric(
-            horizontal:
-                widget.airyCompanion ? MoeTokens.spaceMd : MoeTokens.spaceLg,
-            vertical:
-                widget.airyCompanion ? MoeTokens.spaceMd : MoeTokens.spaceMd,
-          );
+    final bubblePadding = capsule
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 7)
+        : isError
+            ? const EdgeInsets.fromLTRB(
+                MoeTokens.spaceMd,
+                MoeTokens.spaceMd,
+                MoeTokens.spaceSm,
+                MoeTokens.spaceSm,
+              )
+            : EdgeInsets.symmetric(
+                horizontal: widget.airyCompanion
+                    ? MoeTokens.spaceMd
+                    : MoeTokens.spaceLg,
+                vertical: widget.airyCompanion
+                    ? MoeTokens.spaceMd
+                    : MoeTokens.spaceMd,
+              );
 
     return Container(
       margin: EdgeInsets.only(top: widget.compactTop ? 2 : 8, bottom: 6),
@@ -381,136 +396,109 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxBubbleWidth),
-              child: Column(
-                crossAxisAlignment:
-                    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: bubblePadding,
-                    decoration: BoxDecoration(
-                      gradient: isUser ? MoeTokens.primaryGradient : null,
-                      color: isUser
-                          ? null
-                          : isError
-                              ? AiTheme.danger.withValues(alpha: 0.06)
-                              : widget.contentType == MessageContentType.code
-                                  ? const Color(0xFF1E1E1E)
-                                  : widget.airyCompanion
-                                      ? AiBrandTokens.companionSurface
-                                      : MoeTokens.cardBackground,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(
-                          isError
-                              ? MoeTokens.radiusLg
-                              : widget.airyCompanion && !isUser
-                                  ? MoeTokens.radiusMd
-                                  : MoeTokens.radiusXl,
-                        ),
-                        topRight: const Radius.circular(MoeTokens.radiusXl),
-                        bottomLeft: isUser
-                            ? const Radius.circular(MoeTokens.radiusXl)
-                            : Radius.circular(
-                                isError
-                                    ? MoeTokens.radiusLg
+            child: GestureDetector(
+              onLongPress: widget.isLoading || widget.content.trim().isEmpty
+                  ? null
+                  : _copyMessage,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+                child: Column(
+                  crossAxisAlignment: isUser
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: bubblePadding,
+                      decoration: BoxDecoration(
+                        gradient: isUser ? MoeTokens.primaryGradient : null,
+                        color: isUser
+                            ? null
+                            : isError
+                                ? AiTheme.danger.withValues(alpha: 0.06)
+                                : widget.contentType == MessageContentType.code
+                                    ? const Color(0xFF1E1E1E)
                                     : widget.airyCompanion
-                                        ? MoeTokens.radiusXl
-                                        : MoeTokens.radiusSm,
-                              ),
-                        bottomRight: isUser
-                            ? const Radius.circular(MoeTokens.radiusMd)
-                            : const Radius.circular(MoeTokens.radiusXl),
-                      ),
-                      border: !isUser &&
-                              (isError ||
-                                  widget.contentType != MessageContentType.code)
-                          ? Border.all(
-                              color: isError
-                                  ? AiTheme.danger.withValues(alpha: 0.22)
-                                  : widget.airyCompanion
-                                      ? MoeTokens.primary
-                                          .withValues(alpha: 0.16)
-                                      : AiBrandTokens.primary
-                                          .withValues(alpha: 0.08),
-                              width: isError
-                                  ? 1
-                                  : widget.airyCompanion
-                                      ? 1.2
-                                      : 1,
-                            )
-                          : null,
-                      boxShadow: isUser ||
-                              widget.contentType == MessageContentType.code
-                          ? MoeTokens.shadowMd()
-                          : MoeTokens.shadowSm(),
-                    ),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        if (showCompanionAccent)
-                          Positioned(
-                            left: -MoeTokens.spaceSm + MoeTokens.spaceXs / 2,
-                            top: MoeTokens.spaceSm,
-                            bottom: MoeTokens.spaceSm,
-                            child: Container(
-                              width: 3,
-                              decoration: BoxDecoration(
-                                borderRadius:
-                                    BorderRadius.circular(MoeTokens.radiusFull),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    MoeTokens.primary.withValues(alpha: 0.55),
-                                    MoeTokens.accent.withValues(alpha: 0.35),
-                                  ],
+                                        ? AiBrandTokens.companionSurface
+                                        : MoeTokens.cardBackground,
+                        borderRadius: capsule
+                            ? BorderRadius.circular(MoeTokens.radiusFull)
+                            : BorderRadius.only(
+                                topLeft: Radius.circular(
+                                  isError
+                                      ? MoeTokens.radiusLg
+                                      : MoeTokens.radiusXl,
                                 ),
+                                topRight:
+                                    const Radius.circular(MoeTokens.radiusXl),
+                                bottomLeft: isUser
+                                    ? const Radius.circular(MoeTokens.radiusXl)
+                                    : Radius.circular(
+                                        isError
+                                            ? MoeTokens.radiusLg
+                                            : MoeTokens.radiusSm,
+                                      ),
+                                bottomRight: isUser
+                                    ? const Radius.circular(MoeTokens.radiusMd)
+                                    : const Radius.circular(MoeTokens.radiusXl),
                               ),
-                            ),
-                          ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            left: showCompanionAccent ? MoeTokens.spaceSm : 0,
-                            right: widget.bubbleAction == null
-                                ? 0
-                                : MoeTokens.space3xl,
-                          ),
-                          child: isError
-                              ? _renderErrorContent()
-                              : (!widget.isUser &&
-                                      widget.isLoading &&
-                                      widget.content.trim().isEmpty)
-                                  ? _renderThinkingContent()
+                        border: !isUser &&
+                                (isError ||
+                                    widget.contentType !=
+                                        MessageContentType.code)
+                            ? Border.all(
+                                color: isError
+                                    ? AiTheme.danger.withValues(alpha: 0.22)
+                                    : widget.airyCompanion
+                                        ? MoeTokens.primary
+                                            .withValues(alpha: 0.16)
+                                        : AiBrandTokens.primary
+                                            .withValues(alpha: 0.08),
+                                width: isError
+                                    ? 1
+                                    : widget.airyCompanion
+                                        ? 1.2
+                                        : 1,
+                              )
+                            : null,
+                        boxShadow: capsule
+                            ? MoeTokens.shadowSm()
+                            : isUser ||
+                                    widget.contentType ==
+                                        MessageContentType.code
+                                ? MoeTokens.shadowMd()
+                                : MoeTokens.shadowSm(),
+                      ),
+                      child: isError
+                          ? _renderErrorContent()
+                          : (!widget.isUser &&
+                                  widget.isLoading &&
+                                  widget.content.trim().isEmpty)
+                              ? _renderThinkingContent()
+                              : widget.contentType == MessageContentType.text
+                                  ? _renderTextContent()
                                   : widget.contentType ==
-                                          MessageContentType.text
-                                      ? _renderTextContent()
-                                      : widget.contentType ==
-                                              MessageContentType.thinking
-                                          ? _renderThinkingContent()
-                                          : _renderCodeContent(),
-                        ),
-                        if (widget.bubbleAction != null)
-                          Positioned(
-                            top: -MoeTokens.spaceSm,
-                            right: -MoeTokens.spaceSm,
-                            child: widget.bubbleAction!,
-                          ),
-                      ],
+                                          MessageContentType.thinking
+                                      ? _renderThinkingContent()
+                                      : _renderCodeContent(),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
+          if (!isUser && widget.bubbleAction != null) ...[
+            const SizedBox(width: 6),
+            widget.bubbleAction!,
+          ],
           if (isUser && !widget.hideAvatar) ...[
             const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AiBrandTokens.secondary,
-              child: Icon(Icons.person_rounded,
-                  size: 18, color: Colors.white.withValues(alpha: 0.95)),
-            ),
+            widget.userAvatar ??
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AiBrandTokens.secondary,
+                  child: Icon(Icons.person_rounded,
+                      size: 18, color: Colors.white.withValues(alpha: 0.95)),
+                ),
           ],
         ],
       ),

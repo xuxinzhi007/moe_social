@@ -35,14 +35,6 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 		c.LLMInference.ApiKey = inf.APIKey
 	}
 
-	// Agora 逐键区分缺失与显式清空；不能用非空判断使旧凭证复活。
-	agora := conf.Get().Agora
-	if conf.IsSet("agora.app_id") {
-		c.Agora.AppId = strings.TrimSpace(agora.AppID)
-	}
-	if conf.IsSet("agora.app_certificate") {
-		c.Agora.AppCertificate = strings.TrimSpace(agora.AppCertificate)
-	}
 	if u := conf.ClientPublicBaseURL(); u != "" {
 		c.ClientPublicApiBaseUrl = u
 	}

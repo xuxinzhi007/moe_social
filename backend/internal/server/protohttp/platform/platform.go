@@ -38,7 +38,6 @@ type Deps struct {
 	ModelCache       *utils.ModelCache
 	InferenceConfig  llminference.Config
 	ConfigSnapshot   llmbiz.ConfigSnapshot
-	VoiceConfig      voicebiz.AgoraConfig
 }
 
 type Server struct {
@@ -63,9 +62,7 @@ func New(deps Deps) *Server {
 	if deps.MoeAdmin != nil {
 		s.moePlatform = moeadmin.NewPlatform(newPlatformMoeToolExecutor(deps.MoeAdmin))
 	}
-	if deps.VoiceConfig.AppID != "" {
-		s.voiceApp = voiceapp.New(newVoiceUserResolver(deps.UserApp), deps.VoiceConfig)
-	}
+	s.voiceApp = voiceapp.New(newVoiceUserResolver(deps.UserApp))
 	return s
 }
 
@@ -82,10 +79,6 @@ func DepsFromServiceContext(svcCtx *svc.ServiceContext) Deps {
 		ModelCache:       svcCtx.ModelCache,
 		InferenceConfig:  platformInferenceCfgFromConfig(svcCtx.Config),
 		ConfigSnapshot:   platformConfigSnapshotFromConfig(svcCtx.Config),
-		VoiceConfig: voicebiz.AgoraConfig{
-			AppID:          svcCtx.Config.Agora.AppId,
-			AppCertificate: svcCtx.Config.Agora.AppCertificate,
-		},
 	}
 }
 

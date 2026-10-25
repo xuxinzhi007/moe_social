@@ -208,66 +208,63 @@ class _ToastWidgetState extends State<_ToastWidget>
 
   @override
   Widget build(BuildContext context) {
-    final toastBody = Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: (widget.backgroundColor ?? Colors.black.withValues(alpha: 0.82))
-              .withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-          border: Border.all(
-            color: (widget.textColor ?? Colors.white).withValues(alpha: 0.10),
-            width: 1,
-          ),
-          boxShadow: MoeTokens.shadowElevated(),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.icon != null) ...[  
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: (widget.textColor ?? Colors.white).withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  widget.icon,
-                  color: widget.textColor ?? Colors.white,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 10),
-            ],
-            Flexible(
-              child: Text(
-                widget.message,
-                style: TextStyle(
-                  color: widget.textColor ?? Colors.white,
-                  fontSize: MoeTokens.textBase,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.3,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
+    final ink = widget.textColor ?? Colors.white;
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 40,
-      left: 24,
-      right: 24,
-      child: Material(
-        color: Colors.transparent,
-        child: moeReduceMotion(context)
-            ? toastBody
-            : ScaleTransition(
+      top: MediaQuery.of(context).padding.top + 6,
+      left: 16,
+      right: 16,
+      child: IgnorePointer(
+        child: Material(
+          color: Colors.transparent,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const iconSize = 14.0;
+              const gap = 6.0;
+              const padH = 12.0;
+              final textMax = (constraints.maxWidth - padH * 2 - iconSize - gap)
+                  .clamp(72.0, 280.0);
+              final toastBody = Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: padH,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (widget.backgroundColor ??
+                            Colors.black.withValues(alpha: 0.82))
+                        .withValues(alpha: 0.96),
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                    border: Border.all(color: ink.withValues(alpha: 0.12)),
+                    boxShadow: MoeTokens.shadowSm(),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.icon != null) ...[
+                        Icon(widget.icon, color: ink, size: iconSize),
+                        const SizedBox(width: gap),
+                      ],
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: textMax),
+                        child: Text(
+                          widget.message,
+                          style: TextStyle(
+                            color: ink,
+                            fontSize: MoeTokens.textSm,
+                            fontWeight: FontWeight.w600,
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              if (moeReduceMotion(context)) return toastBody;
+              return ScaleTransition(
                 scale: _scale,
                 child: SlideTransition(
                   position: _offset,
@@ -276,7 +273,10 @@ class _ToastWidgetState extends State<_ToastWidget>
                     child: toastBody,
                   ),
                 ),
-              ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

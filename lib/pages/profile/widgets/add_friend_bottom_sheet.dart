@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../auth_service.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/moe_theme_extension.dart';
+import '../../../widgets/moe_input_field.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/motion/moe_pressable.dart';
 import '../../../widgets/motion/moe_reveal.dart';
@@ -173,24 +174,16 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
           const SizedBox(height: 20),
           MoeReveal(
             delay: const Duration(milliseconds: 80),
-            child: TextField(
+            child: MoeInputField(
               controller: _controller,
+              hintText: '邮箱或 Moe 号',
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
-              onSubmitted: (_) {
+              onFieldSubmitted: (_) {
                 if (!_isLoading) {
                   _submit();
                 }
               },
-              decoration: InputDecoration(
-                labelText: '邮箱或 Moe 号',
-                hintText: '例如 name@example.com 或 1234567890',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
             ),
           ),
           if (_error != null) ...[

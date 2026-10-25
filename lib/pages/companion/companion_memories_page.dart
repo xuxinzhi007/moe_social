@@ -99,7 +99,6 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
             autofocus: true,
             decoration: const InputDecoration(
               hintText: '写下更准确的说法',
-              border: OutlineInputBorder(),
             ),
           ),
           actions: [

@@ -296,17 +296,6 @@ func TestPublicURLDerivationMatrix(t *testing.T) {
 	}
 }
 
-func TestAgoraTypedConfig(t *testing.T) {
-	loadBody(t, "agora: {app_id: 'fake-id', app_certificate: 'fake-certificate'}")
-	if Get().Agora.AppID != "fake-id" || Get().Agora.AppCertificate != "fake-certificate" {
-		t.Fatal("typed Agora keys were not decoded")
-	}
-	loadBody(t, "agora: {app_id: ''}")
-	if !IsSet("agora.app_id") || IsSet("agora.app_certificate") {
-		t.Fatal("explicit empty and absent credentials must remain distinguishable")
-	}
-}
-
 // TestInferenceResolution 复现 moeconfig.InferenceFromViper 的
 // 环境变量 → llm_inference → ollama 三级链。
 func TestInferenceResolution(t *testing.T) {

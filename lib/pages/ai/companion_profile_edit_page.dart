@@ -10,6 +10,7 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/moe_action_row.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import 'companion_avatar_studio_page.dart';
@@ -197,7 +198,6 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
             maxLines: 10,
             decoration: const InputDecoration(
               hintText: '粘贴 SillyTavern / Moe 角色卡 JSON',
-              border: OutlineInputBorder(),
             ),
           ),
           actions: [
@@ -398,15 +398,8 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
                               ? MoeTokens.titleText
                               : MoeTokens.hintText,
                         ),
-                        decoration: InputDecoration(
+                        decoration: MoeFieldDecoration.decorate(
                           hintText: '这个模型没有写系统提示词',
-                          filled: true,
-                          fillColor: MoeTokens.softChipBg,
-                          border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(MoeTokens.radiusLg),
-                            borderSide: BorderSide.none,
-                          ),
                         ),
                       ),
                   ],
@@ -584,15 +577,9 @@ class _NameDialogState extends State<_NameDialog> {
                 fontWeight: FontWeight.w700,
                 color: MoeTokens.titleText,
               ),
-              decoration: InputDecoration(
+              decoration: MoeFieldDecoration.decorate(
                 hintText: '例如：小星',
-                isDense: true,
-                filled: true,
-                fillColor: MoeTokens.softChipBg,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                  borderSide: BorderSide.none,
-                ),
+                emphasize: true,
               ),
             ),
             Align(

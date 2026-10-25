@@ -12,10 +12,13 @@ var errVoiceUnavailable = errors.New("voice app unavailable")
 // AppService 语音通话应用层。
 type AppService struct {
 	resolver voicebiz.UserDisplayResolver
-	agora    voicebiz.AgoraConfig
 }
 
 // New 构造 AppService。
-func New(resolver voicebiz.UserDisplayResolver, agora voicebiz.AgoraConfig) *AppService {
-	return &AppService{resolver: resolver, agora: agora}
+func New(resolver voicebiz.UserDisplayResolver) *AppService {
+	return &AppService{resolver: resolver}
+}
+
+func errUnavailable() error {
+	return errVoiceUnavailable
 }

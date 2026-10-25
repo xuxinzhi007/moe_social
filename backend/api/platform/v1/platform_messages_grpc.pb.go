@@ -27,7 +27,6 @@ const (
 	Platform_VoiceCall_FullMethodName                = "/platform.v1.Platform/VoiceCall"
 	Platform_VoiceCancel_FullMethodName              = "/platform.v1.Platform/VoiceCancel"
 	Platform_VoiceReject_FullMethodName              = "/platform.v1.Platform/VoiceReject"
-	Platform_GetVoiceToken_FullMethodName            = "/platform.v1.Platform/GetVoiceToken"
 	Platform_LlmCreateAgent_FullMethodName           = "/platform.v1.Platform/LlmCreateAgent"
 	Platform_ListLlmManagedModels_FullMethodName     = "/platform.v1.Platform/ListLlmManagedModels"
 	Platform_GetLlmManagedModel_FullMethodName       = "/platform.v1.Platform/GetLlmManagedModel"
@@ -51,7 +50,6 @@ type PlatformClient interface {
 	VoiceCall(ctx context.Context, in *VoiceCallReq, opts ...grpc.CallOption) (*VoiceCallResp, error)
 	VoiceCancel(ctx context.Context, in *VoiceCancelReq, opts ...grpc.CallOption) (*VoiceSimpleResp, error)
 	VoiceReject(ctx context.Context, in *VoiceRejectReq, opts ...grpc.CallOption) (*VoiceSimpleResp, error)
-	GetVoiceToken(ctx context.Context, in *GetVoiceTokenReq, opts ...grpc.CallOption) (*GetVoiceTokenResp, error)
 	LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error)
 	ListLlmManagedModels(ctx context.Context, in *ListLlmManagedModelsReq, opts ...grpc.CallOption) (*ListLlmManagedModelsResp, error)
 	GetLlmManagedModel(ctx context.Context, in *GetLlmManagedModelReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error)
@@ -145,16 +143,6 @@ func (c *platformClient) VoiceReject(ctx context.Context, in *VoiceRejectReq, op
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VoiceSimpleResp)
 	err := c.cc.Invoke(ctx, Platform_VoiceReject_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *platformClient) GetVoiceToken(ctx context.Context, in *GetVoiceTokenReq, opts ...grpc.CallOption) (*GetVoiceTokenResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetVoiceTokenResp)
-	err := c.cc.Invoke(ctx, Platform_GetVoiceToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +251,6 @@ type PlatformServer interface {
 	VoiceCall(context.Context, *VoiceCallReq) (*VoiceCallResp, error)
 	VoiceCancel(context.Context, *VoiceCancelReq) (*VoiceSimpleResp, error)
 	VoiceReject(context.Context, *VoiceRejectReq) (*VoiceSimpleResp, error)
-	GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error)
 	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*LlmManagedModelResp, error)
 	ListLlmManagedModels(context.Context, *ListLlmManagedModelsReq) (*ListLlmManagedModelsResp, error)
 	GetLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error)
@@ -306,9 +293,6 @@ func (UnimplementedPlatformServer) VoiceCancel(context.Context, *VoiceCancelReq)
 }
 func (UnimplementedPlatformServer) VoiceReject(context.Context, *VoiceRejectReq) (*VoiceSimpleResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method VoiceReject not implemented")
-}
-func (UnimplementedPlatformServer) GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetVoiceToken not implemented")
 }
 func (UnimplementedPlatformServer) LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*LlmManagedModelResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method LlmCreateAgent not implemented")
@@ -498,24 +482,6 @@ func _Platform_VoiceReject_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PlatformServer).VoiceReject(ctx, req.(*VoiceRejectReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Platform_GetVoiceToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetVoiceTokenReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlatformServer).GetVoiceToken(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Platform_GetVoiceToken_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlatformServer).GetVoiceToken(ctx, req.(*GetVoiceTokenReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -720,10 +686,6 @@ var Platform_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VoiceReject",
 			Handler:    _Platform_VoiceReject_Handler,
-		},
-		{
-			MethodName: "GetVoiceToken",
-			Handler:    _Platform_GetVoiceToken_Handler,
 		},
 		{
 			MethodName: "LlmCreateAgent",

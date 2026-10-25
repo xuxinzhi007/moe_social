@@ -18,9 +18,8 @@ class AiChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected
-        ? AiBrandTokens.primary.withValues(alpha: 0.14)
-        : Colors.white;
+    final bg =
+        selected ? AiBrandTokens.primary.withValues(alpha: 0.14) : Colors.white;
     final fg = selected ? AiBrandTokens.primary : Colors.grey.shade700;
     final border = selected
         ? AiBrandTokens.primary.withValues(alpha: 0.35)
@@ -38,22 +37,31 @@ class AiChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: border),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 16, color: fg),
-                const SizedBox(width: 6),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: fg,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width - 72,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 16, color: fg),
+                  const SizedBox(width: 6),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: fg,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

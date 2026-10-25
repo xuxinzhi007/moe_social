@@ -48,5 +48,5 @@ func adminAppDepsValid(d adminapphttp.Deps) bool {
 }
 
 func platformDepsValid(d platformhttp.Deps) bool {
-	return d.PublicAPIBaseURL != "" || d.AdminApp != nil || d.MoeAdmin != nil || d.UserApp != nil || d.LLMApp != nil || d.ModelCache != nil || d.InferenceConfig.BaseURL != "" || d.VoiceConfig.AppID != "" || d.VoiceConfig.AppCertificate != "" || d.ConfigSnapshot.InferenceBaseURL != ""
+	return d.PublicAPIBaseURL != "" || d.AdminApp != nil || d.MoeAdmin != nil || d.UserApp != nil || d.LLMApp != nil || d.ModelCache != nil || d.InferenceConfig.BaseURL != "" || d.ConfigSnapshot.InferenceBaseURL != ""
 }

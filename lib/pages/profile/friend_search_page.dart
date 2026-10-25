@@ -11,6 +11,7 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_search_bar.dart';
 import '../../utils/moe_error_copy.dart';
 
 /// 好友页搜索：聊天和通讯录共用，按会话、昵称、邮箱或 Moe 号查找。
@@ -177,34 +178,16 @@ class _FriendSearchPageState extends State<FriendSearchPage> {
         foregroundColor: MoeTokens.titleText,
         surfaceTintColor: Colors.transparent,
         titleSpacing: 0,
-        title: TextField(
-          controller: _query,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          style: const TextStyle(
-            color: MoeTokens.titleText,
-            fontSize: MoeTokens.textBase,
-            fontWeight: FontWeight.w600,
-          ),
-          decoration: const InputDecoration(
+        title: Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: MoeSearchBar(
+            controller: _query,
+            autofocus: true,
             hintText: '搜索会话、好友昵称或 Moe 号',
-            hintStyle: TextStyle(
-              color: MoeTokens.hintText,
-              fontSize: MoeTokens.textBase,
-              fontWeight: FontWeight.w600,
-            ),
-            border: InputBorder.none,
-            isCollapsed: true,
+            onSearch: (_) {},
+            onClear: () {},
           ),
         ),
-        actions: [
-          if (_query.text.isNotEmpty)
-            IconButton(
-              tooltip: '清除',
-              onPressed: _query.clear,
-              icon: const Icon(Icons.close_rounded),
-            ),
-        ],
       ),
       body: _buildBody(),
     );
