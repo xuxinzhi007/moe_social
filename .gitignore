@@ -173,6 +173,24 @@ moe-admin/dist/
 # npm run build 的输出日志；上面的 *.log 规则盖不到 .txt 后缀
 moe-admin/build-out.txt
 
+# data-workflow 技能 junction（指向本机插件仓，不提交副本）
+.cursor/skills/data-workflow/
+.cursor/skills/requirement-analysis/
+.cursor/skills/tech-design/
+.cursor/skills/implementation/
+.cursor/skills/change-review/
+.cursor/skills/quality-gate/
+.cursor/skills/oncall/
+.cursor/skills/excalidraw-diagram/
+.agents/skills/data-workflow/
+.agents/skills/requirement-analysis/
+.agents/skills/tech-design/
+.agents/skills/implementation/
+.agents/skills/change-review/
+.agents/skills/quality-gate/
+.agents/skills/oncall/
+.agents/skills/excalidraw-diagram/
+
 # Avatar generated artifacts
 moe-admin/public/pet/moe_avatar/
 moe-avatar/node_modules/

@@ -94,12 +94,12 @@ func TestCreateSeedEntitiesFlagshipHero(t *testing.T) {
 	if hero.HeroSlug != HeroSlugXiaoxing {
 		t.Errorf("hero hero_slug=%q, want %q", hero.HeroSlug, HeroSlugXiaoxing)
 	}
-	for _, e := range entities[1:] {
+	for _, e := range entities {
+		if e.HeroSlug != "" {
+			continue
+		}
 		if e.Personality != "" {
 			t.Errorf("NPC %s personality=%q, want empty (default behavior)", e.Name, e.Personality)
-		}
-		if e.HeroSlug != "" {
-			t.Errorf("NPC %s hero_slug=%q, want empty", e.Name, e.HeroSlug)
 		}
 	}
 }

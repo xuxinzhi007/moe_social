@@ -37,7 +37,7 @@ alwaysApply: true
 
 ## 6. 技能（仓库内）
 
-Go 改动：`golang-style`、`effective-go`、`implementation-guardrails`。提交：`git-commit`。
+开发与分析入口：`data-workflow`（`.cursor/rules/data-workflow.mdc`）。Go 改动仍读 `golang-style`、`effective-go`、`implementation-guardrails`。提交用本仓库 `git-commit`。
 
 ## 7. 收尾
 

@@ -4,8 +4,13 @@ import 'dart:ui' as ui;
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
-import 'arena_view_model.dart';
+import '../arena_view_model.dart';
 
+/// 星辉战斗场景，只画战场底图。
+///
+/// 单位、手牌和血条是 Flutter 叠层。出牌时机在 `ArenaBattleCast`，
+/// 结算在 `ArenaViewModel`。营地院子是另一个 `LifeFlameGame`，
+/// 不把战斗写进院子场景。
 class ArenaBattleGame extends FlameGame {
   ArenaBattleGame({required this.model});
 
@@ -26,6 +31,13 @@ class ArenaBattleGame extends FlameGame {
     super.render(canvas);
     final width = size.x;
     final height = size.y;
+    if (model.view != ArenaView.battle) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, width, height),
+        Paint()..color = const Color(0xFF30263C),
+      );
+      return;
+    }
     final arenaTop = height * .16;
     final arenaBottom = height * .86;
     canvas.drawRect(
@@ -121,7 +133,10 @@ class ArenaBattleGame extends FlameGame {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3,
     );
-    canvas.drawCircle(center, 5 + math.sin(_time * 3) * 1.5,
-        Paint()..color = const Color(0xFFD6A950));
+    canvas.drawCircle(
+      center,
+      5 + math.sin(_time * 3) * 1.5,
+      Paint()..color = const Color(0xFFD6A950),
+    );
   }
 }

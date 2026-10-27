@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moe_social/pages/ai/companion_hub_page.dart';
 
 void main() {
-  test('companion daily panels are hidden while arena prototype is active', () {
+  test('companion daily panels stay visible beside the arena entry', () {
     expect(
       shouldShowCompanionDailyPanels(arenaGamePrototype: true),
-      isFalse,
+      isTrue,
     );
     expect(
       shouldShowCompanionDailyPanels(arenaGamePrototype: false),

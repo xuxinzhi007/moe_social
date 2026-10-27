@@ -1,0 +1,44 @@
+---
+description: 开发与分析以 data-workflow 为入口，知识层映射到本仓库
+alwaysApply: true
+---
+
+# data-workflow 接入
+
+本仓库的开发、分析、排查先读插件 `skills/data-workflow/SKILL.md`，再按选型表进入下一步。插件只装流程；取值回代码。
+
+`PLUGIN_ROOT` = `C:/Users/ZhuanZ1/Desktop/data-workflow`。技能是本机 junction，不进 git：
+
+- `.cursor/skills/` 与 `.agents/skills/` 各链一份：`data-workflow`、`requirement-analysis`、`tech-design`、`implementation`、`change-review`、`quality-gate`、`oncall`、`excalidraw-diagram`
+- 不链插件里的 `git-commit`。提交用本仓库 `git-commit` 与工程规则的中文单行 title。用户要求 MR 时再读 `PLUGIN_ROOT/skills/git-commit/SKILL.md`，冲突以本仓库为准。
+
+重链（仓库根）：
+
+```powershell
+$src = 'C:\Users\ZhuanZ1\Desktop\data-workflow\skills'
+$names = 'data-workflow','requirement-analysis','tech-design','implementation','change-review','quality-gate','oncall','excalidraw-diagram'
+foreach ($root in '.cursor\skills','.agents\skills') {
+  foreach ($n in $names) {
+    $dest = Join-Path $root $n
+    if (-not (Test-Path $dest)) { New-Item -ItemType Junction -Path $dest -Target (Join-Path $src $n) | Out-Null }
+  }
+}
+```
+
+## 知识层映射
+
+data-service 的 Obsidian `$VAULT` 与其 `docs/support` 降级区不用于本仓库。一次只读一个域文件。
+
+| 要查什么 | 去哪 |
+|---|---|
+| 工程分层、命令、R01–R18 | `.cursor/rules/moe-social-engineering.mdc` |
+| 踩坑 | `.cursor/LESSONS.md` |
+| 后端架构线索 | `docs/dev/new-api-kratos.md`，取值回 `backend/` |
+| Flutter 结构与 UI | `.cursor/rules/frontend-ai-spec.mdc`，取值回 `lib/` |
+| 管理台 | `.cursor/rules/moe-admin-ai-spec.mdc` |
+| 方案落点 | `docs/dev/` |
+| 契约 | `backend/api/<domain>/v1/*.proto` |
+
+这些文档没有 `verified_commit`，按 STALE 线索。`knowledge_drift.sh` 用 `DS_REPO=<仓库>/backend`（`internal/biz` 在这里）。`repo_snapshot.sh` 不设 `DS_REPO`，快照整个 moe_social。
+
+三栈边界不变：Flutter `lib/**`，后端 `backend/**`，管理台 `moe-admin/**`。

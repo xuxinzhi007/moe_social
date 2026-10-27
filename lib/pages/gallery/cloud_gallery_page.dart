@@ -398,161 +398,212 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     }
   }
 
+  String get _galleryTitle {
+    if (widget.isSelectMode) return '选择图片';
+    if (_selectMode) return '已选 ${_selected.length} 项';
+    return '我的云图库';
+  }
+
+  List<({IconData icon, String label, String value})> _statusItems() {
+    final maxBytes = _maxBytes ?? 0;
+    final usedBytes = _usedBytes ?? 0;
+    final remainingBytes =
+        maxBytes > usedBytes ? _formatBytes(maxBytes - usedBytes) : '0 B';
+    return [
+      (
+        icon: Icons.collections_outlined,
+        label: '已存图片',
+        value: '${_images.length}',
+      ),
+      (
+        icon: Icons.auto_awesome_outlined,
+        label: '剩余空间',
+        value: maxBytes > 0 ? remainingBytes : '未统计',
+      ),
+      (
+        icon: Icons.backup_outlined,
+        label: '云端状态',
+        value: _busy ? '同步中' : '可上传',
+      ),
+    ];
+  }
+
+  Widget _buildAppBarTitle(BuildContext context) {
+    final compact = _isCompactLayout(context);
+    const titleStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 18);
+    final title = Text(
+      _galleryTitle,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: titleStyle,
+    );
+    if (_selectMode) return title;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: _galleryTitle, style: titleStyle),
+          maxLines: 1,
+          textDirection: Directionality.of(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        const gap = 8.0;
+        final titleWidth = painter.width.clamp(0.0, constraints.maxWidth);
+        painter.dispose();
+        final statsWidth = (constraints.maxWidth - titleWidth - gap)
+            .clamp(0.0, double.infinity);
+        return Row(
+          children: [
+            SizedBox(width: titleWidth, child: title),
+            if (statsWidth > 0) ...[
+              const SizedBox(width: gap),
+              SizedBox(
+                width: statsWidth,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: _buildHeaderStats(compact: compact),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  /// 竖屏把用量状态收进标题栏右侧，避免再占两行网格高度。
+  Widget _buildHeaderStats({required bool compact}) {
+    final items = _statusItems();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) SizedBox(width: compact ? 4 : 6),
+          _buildHeaderStat(
+            icon: items[i].icon,
+            label: items[i].label,
+            value: items[i].value,
+            compact: compact,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHeaderStat({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool compact,
+  }) {
+    return Semantics(
+      label: '$label $value',
+      child: Tooltip(
+        message: '$label $value',
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 6 : 8,
+            vertical: compact ? 3 : 4,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F6FB),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0xFFE7E8F4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: compact ? 12 : 14, color: MoeTokens.primary),
+              SizedBox(width: compact ? 3 : 4),
+              if (!compact) ...[
+                Text(
+                  label,
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF77809A)),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2E3142),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildGallerySummary(BuildContext context) {
     final compact = _isCompactLayout(context);
     final maxBytes = _maxBytes ?? 0;
     final usedBytes = _usedBytes ?? 0;
     final progress =
         maxBytes > 0 ? (usedBytes / maxBytes).clamp(0.0, 1.0) : 0.0;
-    final remainingBytes =
-        maxBytes > usedBytes ? _formatBytes(maxBytes - usedBytes) : '0 B';
-    final infoChips = [
-      _buildInfoChip(
-        icon: Icons.collections_outlined,
-        label: '已存图片',
-        value: '${_images.length}',
-      ),
-      _buildInfoChip(
-        icon: Icons.auto_awesome_outlined,
-        label: '剩余空间',
-        value: maxBytes > 0 ? remainingBytes : '未统计',
-      ),
-      _buildInfoChip(
-        icon: Icons.backup_outlined,
-        label: '云端状态',
-        value: _busy ? '同步中' : '可上传',
-      ),
-    ];
+
+    if (maxBytes <= 0) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, compact ? 8 : 12, 12, compact ? 8 : 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const gap = 8.0;
-              final columns = constraints.maxWidth >= 560 ? 3 : 2;
-              final chipWidth =
-                  (constraints.maxWidth - gap * (columns - 1)) / columns;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: infoChips
-                    .map(
-                      (chip) => SizedBox(width: chipWidth, child: chip),
-                    )
-                    .toList(),
-              );
-            },
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: MoeTokens.primary.withValues(alpha: 0.1),
           ),
-          if (maxBytes > 0) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: MoeTokens.primary.withValues(alpha: 0.1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '空间使用情况',
+                  style: TextStyle(
+                    fontSize: compact ? 13 : 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF30344B),
+                  ),
                 ),
+                const Spacer(),
+                Text(
+                  '${(progress * 100).toInt()}%',
+                  style: TextStyle(
+                    fontSize: compact ? 13 : 14,
+                    fontWeight: FontWeight.w700,
+                    color: MoeTokens.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: Colors.white,
+                valueColor: AlwaysStoppedAnimation<Color>(MoeTokens.primary),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '空间使用情况',
-                        style: TextStyle(
-                          fontSize: compact ? 13 : 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF30344B),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${(progress * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: compact ? 13 : 14,
-                          fontWeight: FontWeight.w700,
-                          color: MoeTokens.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 8,
-                      backgroundColor: Colors.white,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(MoeTokens.primary),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '已用 ${_formatBytes(usedBytes)} / 共 ${_formatBytes(maxBytes)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF7A819B),
-                    ),
-                  ),
-                ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '已用 ${_formatBytes(usedBytes)} / 共 ${_formatBytes(maxBytes)}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF7A819B),
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFFE7E8F4),
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: MoeTokens.primary),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF77809A),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2E3142),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -665,12 +716,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
-        title: Text(
-          widget.isSelectMode
-              ? '选择图片'
-              : (_selectMode ? '已选 ${_selected.length} 项' : '我的云图库'),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        centerTitle: false,
+        title: _buildAppBarTitle(context),
         actions: [
           if (!widget.isSelectMode && _selectMode) ...[
             IconButton(
@@ -716,8 +763,11 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
           Expanded(
             child: _isFetching && _images.isEmpty
                 ? GridView.builder(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: _isCompactLayout(context) ? 12 : 16,
+                    padding: EdgeInsets.fromLTRB(
+                      _isCompactLayout(context) ? 12 : 16,
+                      8,
+                      _isCompactLayout(context) ? 12 : 16,
+                      0,
                     ),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: _gridCrossAxisCount(context),
@@ -743,7 +793,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                         controller: _scrollController,
                         padding: EdgeInsets.fromLTRB(
                           _isCompactLayout(context) ? 12 : 16,
-                          0,
+                          8,
                           _isCompactLayout(context) ? 12 : 16,
                           _isCompactLayout(context) ? 88 : 96,
                         ),

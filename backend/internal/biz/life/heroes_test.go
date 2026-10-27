@@ -32,9 +32,27 @@ func TestSeedHeroBinding(t *testing.T) {
 	if hero.Name != def.Name || hero.Emoji != def.Emoji || hero.Personality != def.Personality {
 		t.Errorf("seed hero should mirror hero definition, got %+v", hero)
 	}
-	for _, e := range entities[1:] {
-		if e.HeroSlug != "" {
-			t.Errorf("NPC %s hero_slug=%q, want empty", e.Name, e.HeroSlug)
+	seen := map[string]bool{}
+	for _, e := range entities {
+		if e.HeroSlug == "" {
+			continue
+		}
+		seen[e.HeroSlug] = true
+	}
+	for _, hero := range LivingWorldRoster() {
+		if !seen[hero.Slug] {
+			t.Errorf("seed missing roster hero %s", hero.Slug)
+		}
+	}
+}
+
+func TestRosterPersonalitiesCovered(t *testing.T) {
+	if len(LivingWorldRoster()) != 4 {
+		t.Fatalf("roster len=%d, want 4", len(LivingWorldRoster()))
+	}
+	for _, hero := range LivingWorldRoster() {
+		if _, ok := personalityTable[hero.Personality]; !ok {
+			t.Errorf("%s personality %q missing from preference table", hero.Slug, hero.Personality)
 		}
 	}
 }

@@ -22,6 +22,8 @@ Kratos：`docs/dev/new-api-kratos.md`（当前架构）· `docs/dev/kratos-migra
 
 **入口：** `moe-skill`（通用质量规则，对任意改动生效，按整条链路看，不按功能点分叉）
 
+**开发工作流：** `data-workflow`（`.cursor/rules/data-workflow.mdc`）。插件在本机 `C:/Users/ZhuanZ1/Desktop/data-workflow`，技能以 junction 接入，不复制进本仓库。
+
 
 # backend目录内执行，生成cover.out
 # CGO_ENABLED=1 必须显式给：本机 go env 里它持久为 0，而 gorm 的 sqlite 驱动依赖 cgo。

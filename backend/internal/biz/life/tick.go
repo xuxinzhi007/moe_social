@@ -478,6 +478,7 @@ func seedEmptyWorld(ctx context.Context, engine *LifeEngine, snap *WorldSnapshot
 				snap.Entities[cp.ID] = &cp
 			}
 			dedupeAliveEntitiesByName(ctx, engine, snap)
+			ensureRosterHeroes(ctx, engine, snap.Entities)
 			moelog.Infof("life: restored %d alive entities from DB into empty cache (skip reseed)", len(snap.Entities))
 			return
 		}
@@ -695,6 +696,7 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 	} else {
 		snap := &WorldSnapshot{Entities: entityMap}
 		dedupeAliveEntitiesByName(ctx, e, snap)
+		ensureRosterHeroes(ctx, e, snap.Entities)
 		entityMap = snap.Entities
 	}
 
@@ -731,8 +733,91 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 	}
 }
 
+type rosterPlacement struct {
+	slug string
+	x, y float64
+	age  int
+}
+
+func livingWorldPlacements() []rosterPlacement {
+	return []rosterPlacement{
+		{slug: HeroSlugXiaoxing, x: 640, y: 360, age: 120},
+		{slug: HeroSlugLanxing, x: 520, y: 440, age: 140},
+		{slug: HeroSlugTutu, x: 760, y: 410, age: 110},
+		{slug: HeroSlugMaoying, x: 600, y: 500, age: 160},
+	}
+}
+
+func newRosterEntity(worldID string, place rosterPlacement, now time.Time) *model.LifeEntity {
+	hero, ok := HeroForSlug(place.slug)
+	if !ok {
+		return nil
+	}
+	return &model.LifeEntity{
+		WorldID:       worldID,
+		Name:          hero.Name,
+		Emoji:         hero.Emoji,
+		Hunger:        80,
+		Energy:        80,
+		Mood:          70,
+		Age:           place.age,
+		GrowthStage:   stageForAge(place.age),
+		Personality:   hero.Personality,
+		HeroSlug:      hero.Slug,
+		Experience:    float64(place.age),
+		IsAlive:       true,
+		CurrentAction: string(ActionIdle),
+		PositionX:     place.x,
+		PositionY:     place.y,
+		LastActionAt:  now,
+		UpdatedAt:     now,
+		CreatedAt:     now,
+	}
+}
+
+// ensureRosterHeroes 给已有世界补上缺失的入驻英雄。人数达到 MaxEntities 时停止。
+func ensureRosterHeroes(ctx context.Context, engine *LifeEngine, entityMap map[uint]*model.LifeEntity) {
+	if engine == nil || engine.store == nil || entityMap == nil {
+		return
+	}
+	present := make(map[string]struct{}, len(entityMap))
+	alive := 0
+	for _, entity := range entityMap {
+		if entity == nil {
+			continue
+		}
+		if entity.IsAlive {
+			alive++
+		}
+		if entity.HeroSlug != "" {
+			present[entity.HeroSlug] = struct{}{}
+		}
+	}
+	now := time.Now()
+	for _, place := range livingWorldPlacements() {
+		if _, ok := present[place.slug]; ok {
+			continue
+		}
+		if engine.config.MaxEntities > 0 && alive >= engine.config.MaxEntities {
+			moelog.Warnf("life: skip roster hero %s, world at capacity %d", place.slug, engine.config.MaxEntities)
+			return
+		}
+		entity := newRosterEntity(engine.config.WorldName, place, now)
+		if entity == nil {
+			continue
+		}
+		if err := engine.store.UpsertEntity(ctx, entity); err != nil {
+			moelog.Errorf("life: enroll hero %s: %v", place.slug, err)
+			continue
+		}
+		entityMap[entity.ID] = entity
+		present[place.slug] = struct{}{}
+		alive++
+	}
+}
+
 func createSeedEntities(worldID string) []*model.LifeEntity {
-	xiaoxing, _ := HeroForSlug(HeroSlugXiaoxing)
+	now := time.Now()
 	seeds := []struct {
 		name, emoji string
 		x, y        float64
@@ -740,16 +825,21 @@ func createSeedEntities(worldID string) []*model.LifeEntity {
 		personality string
 		heroSlug    string
 	}{
-		{xiaoxing.Name, xiaoxing.Emoji, 640, 360, 120, xiaoxing.Personality, xiaoxing.Slug}, // 旗舰英雄，少年
-		{"小花", "🐰", 200, 300, 20, "", ""},   // 幼年
-		{"时雨", "🦊", 800, 400, 150, "", ""},  // 少年
-		{"团子", "🐹", 500, 200, 400, "", ""},  // 成年
-		{"啾啾", "🐥", 640, 150, 50, "", ""},   // 幼年
-		{"泡泡", "🐠", 300, 500, 250, "", ""},  // 少年
-		{"小眠", "🦌", 900, 600, 850, "", ""},  // 老年
+		{"小花", "🐰", 200, 300, 20, "", ""},
+		{"时雨", "🦊", 800, 400, 150, "", ""},
+		{"团子", "🐹", 500, 200, 400, "", ""},
+		{"啾啾", "🐥", 640, 150, 50, "", ""},
+		{"泡泡", "🐠", 300, 500, 250, "", ""},
+		{"小眠", "🦌", 900, 600, 850, "", ""},
 	}
 	var result []*model.LifeEntity
-	now := time.Now()
+	for _, place := range livingWorldPlacements() {
+		entity := newRosterEntity(worldID, place, now)
+		if entity == nil {
+			continue
+		}
+		result = append(result, entity)
+	}
 	for _, s := range seeds {
 		stage := stageForAge(s.age)
 		result = append(result, &model.LifeEntity{

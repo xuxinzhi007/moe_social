@@ -10,6 +10,7 @@ import '../../models/life_state.dart';
 import '../../services/arena_service.dart';
 import '../../services/life_service.dart';
 import '../../theme/moe_tokens.dart';
+import 'arena_camp_care.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
@@ -35,6 +36,7 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
   int? _selectedEntityId;
   Object? _loadError;
   bool _loading = true;
+  bool _carePending = false;
   int _syncAttempts = 0;
 
   @override
@@ -107,13 +109,7 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
       return;
     }
     try {
-      _game.setBoundEntityId(_selectedEntityId);
-      _game.syncEntities(state.entities, selectedId: _selectedEntityId);
-      _game.syncRecentEvents(state.events.take(8).toList(growable: false));
-      final selectedId = _selectedEntityId;
-      if (selectedId != null) {
-        _game.focusEntity(selectedId);
-      }
+      syncCampStage(_game, state, selectedId: _selectedEntityId);
     } catch (error) {
       if (error.toString().contains('hasLayout')) {
         _retryGameSync();
@@ -129,6 +125,17 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
     unawaited(Future<void>.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _syncGame();
     }));
+  }
+
+  Future<void> _care(String action) async {
+    final entityId = _selectedEntityId;
+    if (entityId == null || _carePending) return;
+    setState(() => _carePending = true);
+    try {
+      await applyCampCare(game: _game, entityId: entityId, action: action);
+    } finally {
+      if (mounted) setState(() => _carePending = false);
+    }
   }
 
   LifeEntity? get _selectedEntity {
@@ -211,6 +218,28 @@ class _ArenaCampPreviewPageState extends State<ArenaCampPreviewPage> {
                         : worldHasHero
                             ? '点下方居民可切换观察对象，⭐ 是入驻英雄。'
                             : '英雄暂未出现在营地舞台上，先看看居民们的生活。',
+                  ),
+                  const SizedBox(height: MoeTokens.spaceSm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: _carePending
+                              ? null
+                              : () => unawaited(_care(campCareFeed)),
+                          child: const Text('喂食'),
+                        ),
+                      ),
+                      const SizedBox(width: MoeTokens.spaceSm),
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: _carePending
+                              ? null
+                              : () => unawaited(_care(campCarePet)),
+                          child: const Text('陪伴'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: MoeTokens.spaceSm),
                   SizedBox(
