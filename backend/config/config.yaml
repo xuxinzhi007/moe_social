@@ -117,7 +117,7 @@ llm_inference:
     model_sync_timeout_seconds: 120
     allowed_base_models: [] # 空列表仅允许当前默认模型，不代表允许所有模型。
   provider: ollama
-  base_url: "http://192.168.124.77:11434"
+  base_url: "http://47.106.175.49:11434"
   api_style: ollama
   timeout_seconds: 300
   memory_model: "qwen2.5:3b-instruct"
