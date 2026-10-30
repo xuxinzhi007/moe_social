@@ -348,4 +348,3 @@ func PullModel(ctx context.Context, cfg Config, name string) (string, error) {
 	}
 	return result.Status, nil
 }
-

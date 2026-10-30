@@ -12,6 +12,7 @@ import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_menu_card.dart';
 import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../utils/moe_error_copy.dart';
@@ -260,7 +261,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           MoeReveal(
                             delay: const Duration(milliseconds: 110),
                             child: _menuSection('云端与相册', [
-                              _MenuItem(
+                              MoeMenuItem(
                                   icon: Icons.cloud_queue_rounded,
                                   title: '云端图库',
                                   subtitle: '管理你的美好回忆',
@@ -273,7 +274,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                             builder: (_) =>
                                                 const CloudGalleryPage()));
                                   }),
-                              _MenuItem(
+                              MoeMenuItem(
                                   icon: Icons.qr_code_rounded,
                                   title: '我的二维码',
                                   subtitle: '让其他用户扫描添加你',
@@ -290,7 +291,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           MoeReveal(
                             delay: const Duration(milliseconds: 140),
                             child: _menuSection('账号', [
-                              _MenuItem(
+                              MoeMenuItem(
                                   icon: Icons.logout_rounded,
                                   title: '退出登录',
                                   color: MoeTokens.danger,
@@ -944,92 +945,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ─── Menu section ─────────────────────────────────────────────────────────
 
-  Widget _menuSection(String title, List<_MenuItem> items) {
+  Widget _menuSection(String title, List<MoeMenuItem> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionTitle(title),
         const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: MoeTokens.surface1,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-            border: Border.all(color: MoeTokens.surfaceBorder),
-            boxShadow: MoeTokens.shadowSm(),
-          ),
-          child: Column(
-            children: items.map((item) {
-              final isLast = items.last == item;
-              return Column(
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: item.onTap,
-                      borderRadius: BorderRadius.only(
-                        topLeft: items.first == item
-                            ? const Radius.circular(24)
-                            : Radius.zero,
-                        topRight: items.first == item
-                            ? const Radius.circular(24)
-                            : Radius.zero,
-                        bottomLeft:
-                            isLast ? const Radius.circular(24) : Radius.zero,
-                        bottomRight:
-                            isLast ? const Radius.circular(24) : Radius.zero,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(9),
-                              decoration: BoxDecoration(
-                                  color: item.color.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(13)),
-                              child:
-                                  Icon(item.icon, color: item.color, size: 21),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(item.title,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15,
-                                          color: item.isDestructive
-                                              ? MoeTokens.danger
-                                              : MoeTokens.titleText)),
-                                  if (item.subtitle != null) ...[
-                                    const SizedBox(height: 2),
-                                    Text(item.subtitle!,
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: MoeTokens.hintText)),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.arrow_forward_ios_rounded,
-                                color: MoeTokens.lineSoft, size: 15),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (!isLast)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 60, right: 20),
-                      child: Divider(height: 1, color: MoeTokens.surfaceBorder),
-                    ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
+        MoeMenuCard(items: items),
       ],
     );
   }
@@ -1069,20 +991,4 @@ class _QuickAction {
     this.isCta = false,
     this.badge,
   });
-}
-
-class _MenuItem {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Color color;
-  final VoidCallback onTap;
-  final bool isDestructive;
-  _MenuItem(
-      {required this.icon,
-      required this.title,
-      this.subtitle,
-      required this.color,
-      required this.onTap,
-      this.isDestructive = false});
 }

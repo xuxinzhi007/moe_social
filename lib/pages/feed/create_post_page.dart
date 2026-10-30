@@ -18,6 +18,7 @@ import '../../widgets/moe_input_field.dart';
 import '../../widgets/motion/moe_motion.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/motion/moe_sheet.dart';
 import '../../theme/moe_tokens.dart';
 import '../gallery/cloud_gallery_page.dart';
 import '../../models/hand_draw_card.dart';
@@ -144,65 +145,52 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   void _openTopicTagSelector() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    MoeSheet.show<void>(
+      context,
+      backgroundColor: MoeTokens.surface2,
       builder: (bottomSheetContext) {
         final media = MediaQuery.of(bottomSheetContext);
         final available = media.size.height -
             media.viewInsets.bottom -
             media.padding.top -
-            12;
-        var sheetHeight = media.size.height * 0.72;
+            32;
+        var sheetHeight = media.size.height * 0.68;
         if (sheetHeight > available) sheetHeight = available;
         return Padding(
           padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-          child: Container(
+          child: SizedBox(
             height: sheetHeight,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            decoration: const BoxDecoration(
-              color: MoeTokens.surface2,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(MoeTokens.radius2xl),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '搜索话题',
+                        style:
+                            Theme.of(bottomSheetContext).textTheme.titleLarge,
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.pop(bottomSheetContext),
+                        child: const Text('完成'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: TopicTagSelector(
+                      selectedTags: _vm.selectedTopicTags,
+                      onTagsChanged: (tags) {
+                        _vm.setTopicTags(List<TopicTag>.from(tags));
+                      },
+                      userId: AuthService.currentUser ?? 'guest',
+                      maxTags: 5,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: MoeTokens.lineSoft,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Row(
-                  children: [
-                    Text(
-                      '搜索话题',
-                      style: Theme.of(bottomSheetContext).textTheme.titleLarge,
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.pop(bottomSheetContext),
-                      child: const Text('完成'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: TopicTagSelector(
-                    selectedTags: _vm.selectedTopicTags,
-                    onTagsChanged: (tags) {
-                      _vm.setTopicTags(List<TopicTag>.from(tags));
-                    },
-                    userId: AuthService.currentUser ?? 'guest',
-                    maxTags: 5,
-                  ),
-                ),
-              ],
             ),
           ),
         );

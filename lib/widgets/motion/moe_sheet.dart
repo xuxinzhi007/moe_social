@@ -105,7 +105,7 @@ class _MoeSheetContainer extends StatelessWidget {
     );
 
     final sheet = Material(
-      color: backgroundColor ?? Colors.white,
+      color: backgroundColor ?? MoeTokens.surface2,
       shape: shape ?? radius,
       clipBehavior: Clip.antiAlias,
       child: Padding(
@@ -116,10 +116,10 @@ class _MoeSheetContainer extends StatelessWidget {
             if (showHandle) ...[
               const SizedBox(height: 10),
               Container(
-                width: 48,
-                height: 5,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD7D1C8),
+                  color: MoeTokens.lineSoft,
                   borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                 ),
               ),

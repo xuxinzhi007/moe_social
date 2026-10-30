@@ -54,6 +54,12 @@ export type {
 export type {
   MoeBrainGenerationMeta,
   MoeInferenceStatusData,
+  MoeInferenceModelInfoData,
+  MoeInferenceCreateModelReq,
+  MoeInferenceMutationData,
+  MoeInferenceChatMessage,
+  MoeInferenceChatReq,
+  MoeInferenceChatData,
   MoePipelineStepItem,
   MoeGenAttemptItem,
   MoeHostMetrics,

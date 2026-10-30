@@ -13,7 +13,6 @@ import '../../utils/error_handler.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/post_navigation.dart';
-import '../../providers/companion_presence_provider.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/post_card.dart';
@@ -37,7 +36,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final HomeFeedViewModel _feed;
-  late final CompanionPresenceProvider _presence;
 
   HomeFeedMode _baseFeedMode = HomeFeedMode.hot;
 
@@ -58,8 +56,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _feed = HomeFeedViewModel();
     _feed.addListener(_onFeedChanged);
-    _presence = CompanionPresenceProvider.instance;
-    _presence.addListener(_onPresenceChanged);
     _scrollController.addListener(_scrollListener);
     unawaited(_feed.bootstrap());
   }
@@ -68,17 +64,8 @@ class _HomePageState extends State<HomePage> {
     if (mounted) setState(() {});
   }
 
-  void _onPresenceChanged() {
-    _feed.applyLiveCompanionPresence(
-      greeting: _presence.greeting,
-      moodThought: _presence.moodThought,
-      activityLabel: _presence.activityLabel,
-    );
-  }
-
   @override
   void dispose() {
-    _presence.removeListener(_onPresenceChanged);
     _feed.removeListener(_onFeedChanged);
     _feed.dispose();
     _scrollController.removeListener(_scrollListener);
@@ -133,10 +120,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _refreshHome() async {
-    await Future.wait([
-      _fetchPosts(resetContent: false),
-      _feed.loadCompanionPresence(),
-    ]);
+    await _fetchPosts(resetContent: false);
   }
 
   Future<void> _loadMorePosts() async {

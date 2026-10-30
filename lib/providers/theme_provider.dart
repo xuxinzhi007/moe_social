@@ -135,10 +135,15 @@ class ThemeProvider with ChangeNotifier {
       // ),
       appBarTheme: AppBarTheme(
         backgroundColor: isDark ? Colors.grey[900] : MoeTokens.surface1,
+        foregroundColor: isDark ? Colors.white : MoeTokens.titleText,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: isDark ? Colors.white : MoeTokens.titleText,
+          fontSize: MoeTokens.textLg,
+          fontWeight: MoeTokens.fontWeightTitle,
         ),
         iconTheme: IconThemeData(
           color: isDark ? Colors.white : MoeTokens.titleText,

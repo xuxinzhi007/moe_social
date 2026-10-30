@@ -28,6 +28,7 @@ import { AppReleasePage } from './pages/AppReleasePage'
 import { NotifyPage } from './pages/NotifyPage'
 import { AiAgentsPage } from './pages/AiAgentsPage'
 import { AiModelsPage } from './pages/AiModelsPage'
+import { AiPlaygroundPage } from './pages/AiPlaygroundPage'
 import { MoeBotsPage } from './pages/MoeBotsPage'
 import { MoeBrainPage } from './pages/MoeBrainPage'
 import { MoeBotFlowPage } from './pages/MoeBotFlowPage'
@@ -108,6 +109,7 @@ export default function App() {
 
                 {/* AI /ai */}
                 <Route path="ai/models" element={<AiModelsPage />} />
+                <Route path="ai/playground" element={<AiPlaygroundPage />} />
                 <Route path="ai/agents" element={<AiAgentsPage />} />
                 <Route path="ai/moe-bots" element={<MoeBotsPage />} />
                 <Route path="ai/moe-bots/:agentKey/brain" element={<MoeBrainPage />} />

@@ -23,48 +23,41 @@ abstract final class AiTheme {
   static const double sectionGap = MoeTokens.spaceMd; // 12
   static const double sectionGapLg = MoeTokens.space2xl; // 24
 
-  // ─── Semantic colors ─────────────────────────────────────────────
+  // ─── Semantic colors (委托 MoeTokens) ────────────────────────────
   static const Color surface = MoeTokens.cardBackground;
-  static const Color bodyMuted = Color(0xFF757575);
-  static const Color success = Color(0xFF00A86B);
-  static const Color warning = Color(0xFFE6A700);
-  static const Color danger = Color(0xFFE94057);
+  static const Color bodyMuted = MoeTokens.inkMuted;
+  static const Color success = MoeTokens.success;
+  static const Color warning = MoeTokens.warning;
+  static const Color danger = MoeTokens.danger;
 
   // ─── Shadow — 委托 MoeTokens ─────────────────────────────────────
-  /// AI 卡片阴影（基于 MoeTokens.shadowMd，略微调整偏移以适配 AI 卡片）
-  static List<BoxShadow> get cardShadow => [
-        BoxShadow(
-          color: AiBrandTokens.primary.withValues(alpha: 0.08),
-          blurRadius: 24,
-          offset: const Offset(0, 10),
-        ),
-      ];
+  static List<BoxShadow> get cardShadow => MoeTokens.shadowMd();
 
   // ─── Typography ──────────────────────────────────────────────────
   static TextStyle get display => const TextStyle(
-        fontSize: 22,
+        fontSize: MoeTokens.text2xl,
         fontWeight: FontWeight.w800,
-        color: AiBrandTokens.titleColor,
+        color: MoeTokens.titleText,
         height: 1.2,
       );
 
   static TextStyle get title => const TextStyle(
         fontSize: MoeTokens.textLg,
         fontWeight: MoeTokens.fontWeightTitle,
-        color: AiBrandTokens.titleColor,
+        color: MoeTokens.titleText,
       );
 
   static TextStyle get body => const TextStyle(
         fontSize: MoeTokens.textBase,
         fontWeight: MoeTokens.fontWeightBody,
-        color: AiBrandTokens.titleColor,
+        color: MoeTokens.titleText,
         height: 1.45,
       );
 
-  static TextStyle get caption => TextStyle(
+  static TextStyle get caption => const TextStyle(
         fontSize: MoeTokens.textSm,
         fontWeight: MoeTokens.fontWeightCaption,
-        color: Colors.grey.shade600,
+        color: MoeTokens.inkMuted,
         height: 1.35,
       );
 

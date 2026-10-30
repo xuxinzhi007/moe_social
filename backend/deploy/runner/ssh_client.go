@@ -92,6 +92,9 @@ func dialSSH(ctx context.Context, cfg SSHConfig) (*ssh.Client, error) {
 	})
 	if err != nil {
 		_ = conn.Close()
+		if strings.Contains(err.Error(), "unable to authenticate") {
+			return nil, fmt.Errorf("SSH 认证失败（%s@%s 拒绝了本机公钥且未配置密码；请在 backend/deploy/config.yaml 的 targets 中配置匹配的 identity_file 或 password）: %w", cfg.User, addr, err)
+		}
 		return nil, err
 	}
 	return ssh.NewClient(sshConn, chans, reqs), nil

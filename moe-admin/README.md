@@ -55,7 +55,7 @@ npm run deploy:lan
 | 工作区 | URL 前缀 | 内容 |
 |--------|----------|------|
 | 运营 | `/ops/biz/...` | 用户、内容、公告、分析、云图库… |
-| AI | `/ops/ai/...` | 酒馆、Bot、大脑、编排、工具… |
+| AI | `/ops/ai/...` | 酒馆、模型与试聊、Bot、大脑、编排、工具… |
 | 运维 | `/ops/infra/...` | 平台治理、发布、Docker、审计… |
 
 菜单 SSOT：`src/config/workspaceNav.ts` · 结构说明：`docs/dev/moe-admin.md`（工作区与导航 / 模块索引）

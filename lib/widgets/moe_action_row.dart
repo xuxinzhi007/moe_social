@@ -67,7 +67,7 @@ class MoeActionRow extends StatelessWidget {
     final resolvedSubtitleColor = subtitleColor ??
         (selected
             ? resolvedIconColor.withValues(alpha: 0.85)
-            : Colors.grey[600]);
+            : MoeTokens.inkMuted);
 
     return Container(
       decoration: BoxDecoration(
@@ -122,9 +122,9 @@ class MoeActionRow extends StatelessWidget {
               if (trailing != null)
                 trailing!
               else if (showDefaultTrailing && onTap != null)
-                Icon(
+                const Icon(
                   Icons.chevron_right_rounded,
-                  color: Colors.grey[400],
+                  color: MoeTokens.hintText,
                 ),
             ],
           ),

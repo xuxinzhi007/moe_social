@@ -14,6 +14,7 @@ import 'companion_profile_edit_page.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/moe_error_copy.dart';
@@ -122,14 +123,27 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
 
   @override
   Widget build(BuildContext context) {
+    final glassNav = FeatureFlags.glassNavigation;
     return Scaffold(
-      backgroundColor: AiBrandTokens.pageBackground,
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text('AI伙伴'),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        foregroundColor: AiBrandTokens.titleColor,
+        backgroundColor: glassNav ? Colors.transparent : MoeTokens.surface1,
+        foregroundColor: MoeTokens.titleText,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
+        flexibleSpace: glassNav
+            ? MoeGlassSurface(
+                tint: MoeTokens.surface1.withValues(alpha: 0.82),
+                showBorder: false,
+                child: const SizedBox.expand(),
+              )
+            : null,
+        shape: const Border(
+          bottom: BorderSide(color: MoeTokens.surfaceBorder),
+        ),
         actions: const [
           _IdentityCardAction(),
           SizedBox(width: 12),

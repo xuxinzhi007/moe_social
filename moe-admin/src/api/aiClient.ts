@@ -30,6 +30,51 @@ export type MoeInferenceStatusData = {
   message?: string
 }
 
+export type MoeInferenceModelInfoData = {
+  model: string
+  system?: string
+  modelfile?: string
+  template?: string
+  parameters_text?: string
+  parameters?: Record<string, number>
+}
+
+export type MoeInferenceCreateModelReq = {
+  name: string
+  base_model?: string
+  system_prompt?: string
+  modelfile?: string
+  parameters?: Record<string, number>
+  replace_existing?: boolean
+}
+
+export type MoeInferenceMutationData = {
+  ok: boolean
+  model: string
+  status?: string
+  message?: string
+}
+
+export type MoeInferenceChatMessage = {
+  role: 'system' | 'user' | 'assistant' | string
+  content: string
+}
+
+export type MoeInferenceChatReq = {
+  model?: string
+  messages: MoeInferenceChatMessage[]
+  temperature?: number
+  top_p?: number
+  repeat_penalty?: number
+  max_tokens?: number
+}
+
+export type MoeInferenceChatData = {
+  model: string
+  content: string
+  duration_ms?: number
+}
+
 export type MoePipelineStepItem = {
   key: string
   label: string
@@ -367,6 +412,158 @@ export function createAiMethods(api: AdminApiFn, opts: AdminClientOptions) {
       return api<BaseResp<MoeInferenceStatusData>>(
         `${adminApiPath('/moe/inference/status')}${q}`,
       )
+    },
+
+    showMoeInferenceModel: (model: string) =>
+      api<BaseResp<MoeInferenceModelInfoData>>(
+        adminApiPath('/moe/inference/models/show'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model }),
+        },
+      ),
+
+    createMoeInferenceModel: (body: MoeInferenceCreateModelReq) =>
+      api<BaseResp<MoeInferenceMutationData>>(
+        adminApiPath('/moe/inference/models/create'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      ),
+
+    deleteMoeInferenceModel: (model: string) =>
+      api<BaseResp<MoeInferenceMutationData>>(
+        adminApiPath('/moe/inference/models/delete'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model }),
+        },
+      ),
+
+    pullMoeInferenceModel: (model: string) =>
+      api<BaseResp<MoeInferenceMutationData>>(
+        adminApiPath('/moe/inference/models/pull'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model }),
+        },
+      ),
+
+    chatMoeInference: (body: MoeInferenceChatReq) =>
+      api<BaseResp<MoeInferenceChatData>>(
+        adminApiPath('/moe/inference/chat'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      ),
+
+    streamMoeInferenceChat: async (
+      body: MoeInferenceChatReq,
+      onChunk: (delta: string) => void,
+      signal?: AbortSignal,
+    ): Promise<MoeInferenceChatData> => {
+      const url = resolveAdminRequestUrl(
+        adminApiPath('/moe/inference/chat/stream'),
+        opts,
+      )
+      const headers = new Headers({
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      })
+      if (opts.token) {
+        headers.set('Authorization', `Bearer ${opts.token}`)
+      }
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      })
+      if (!res.ok || !res.body) {
+        const fallback = await api<BaseResp<MoeInferenceChatData>>(
+          adminApiPath('/moe/inference/chat'),
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal,
+          },
+        )
+        if (!fallback.success || !fallback.data) {
+          throw new Error(fallback.message || '试聊请求失败')
+        }
+        onChunk(fallback.data.content || '')
+        return fallback.data
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let fullContent = ''
+      let resolvedModel = body.model || ''
+      let durationMs: number | undefined
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split('\n\n')
+        buffer = events.pop() || ''
+        for (const rawEvent of events) {
+          const lines = rawEvent.split('\n')
+          let eventName = 'message'
+          let dataLine = ''
+          for (const line of lines) {
+            if (line.startsWith('event:')) {
+              eventName = line.slice(6).trim()
+            } else if (line.startsWith('data:')) {
+              dataLine += line.slice(5).trim()
+            }
+          }
+          if (!dataLine) continue
+          let parsed: Record<string, unknown>
+          try {
+            parsed = JSON.parse(dataLine) as Record<string, unknown>
+          } catch {
+            continue
+          }
+          if (eventName === 'chunk') {
+            const delta = typeof parsed.delta === 'string' ? parsed.delta : ''
+            if (delta) {
+              fullContent += delta
+              onChunk(delta)
+            }
+          } else if (eventName === 'done') {
+            if (typeof parsed.content === 'string' && !fullContent) {
+              fullContent = parsed.content
+              onChunk(fullContent)
+            }
+            if (typeof parsed.model === 'string') {
+              resolvedModel = parsed.model
+            }
+            if (typeof parsed.duration_ms === 'number') {
+              durationMs = parsed.duration_ms
+            }
+          } else if (eventName === 'error') {
+            throw new Error(
+              typeof parsed.message === 'string' ? parsed.message : '流式试聊失败',
+            )
+          }
+        }
+      }
+
+      return {
+        model: resolvedModel,
+        content: fullContent,
+        duration_ms: durationMs,
+      }
     },
 
     // ── Moe Brain Pipeline ────────────────────────────────

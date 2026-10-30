@@ -42,6 +42,7 @@
 @import './components/soft-particles.css';
 @import './pages/landing-feedback.css';
 @import './pages/analytics.css';
+@import './pages/ai-workbench.css';
 
 /* legacy monolith — remaining shell / platform / data-catalog / moe-tools */
 @import './legacy/moe-admin-theme.css';

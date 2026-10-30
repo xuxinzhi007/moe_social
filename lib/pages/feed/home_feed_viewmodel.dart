@@ -58,18 +58,11 @@ class HomeFeedViewModel extends ChangeNotifier {
     this.pageSize = 10,
   })  : _likeManager = likeManager ?? LikeStateManager(),
         _companionService = companionService ?? CompanionService(),
-        _postsLoader = postsLoader ?? PostService.getPosts,
-        _interactionCoordinator =
-            interactionCoordinator ?? CompanionInteractionCoordinator.instance {
-    _interactionSubscription = _interactionCoordinator.events.listen(
-      _onCompanionInteraction,
-    );
-  }
+        _postsLoader = postsLoader ?? PostService.getPosts;
 
   final LikeStateManager _likeManager;
   final CompanionService _companionService;
   final HomeFeedPostsLoader _postsLoader;
-  final CompanionInteractionCoordinator _interactionCoordinator;
   final int pageSize;
 
   List<Post> _allPosts = [];
@@ -129,10 +122,7 @@ class HomeFeedViewModel extends ChangeNotifier {
   }
 
   Future<void> bootstrap() async {
-    await Future.wait([
-      fetchPosts(resetContent: true),
-      loadCompanionPresence(),
-    ]);
+    await fetchPosts(resetContent: true);
   }
 
   Future<void> loadCompanionPresence() async {
@@ -164,25 +154,6 @@ class HomeFeedViewModel extends ChangeNotifier {
         _companionRefreshQueued = false;
         _scheduleCompanionRefresh();
       }
-    }
-  }
-
-  void _onCompanionInteraction(CompanionInteractionEvent event) {
-    if (_disposed || !_shouldRefreshCompanion(event)) return;
-    _scheduleCompanionRefresh();
-  }
-
-  bool _shouldRefreshCompanion(CompanionInteractionEvent event) {
-    switch (event.type) {
-      case CompanionInteractionType.chatCompleted:
-      case CompanionInteractionType.memoryChanged:
-      case CompanionInteractionType.companionEvent:
-      case CompanionInteractionType.voiceTurnCompleted:
-        return true;
-      case CompanionInteractionType.relationshipChanged:
-      case CompanionInteractionType.lifeMomentChanged:
-      case CompanionInteractionType.presenceChanged:
-        return false;
     }
   }
 

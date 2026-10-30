@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -36,7 +38,7 @@ func ValidateRemoteConfigName(name string) (string, error) {
 	return name, nil
 }
 
-// ReadRemoteConfig reads a whitelisted file from VPS backend_dir.
+// ReadRemoteConfig reads a whitelisted file from VPS backend_dir (or local backend_dir when target is local).
 func ReadRemoteConfig(ctx context.Context, cfg *deploycfg.Config, targetID, fileName string) (content string, remotePath string, err error) {
 	base, err := ValidateRemoteConfigName(fileName)
 	if err != nil {
@@ -44,7 +46,19 @@ func ReadRemoteConfig(ctx context.Context, cfg *deploycfg.Config, targetID, file
 	}
 	t := cfg.TargetByID(targetID)
 	if !t.IsSSH() {
-		return "", "", fmt.Errorf("仅 SSH 目标可读远程配置")
+		localDir := strings.TrimSpace(cfg.BackendAbs())
+		if localDir == "" {
+			return "", "", fmt.Errorf("未配置本机 backend_dir")
+		}
+		localPath := filepath.Join(localDir, filepath.FromSlash(base))
+		raw, readErr := os.ReadFile(localPath)
+		if readErr != nil {
+			if os.IsNotExist(readErr) {
+				return "", localPath, fmt.Errorf("本机文件不存在: %s", localPath)
+			}
+			return "", localPath, fmt.Errorf("读取本机文件失败: %w", readErr)
+		}
+		return string(raw), localPath, nil
 	}
 	if strings.TrimSpace(t.BackendDir) == "" {
 		return "", "", fmt.Errorf("未配置 backend_dir")
@@ -86,7 +100,22 @@ func WriteRemoteConfig(ctx context.Context, cfg *deploycfg.Config, targetID, fil
 	}
 	t := cfg.TargetByID(targetID)
 	if !t.IsSSH() {
-		return "", "", fmt.Errorf("仅 SSH 目标可写远程配置")
+		localDir := strings.TrimSpace(cfg.BackendAbs())
+		if localDir == "" {
+			return "", "", fmt.Errorf("未配置本机 backend_dir")
+		}
+		localPath := filepath.Join(localDir, filepath.FromSlash(base))
+		if err := os.MkdirAll(filepath.Dir(localPath), 0o755); err != nil {
+			return localPath, "", fmt.Errorf("创建目录失败: %w", err)
+		}
+		if prev, readErr := os.ReadFile(localPath); readErr == nil {
+			backupPath = localPath + ".bak." + time.Now().Format("20060102-150405")
+			_ = os.WriteFile(backupPath, prev, 0o644)
+		}
+		if err := os.WriteFile(localPath, []byte(content), 0o644); err != nil {
+			return localPath, backupPath, fmt.Errorf("写入本机文件失败: %w", err)
+		}
+		return localPath, backupPath, nil
 	}
 	if strings.TrimSpace(t.BackendDir) == "" {
 		return "", "", fmt.Errorf("未配置 backend_dir")

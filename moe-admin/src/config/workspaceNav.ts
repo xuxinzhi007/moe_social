@@ -151,7 +151,14 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       to: '/ai/models',
       label: '模型与 Modelfile',
       icon: 'data',
-      title: '小主机模型总览与 Modelfile',
+      title: '小主机模型总览、拉取、定制与 Modelfile',
+    },
+    {
+      kind: 'item',
+      to: '/ai/playground',
+      label: '模型与角色试聊',
+      icon: 'bot',
+      title: 'Ollama 模型与酒馆角色流式试聊台',
     },
     {
       kind: 'group',

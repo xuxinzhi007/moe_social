@@ -14,6 +14,7 @@ import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
 import '../widgets/motion/moe_pressable.dart';
+import '../widgets/motion/moe_sheet.dart';
 import '../widgets/moe_action_row.dart';
 import '../widgets/moe_toast.dart';
 
@@ -174,7 +175,7 @@ class _PostCardState extends State<PostCard> {
                             _formatTime(widget.post.createdAt),
                             style: TextStyle(
                               color: theme.textTheme.bodySmall?.color ??
-                                  Colors.grey[400],
+                                  MoeTokens.hintText,
                               fontSize: 12,
                             ),
                           ),
@@ -185,98 +186,78 @@ class _PostCardState extends State<PostCard> {
                       onPressed: () {
                         final isAuthor = widget.post.userId ==
                             (AuthService.currentUser ?? '');
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(24)),
-                            ),
-                            child: SafeArea(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        top: 12, bottom: 8),
-                                    width: 40,
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[300],
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  // 作者专属：编辑与删除
-                                  if (isAuthor && widget.onEdit != null)
-                                    MoeActionRow(
-                                      icon: Icons.edit_rounded,
-                                      title: '编辑动态',
-                                      iconColor: MoeTokens.primary,
-                                      showDefaultTrailing: false,
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        widget.onEdit!();
-                                      },
-                                    ),
-                                  if (isAuthor && widget.onDelete != null)
-                                    MoeActionRow(
-                                      icon: Icons.delete_outline_rounded,
-                                      title: '删除动态',
-                                      iconColor: Colors.redAccent,
-                                      titleStyle: const TextStyle(
-                                        color: Colors.redAccent,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      showDefaultTrailing: false,
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        _confirmDelete(context, widget.post,
-                                            widget.onDelete!);
-                                      },
-                                    ),
-                                  if (isAuthor &&
-                                      (widget.onEdit != null ||
-                                          widget.onDelete != null))
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 20),
-                                      child: Divider(
-                                          height: 1,
-                                          color: Colors.grey
-                                              .withValues(alpha: 0.15)),
-                                    ),
+                        MoeSheet.show<void>(
+                          context,
+                          backgroundColor: MoeTokens.surface1,
+                          builder: (sheetCtx) => SafeArea(
+                            top: false,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // 作者专属：编辑与删除
+                                if (isAuthor && widget.onEdit != null)
                                   MoeActionRow(
+                                    icon: Icons.edit_rounded,
+                                    title: '编辑动态',
+                                    iconColor: MoeTokens.primary,
+                                    showDefaultTrailing: false,
+                                    onTap: () {
+                                      Navigator.pop(sheetCtx);
+                                      widget.onEdit!();
+                                    },
+                                  ),
+                                if (isAuthor && widget.onDelete != null)
+                                  MoeActionRow(
+                                    icon: Icons.delete_outline_rounded,
+                                    title: '删除动态',
+                                    iconColor: MoeTokens.danger,
+                                    titleStyle: const TextStyle(
+                                      color: MoeTokens.danger,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    showDefaultTrailing: false,
+                                    onTap: () {
+                                      Navigator.pop(sheetCtx);
+                                      _confirmDelete(context, widget.post,
+                                          widget.onDelete!);
+                                    },
+                                  ),
+                                if (isAuthor &&
+                                    (widget.onEdit != null ||
+                                        widget.onDelete != null))
+                                  const Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 20),
+                                    child: Divider(
+                                        height: 1,
+                                        color: MoeTokens.surfaceBorder),
+                                  ),
+                                MoeActionRow(
                                     icon: Icons.link_rounded,
                                     title: '复制链接',
                                     iconColor: MoeTokens.primary,
                                     showDefaultTrailing: false,
                                     onTap: () {
-                                      Navigator.pop(context);
+                                      Navigator.pop(sheetCtx);
                                       _copyPostLink(context, widget.post);
-                                    },
-                                  ),
-                                  MoeActionRow(
+                                    }),
+                                MoeActionRow(
                                     icon: Icons.visibility_off_rounded,
                                     title: '不感兴趣',
-                                    iconColor: Colors.orange,
+                                    iconColor: MoeTokens.pastelOrange,
                                     showDefaultTrailing: false,
-                                    onTap: () => Navigator.pop(context),
-                                  ),
-                                  MoeActionRow(
+                                    onTap: () => Navigator.pop(sheetCtx)),
+                                MoeActionRow(
                                     icon: Icons.report_rounded,
                                     title: '举报',
-                                    iconColor: Colors.red,
+                                    iconColor: MoeTokens.danger,
                                     showDefaultTrailing: false,
                                     onTap: () {
-                                      Navigator.pop(context);
+                                      Navigator.pop(sheetCtx);
                                       _showReportDialog(context, widget.post);
-                                    },
-                                  ),
-                                  const SizedBox(height: 8),
-                                ],
-                              ),
+                                    }),
+                                const SizedBox(height: 8),
+                              ],
                             ),
                           ),
                         );

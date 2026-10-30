@@ -93,6 +93,8 @@ class CompanionHubViewModel extends ChangeNotifier {
   bool _refreshQueued = false;
   bool _dashboardRequestInFlight = false;
   bool _refreshAfterDashboard = false;
+  bool _lastIncludedDailyFeed = false;
+  bool _pendingIncludeDailyFeed = false;
   Timer? _interactionRefreshTimer;
 
   bool get isLoading => _isLoading;
@@ -191,9 +193,13 @@ class CompanionHubViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> loadDashboard() async {
+  /// 加载伙伴快照与动态数据。
+  /// [includeDailyFeed] 为 true 时拉取完整的社区动态、聊天历史、记忆与时间线（供历程页使用）；
+  /// 为 false 时仅拉取伙伴快照（供 Hub 首页使用，避免首屏多打 5 路日常明细请求）。
+  Future<void> loadDashboard({bool includeDailyFeed = false}) async {
     if (_dashboardRequestInFlight) {
       _refreshAfterDashboard = true;
+      _pendingIncludeDailyFeed = _pendingIncludeDailyFeed || includeDailyFeed;
       return;
     }
     _dashboardRequestInFlight = true;
@@ -203,66 +209,67 @@ class CompanionHubViewModel extends ChangeNotifier {
 
     try {
       final snapshot = await _companion.getSnapshot();
-
-      CompanionCommunityIdentityData? identity;
-      if (snapshot.profile.agentId.trim().isNotEmpty) {
-        try {
-          identity = await _companion.getCommunityIdentity();
-        } catch (_) {}
-      }
-
       final daily = <CompanionDailyItem>[];
 
-      // 后端 moments 优先（life_event_logs，含离场居民历史）；无则回退 Life 事件。
+      // 后端 moments 已在 snapshot.state 中，零额外网络开销。
       final momentItems = _momentDailyItems(snapshot.state.moments);
       if (momentItems.isNotEmpty) {
         daily.addAll(momentItems);
       }
 
-      if (identity != null && identity.isValid) {
-        try {
-          final result = await PostService.getPosts(
-            page: 1,
-            pageSize: 5,
-            authorUserId: identity.userId,
-          );
-          final raw = result['posts'];
-          final posts = raw is List<Post>
-              ? raw
-              : (raw is List
-                  ? raw.whereType<Post>().toList(growable: false)
-                  : const <Post>[]);
-          for (final post in posts) {
-            final text = post.content.trim();
-            if (text.isEmpty) continue;
-            daily.add(
-              CompanionDailyItem(
-                kind: 'post',
-                title: '发了动态',
-                body: text,
-                at: post.createdAt,
-                postId: post.id,
-              ),
+      if (includeDailyFeed) {
+        CompanionCommunityIdentityData? identity;
+        if (snapshot.profile.agentId.trim().isNotEmpty) {
+          try {
+            identity = await _companion.getCommunityIdentity();
+          } catch (_) {}
+        }
+
+        if (identity != null && identity.isValid) {
+          try {
+            final result = await PostService.getPosts(
+              page: 1,
+              pageSize: 5,
+              authorUserId: identity.userId,
             );
-          }
+            final raw = result['posts'];
+            final posts = raw is List<Post>
+                ? raw
+                : (raw is List
+                    ? raw.whereType<Post>().toList(growable: false)
+                    : const <Post>[]);
+            for (final post in posts) {
+              final text = post.content.trim();
+              if (text.isEmpty) continue;
+              daily.add(
+                CompanionDailyItem(
+                  kind: 'post',
+                  title: '发了动态',
+                  body: text,
+                  at: post.createdAt,
+                  postId: post.id,
+                ),
+              );
+            }
+          } catch (_) {}
+        }
+
+        try {
+          final history = await _companion.listChatHistory(limit: 12);
+          daily.addAll(_chatHighlightItems(history));
+          daily.addAll(_unfinishedTopicItems(history));
+        } catch (_) {}
+
+        try {
+          final memories = await _companion.listMemories(limit: 4);
+          daily.addAll(_memoryDailyItems(memories));
+        } catch (_) {}
+
+        try {
+          final events = await _companion.listTimeline(limit: 12);
+          daily.addAll(_unifiedEventDailyItems(events));
         } catch (_) {}
       }
-
-      try {
-        final history = await _companion.listChatHistory(limit: 12);
-        daily.addAll(_chatHighlightItems(history));
-        daily.addAll(_unfinishedTopicItems(history));
-      } catch (_) {}
-
-      try {
-        final memories = await _companion.listMemories(limit: 4);
-        daily.addAll(_memoryDailyItems(memories));
-      } catch (_) {}
-
-      try {
-        final events = await _companion.listTimeline(limit: 12);
-        daily.addAll(_unifiedEventDailyItems(events));
-      } catch (_) {}
 
       daily.sort((a, b) {
         final at = a.at ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -281,6 +288,7 @@ class CompanionHubViewModel extends ChangeNotifier {
       _state = snapshot.state;
       _dailyItems = compressedDaily.take(16).toList(growable: false);
       _dailySummary = dailySummary;
+      _lastIncludedDailyFeed = includeDailyFeed;
       _isLoading = false;
       _notify();
     } catch (e) {
@@ -310,7 +318,11 @@ class CompanionHubViewModel extends ChangeNotifier {
     _interactionRefreshTimer?.cancel();
     _interactionRefreshTimer = Timer(const Duration(milliseconds: 250), () {
       _refreshQueued = false;
-      if (!_disposed) unawaited(loadDashboard());
+      final includeDaily = _lastIncludedDailyFeed || _pendingIncludeDailyFeed;
+      _pendingIncludeDailyFeed = false;
+      if (!_disposed) {
+        unawaited(loadDashboard(includeDailyFeed: includeDaily));
+      }
     });
   }
 
@@ -319,7 +331,7 @@ class CompanionHubViewModel extends ChangeNotifier {
     if (_disposed) return;
     _profile = result;
     _notify();
-    await loadDashboard();
+    await loadDashboard(includeDailyFeed: _lastIncludedDailyFeed);
   }
 
   /// WS 实时问候/状态补丁（不全量刷新日常流）。

@@ -11,6 +11,9 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
     required this.accent,
     required this.pageBackground,
     required this.cardBackground,
+    required this.surfaceBorder,
+    required this.titleText,
+    required this.hintText,
     required this.primaryGradient,
   });
 
@@ -19,6 +22,9 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
   final Color accent;
   final Color pageBackground;
   final Color cardBackground;
+  final Color surfaceBorder;
+  final Color titleText;
+  final Color hintText;
   final LinearGradient primaryGradient;
 
   factory MoeTheme.light({Color? primary}) {
@@ -29,6 +35,9 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
       accent: MoeTokens.accent,
       pageBackground: MoeTokens.pageBackground,
       cardBackground: MoeTokens.cardBackground,
+      surfaceBorder: MoeTokens.surfaceBorder,
+      titleText: MoeTokens.titleText,
+      hintText: MoeTokens.hintText,
       primaryGradient: LinearGradient(
         colors: [p, MoeTokens.secondary],
         begin: Alignment.topLeft,
@@ -45,6 +54,9 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
       accent: MoeTokens.accent,
       pageBackground: const Color(0xFF121212),
       cardBackground: const Color(0xFF1E1E1E),
+      surfaceBorder: const Color(0x26FFFFFF),
+      titleText: Colors.white,
+      hintText: const Color(0xFF9E9E9E),
       primaryGradient: LinearGradient(
         colors: [p, MoeTokens.secondary],
         begin: Alignment.topLeft,
@@ -64,6 +76,9 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
     Color? accent,
     Color? pageBackground,
     Color? cardBackground,
+    Color? surfaceBorder,
+    Color? titleText,
+    Color? hintText,
     LinearGradient? primaryGradient,
   }) {
     return MoeTheme(
@@ -72,6 +87,9 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
       accent: accent ?? this.accent,
       pageBackground: pageBackground ?? this.pageBackground,
       cardBackground: cardBackground ?? this.cardBackground,
+      surfaceBorder: surfaceBorder ?? this.surfaceBorder,
+      titleText: titleText ?? this.titleText,
+      hintText: hintText ?? this.hintText,
       primaryGradient: primaryGradient ?? this.primaryGradient,
     );
   }
@@ -87,6 +105,10 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
           Color.lerp(pageBackground, other.pageBackground, t) ?? pageBackground,
       cardBackground:
           Color.lerp(cardBackground, other.cardBackground, t) ?? cardBackground,
+      surfaceBorder:
+          Color.lerp(surfaceBorder, other.surfaceBorder, t) ?? surfaceBorder,
+      titleText: Color.lerp(titleText, other.titleText, t) ?? titleText,
+      hintText: Color.lerp(hintText, other.hintText, t) ?? hintText,
       primaryGradient: LinearGradient(
         colors: [
           Color.lerp(primaryGradient.colors.first,

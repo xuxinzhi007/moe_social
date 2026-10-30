@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AdminTag } from '../components/AdminTag'
 import { AiAgentEditDrawer, type AiAgentRow } from '../components/AiAgentEditDrawer'
 import { IdCell } from '../components/IdCell'
@@ -10,6 +11,7 @@ import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
 export function AiAgentsPage() {
+  const navigate = useNavigate()
   const { client } = useAdminAuth()
   const { showToast } = useDeploy()
   const [items, setItems] = useState<AiAgentRow[]>([])
@@ -119,6 +121,13 @@ export function AiAgentsPage() {
           <div className="btn-row">
             <button
               type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => navigate(`/ai/playground?agent=${encodeURIComponent(row.id)}`)}
+            >
+              试聊
+            </button>
+            <button
+              type="button"
               className="btn btn-ghost btn-sm"
               onClick={() => {
                 setFormError('')
@@ -146,7 +155,7 @@ export function AiAgentsPage() {
         ),
       },
     ],
-    [client, load],
+    [client, load, navigate],
   )
 
   return (

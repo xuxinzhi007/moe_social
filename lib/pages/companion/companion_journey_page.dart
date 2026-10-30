@@ -29,7 +29,7 @@ class _CompanionJourneyPageState extends State<CompanionJourneyPage> {
     _vm = CompanionJourneyViewModel();
     _daily = CompanionHubViewModel();
     _vm.load();
-    _daily.loadDashboard();
+    _daily.loadDashboard(includeDailyFeed: true);
   }
 
   @override
@@ -123,7 +123,9 @@ class _CompanionJourneyPageState extends State<CompanionJourneyPage> {
                           item: item,
                           companionName: _daily.profile.name,
                         );
-                        if (mounted) _daily.loadDashboard();
+                        if (mounted) {
+                          _daily.loadDashboard(includeDailyFeed: true);
+                        }
                       },
               ),
             );
