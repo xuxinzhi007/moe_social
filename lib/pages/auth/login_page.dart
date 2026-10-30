@@ -433,7 +433,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     if (!mounted) return;
     MoeToast.success(context, '$providerName登录成功');
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
     DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
   }
 
@@ -474,7 +474,7 @@ class _LoginPageState extends State<LoginPage> {
           unawaited(AchievementHooks.ensureReady(uid));
         }
         MoeToast.success(context, '欢迎回来！(｡♥♥｡)');
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
       },
       onError: (msg) {

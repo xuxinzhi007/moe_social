@@ -39,7 +39,7 @@ class _InterestOnboardingPageState extends State<InterestOnboardingPage> {
     if (uid == null || uid.isEmpty) return;
     final done = await OnboardingPreferences.isCompleted(uid);
     if (!mounted || !done) return;
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   }
 
   @override
@@ -54,7 +54,7 @@ class _InterestOnboardingPageState extends State<InterestOnboardingPage> {
       await OnboardingPreferences.markCompleted(uid, _vm.selectedNames);
     }
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   }
 
   Future<void> _goRecommendations() async {
@@ -244,8 +244,7 @@ class _InterestOnboardingPageState extends State<InterestOnboardingPage> {
 
   Widget _buildBottomBar() {
     final isInterestStep = _step == 0;
-    final enabled =
-        isInterestStep ? _vm.selectedIds.isNotEmpty : true;
+    final enabled = isInterestStep ? _vm.selectedIds.isNotEmpty : true;
     final label = isInterestStep
         ? (_vm.selectedIds.isEmpty
             ? '看看推荐'

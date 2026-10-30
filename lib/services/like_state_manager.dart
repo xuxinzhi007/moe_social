@@ -300,6 +300,16 @@ class LikeStateManager {
     trimCommentCaches(maxEntries: maxCommentEntries);
   }
 
+  /// 登出或切换账号时重置点赞状态（只更新已有 ValueNotifier 的 isLiked=false，不 dispose 仍在被监听的实例）。
+  void clearSessionLikes() {
+    for (final notifier in _likeStatus.values) {
+      if (notifier.value) notifier.value = false;
+    }
+    for (final notifier in _commentLikeStatus.values) {
+      if (notifier.value) notifier.value = false;
+    }
+  }
+
   /// 调试用：返回当前缓存条目数
   Map<String, int> debugStats() {
     return {

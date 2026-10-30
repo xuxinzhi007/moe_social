@@ -59,6 +59,22 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// 登出或切换账号时清空内存中的通知与未读计数，避免新账号短暂看到上一账号的红点。
+  void reset() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    _companionRefreshTimer?.cancel();
+    _companionRefreshTimer = null;
+    _notifications = [];
+    _unreadCount = 0;
+    _activityUnreadCount = 0;
+    _unreadDmBySender = {};
+    _isLoading = false;
+    _isRefreshingUnread = false;
+    _lastResumeSyncAt = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _pollingTimer?.cancel();

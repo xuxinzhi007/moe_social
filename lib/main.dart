@@ -273,9 +273,44 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  late final ThemeProvider _themeProvider;
+  late final NotificationProvider _notificationProvider;
+  late final DeviceInfoProvider _deviceInfoProvider;
+  late final LoadingProvider _loadingProvider;
+  late final VirtualAvatarProvider _virtualAvatarProvider;
+  late final CheckInProvider _checkInProvider;
+  late final ChatThemeProvider _chatThemeProvider;
+  late final UserLevelProvider _userLevelProvider;
+  late final MainNavController _mainNavController;
+
   @override
   void initState() {
     super.initState();
+    _themeProvider = _globalThemeProvider ?? ThemeProvider();
+    _notificationProvider =
+        _globalNotificationProvider ?? (NotificationProvider()..init());
+    _deviceInfoProvider =
+        _globalDeviceInfoProvider ?? (DeviceInfoProvider()..init());
+    _loadingProvider = _globalLoadingProvider ?? LoadingProvider();
+    _virtualAvatarProvider =
+        _globalVirtualAvatarProvider ?? (VirtualAvatarProvider()..init());
+    _checkInProvider = CheckInProvider();
+    _chatThemeProvider = ChatThemeProvider()..init();
+    _userLevelProvider = UserLevelProvider();
+    _mainNavController = MainNavController();
+
+    _globalNotificationProvider = _notificationProvider;
+    _globalDeviceInfoProvider = _deviceInfoProvider;
+    _globalLoadingProvider = _loadingProvider;
+    _globalVirtualAvatarProvider = _virtualAvatarProvider;
+
+    AuthService.onSessionCleared = () {
+      _notificationProvider.reset();
+      _checkInProvider.reset();
+      _userLevelProvider.reset();
+      _loadingProvider.clearMessages();
+    };
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 版本检查改到主界面 MainPage 就绪后，避免抢登录/闪屏注意力。
       if (AuthService.isLoggedIn) {
@@ -286,33 +321,17 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = _globalThemeProvider ?? ThemeProvider();
-    final notificationProvider =
-        _globalNotificationProvider ?? NotificationProvider()
-          ..init();
-    final deviceInfoProvider = _globalDeviceInfoProvider ?? DeviceInfoProvider()
-      ..init();
-    final loadingProvider = _globalLoadingProvider ?? LoadingProvider();
-    final virtualAvatarProvider =
-        _globalVirtualAvatarProvider ?? VirtualAvatarProvider()
-          ..init();
-
-    _globalNotificationProvider = notificationProvider;
-    _globalDeviceInfoProvider = deviceInfoProvider;
-    _globalLoadingProvider = loadingProvider;
-    _globalVirtualAvatarProvider = virtualAvatarProvider;
-
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: themeProvider),
-        ChangeNotifierProvider.value(value: notificationProvider),
-        ChangeNotifierProvider.value(value: deviceInfoProvider),
-        ChangeNotifierProvider.value(value: loadingProvider),
-        ChangeNotifierProvider.value(value: virtualAvatarProvider),
-        ChangeNotifierProvider(create: (_) => CheckInProvider()),
-        ChangeNotifierProvider(create: (_) => ChatThemeProvider()..init()),
-        ChangeNotifierProvider(create: (_) => UserLevelProvider()),
-        ChangeNotifierProvider(create: (_) => MainNavController()),
+        ChangeNotifierProvider.value(value: _themeProvider),
+        ChangeNotifierProvider.value(value: _notificationProvider),
+        ChangeNotifierProvider.value(value: _deviceInfoProvider),
+        ChangeNotifierProvider.value(value: _loadingProvider),
+        ChangeNotifierProvider.value(value: _virtualAvatarProvider),
+        ChangeNotifierProvider.value(value: _checkInProvider),
+        ChangeNotifierProvider.value(value: _chatThemeProvider),
+        ChangeNotifierProvider.value(value: _userLevelProvider),
+        ChangeNotifierProvider.value(value: _mainNavController),
         ChangeNotifierProvider.value(
           value: CompanionPresenceProvider.instance,
         ),
@@ -321,7 +340,7 @@ class _MyAppState extends State<MyApp> {
         title: 'Moe Social',
         navigatorKey: AuthService.navigatorKey,
         debugShowCheckedModeBanner: false,
-        theme: themeProvider.currentTheme,
+        theme: _themeProvider.currentTheme,
         initialRoute: AuthService.isLoggedIn ? '/home' : '/login',
         builder: (context, child) {
           return AppMessageWidget(

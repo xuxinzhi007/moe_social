@@ -139,7 +139,17 @@ class ChatPushService {
     connectionLive.value = false;
     _connecting = false;
     _reconnectAttempts = 0;
-    // 不清空 _pendingBySender：避免 stop/restart 导致未消费消息丢失
+    // 不清空 _pendingBySender：避免网络抖动 stop/restart 导致未消费消息丢失
+  }
+
+  /// 登出或切换账号时彻底清空当前会话的未读计数与暂存消息，防止串号。
+  static void clearSessionState() {
+    stop();
+    _activeChatPeerId = null;
+    _pendingBySender.clear();
+    if (unreadBySender.value.isNotEmpty) {
+      unreadBySender.value = const <String, int>{};
+    }
   }
 
   // Ensure the current user is considered online even if they never open a DM.
@@ -219,11 +229,8 @@ class ChatPushService {
 
     final rawToken = _rawToken();
     if (rawToken == null || rawToken.isEmpty) {
-      // Token might not be ready yet; keep retrying until auth is available.
       _reconnectTimer?.cancel();
-      _reconnectTimer = Timer(const Duration(seconds: 3), () {
-        _connect();
-      });
+      _reconnectTimer = null;
       return;
     }
 
@@ -353,7 +360,8 @@ class ChatPushService {
       }
       return;
     }
-    if (msgType == 'announcement_published' || msgType == 'system_notification') {
+    if (msgType == 'announcement_published' ||
+        msgType == 'system_notification') {
       NotificationService.onRealtimeRefresh?.call();
       return;
     }

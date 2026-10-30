@@ -25,6 +25,16 @@ class UserLevelProvider extends ChangeNotifier {
   int? _previousLevel;
   int? get previousLevel => _previousLevel;
 
+  /// 登出或切换账号时清空内存中的等级状态。
+  void reset() {
+    _userLevel = null;
+    _isLoading = false;
+    _errorMessage = null;
+    _isLevelingUp = false;
+    _previousLevel = null;
+    notifyListeners();
+  }
+
   /// 清除错误消息
   void clearError() {
     _errorMessage = null;

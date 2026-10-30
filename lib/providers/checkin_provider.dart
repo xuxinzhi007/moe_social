@@ -58,6 +58,27 @@ class CheckInProvider extends ChangeNotifier {
   String? _successMessage;
   String? get successMessage => _successMessage;
 
+  /// 登出或切换账号时清空内存中的签到状态与记录。
+  void reset() {
+    _checkInStatus = null;
+    _checkInHistory = [];
+    _expLogs = [];
+    _historyPage = 1;
+    _historyTotal = 0;
+    _hasMoreHistory = true;
+    _expLogPage = 1;
+    _expLogTotal = 0;
+    _hasMoreExpLogs = true;
+    _isLoading = false;
+    _isCheckingIn = false;
+    _lastUnlocks = [];
+    _isLoadingHistory = false;
+    _isLoadingExpLogs = false;
+    _errorMessage = null;
+    _successMessage = null;
+    notifyListeners();
+  }
+
   /// 清除错误和成功消息
   void clearMessages() {
     _errorMessage = null;

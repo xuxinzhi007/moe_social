@@ -108,7 +108,7 @@ class CompanionWsService {
     final rawToken = _rawToken();
     if (rawToken == null || rawToken.isEmpty) {
       _reconnectTimer?.cancel();
-      _reconnectTimer = Timer(const Duration(seconds: 3), connect);
+      _reconnectTimer = null;
       return;
     }
 

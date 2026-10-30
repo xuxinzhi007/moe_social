@@ -54,6 +54,9 @@ class PresenceService {
     _notifyDebounce?.cancel();
     _notifyDebounce = null;
     _pendingOnline = null;
+    if (online.value.isNotEmpty) {
+      online.value = const <String, bool>{};
+    }
   }
 
   static String? _rawToken() {
@@ -95,9 +98,8 @@ class PresenceService {
 
     final rawToken = _rawToken();
     if (rawToken == null || rawToken.isEmpty) {
-      // Token may not be ready yet (app just launched / just refreshed).
-      // Keep retrying so presence can recover as soon as auth is available.
-      _scheduleReconnect();
+      _reconnectTimer?.cancel();
+      _reconnectTimer = null;
       return;
     }
 

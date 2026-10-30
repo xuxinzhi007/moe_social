@@ -10,8 +10,10 @@ import 'services/behavior_analytics_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/daily_growth_service.dart';
 import 'services/friend_request_sync.dart';
+import 'services/like_state_manager.dart';
 import 'services/presence_service.dart';
 import 'providers/companion_presence_provider.dart';
+import 'utils/jwt_exp.dart';
 import 'widgets/moe_toast.dart';
 
 // 认证结果类，包含成功状态和错误信息
@@ -55,6 +57,13 @@ class AuthService {
   static String? get currentUser => _currentUser;
   static String? get token => _token;
 
+  static bool _isTokenExpired(String token) {
+    final exp = decodeJwtExpUnixSeconds(token);
+    if (exp == null) return false;
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    return exp <= nowSec;
+  }
+
   /// 读取上次登录成功时保存的账号，供登录页预填（无则 null）
   static Future<String?> getLastLoginAccount() async {
     final prefs = await SharedPreferences.getInstance();
@@ -70,10 +79,11 @@ class AuthService {
     _token = prefs.getString(_tokenKey);
     _currentUser = prefs.getString(_userIdKey);
 
-    // If token is missing or user id invalid, treat as logged out
+    //If token is missing or user id invalid, treat as logged out
     if (_token == null ||
         _token!.isEmpty ||
-        !ApiResponse.isValidUserId(_currentUser)) {
+        !ApiResponse.isValidUserId(_currentUser) ||
+        _isTokenExpired(_token!)) {
       _token = null;
       _currentUser = null;
       currentUserProfileNotifier.value = null;
@@ -241,6 +251,7 @@ class AuthService {
       PresenceService.start();
       ChatPushService.start();
       CompanionPresenceProvider.instance.start();
+      BehaviorAnalyticsService.instance.start();
       return AuthResult.success();
     } on ApiException catch (e) {
       return AuthResult.failure(e.message);
@@ -280,6 +291,7 @@ class AuthService {
       PresenceService.start();
       ChatPushService.start();
       CompanionPresenceProvider.instance.start();
+      BehaviorAnalyticsService.instance.start();
 
       final moe = userData['moe_no'] as String?;
       return AuthResult.success(moeNo: moe);
@@ -291,6 +303,15 @@ class AuthService {
   }
 
   static bool _logoutInProgress = false;
+  static String? _currentRouteName;
+
+  /// 登出时同步重置顶层 Provider 内存态（由 [MyApp] 挂载）。
+  static VoidCallback? onSessionCleared;
+
+  /// 由 [BehaviorRouteObserver] 同步当前栈顶命名路由，避免已在 `/login` 时重复 `pushNamedAndRemoveUntil` 导致闪屏。
+  static void syncCurrentRouteName(String? routeName) {
+    _currentRouteName = routeName;
+  }
 
   static void logout() {
     if (_logoutInProgress || (_token == null && _currentUser == null)) {
@@ -306,18 +327,23 @@ class AuthService {
     currentUserProfileNotifier.value = null;
     unawaited(_purgeLegacyLocalLikeKeys(uid));
     // 清除持久化存储
-    _clearAuthData();
+    unawaited(_clearAuthData());
     // 清除ApiService的token
     ApiService.setToken(null);
-    // Stop websocket-based services to avoid reconnect loops.
+    // Stop websocket-based services & clear per-account memory caches to avoid cross-account leakage.
     PresenceService.stop();
-    ChatPushService.stop();
+    ChatPushService.clearSessionState();
     CompanionPresenceProvider.instance.stop();
     FriendRequestSync.clear();
+    LikeStateManager().clearSessionLikes();
+    onSessionCleared?.call();
 
-    // 跳转到登录页
-    navigatorKey.currentState
-        ?.pushNamedAndRemoveUntil('/login', (route) => false);
+    // 跳转到登录页（若当前已在 /login 则不重复重建路由，避免登录页闪烁）
+    if (_currentRouteName != '/login') {
+      _currentRouteName = '/login';
+      navigatorKey.currentState
+          ?.pushNamedAndRemoveUntil('/login', (route) => false);
+    }
   }
 
   // 持久化存储认证数据
@@ -375,7 +401,11 @@ class AuthService {
     if (_currentUser != null) {
       return _currentUser!;
     }
-    // 如果内存中没有用户ID，从持久化存储中读取
+    // 若正在登出或内存无有效 token，绝不能从 SharedPreferences 把旧 userId 读回内存，
+    // 否则会令 _currentUser 非空并打破 logout() 幂等锁，导致每个并发 401 请求都重推一次 /login！
+    if (_logoutInProgress || _token == null || _token!.isEmpty) {
+      throw Exception('用户未登录');
+    }
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString(_userIdKey);
     if (userId != null) {

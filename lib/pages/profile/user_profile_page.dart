@@ -73,9 +73,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Future<void> _loadData() async {
     try {
-      // 确保AuthService已经初始化，恢复登录状态
-      await AuthService.init();
-
       final user = await UserService.getUserInfo(widget.userId);
       // 加载用户徽章
       final userBadges = _achievementService.getUserBadges(widget.userId);

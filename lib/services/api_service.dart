@@ -231,6 +231,10 @@ class ApiService {
           e.message.contains('authorization header') ||
           e.message.contains('账户失效') ||
           e.message.contains('登录已过期')) {
+        // 如果已经处于登出状态（_currentToken 已被清空），不再发起重复刷新或再次回调 onLogout。
+        if (_currentToken == null || _currentToken!.isEmpty) {
+          throw ApiException('登录已过期，请重新登录', 401);
+        }
         final newToken = await _refreshToken();
         if (newToken != null) {
           return await _performRequest(path, method, body);

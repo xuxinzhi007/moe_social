@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../auth_service.dart';
 import '../services/behavior_analytics_service.dart';
 
 /// 自动采集命名路由的进入/离开与停留时长。
@@ -7,6 +8,7 @@ class BehaviorRouteObserver extends RouteObserver<PageRoute<dynamic>> {
   void _trackEnter(Route<dynamic>? route) {
     if (route == null) return;
     final name = route.settings.name;
+    AuthService.syncCurrentRouteName(name);
     if (name == null || name.isEmpty) return;
     BehaviorAnalyticsService.instance.onRouteEnter(name);
   }
