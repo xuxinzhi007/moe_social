@@ -15,15 +15,19 @@ func TestDrawRequestRejectsOversizedImage(t *testing.T) {
 	if err := in.validate(); err != ErrBadDrawSize {
 		t.Fatalf("validate = %v", err)
 	}
-	in = DrawRequest{Prompt: "  a photo  "}.normalized(ComfyConfig{})
+	in = DrawRequest{Prompt: "  a photo  ", Style: "realistic"}.normalized(ComfyConfig{})
 	if err := in.validate(); err != nil {
 		t.Fatal(err)
 	}
 	if in.Prompt != "a photo" || in.Width != 512 || in.Height != 768 || in.Steps != 25 || in.CFG != 5 {
 		t.Fatalf("defaults = %+v", in)
 	}
-	if in.Checkpoint != defaultComfyCheckpoint {
+	if in.Checkpoint != "Realistic_Vision_V5.1_fp16-no-ema.safetensors" {
 		t.Fatalf("checkpoint = %s", in.Checkpoint)
+	}
+	animeIn := DrawRequest{Prompt: "1girl"}.normalized(ComfyConfig{})
+	if animeIn.Checkpoint != defaultComfyCheckpoint || animeIn.CFG != 6.5 {
+		t.Fatalf("anime defaults = %+v", animeIn)
 	}
 }
 

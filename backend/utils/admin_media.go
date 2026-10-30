@@ -31,16 +31,19 @@ type AdminMediaOwnerSummary struct {
 	TotalBytes   int64
 }
 
-// ResolveImageLocalDir 解析云图库磁盘路径：配置目录不存在时，本机开发可回退 ./data/images。
+// ResolveImageLocalDir 解析云图库磁盘路径：当配置为容器 Linux 路径（如 /app/data/images）且在 Windows/本机开发不存在时，自动回退 ./data/images。
 func ResolveImageLocalDir(configured string) string {
 	dir := strings.TrimSpace(configured)
 	if dir == "" {
-		dir = "./data/images"
+		return "./data/images"
 	}
 	if st, err := os.Stat(dir); err == nil && st.IsDir() {
 		return dir
 	}
 	fallback := "./data/images"
+	if dir != fallback && strings.HasPrefix(dir, "/app/") {
+		return fallback
+	}
 	if dir != fallback {
 		if st, err := os.Stat(fallback); err == nil && st.IsDir() {
 			return fallback

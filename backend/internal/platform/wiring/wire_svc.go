@@ -2,6 +2,8 @@ package runserver
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"backend/internal/platform/apiconfig"
 	"backend/internal/platform/svc"
@@ -11,8 +13,12 @@ import (
 
 // wireServiceContext assembles ServiceContext and domain app services for pure Kratos HTTP.
 func wireServiceContext(opts Options) (apiconfig.Config, *svc.ServiceContext, error) {
-	var c apiconfig.Config
-	yamlconf.MustLoad(opts.ConfigFile, &c)
+	c := apiconfig.DefaultConfig()
+	if f := strings.TrimSpace(opts.ConfigFile); f != "" {
+		if _, err := os.Stat(f); err == nil {
+			yamlconf.MustLoad(f, &c)
+		}
+	}
 	if opts.InternalHTTPPort > 0 {
 		c.Host = opts.InternalHTTPHost
 		if c.Host == "" {

@@ -77,16 +77,23 @@ func countCommentLines(t *testing.T, path string) (comments, lines int) {
 //
 // 第三条断言（除 5 个目标键外逐键全等）是闭合点：它保证定点写没有顺手改动任何别的东西。
 func TestPatchYAMLFilePreservesComments(t *testing.T) {
-	real := filepath.Join("..", "config", "config.yaml")
-	if _, err := os.Stat(real); err != nil {
-		t.Skipf("未找到 %s，跳过真实配置写回测试", real)
+	realApp := filepath.Join("..", "config", conf.AppConfigFileName)
+	realData := filepath.Join("..", "config", conf.DataConfigFileName)
+	if _, err := os.Stat(realApp); err != nil {
+		t.Skipf("未找到 %s，跳过真实配置写回测试", realApp)
 	}
 	work := filepath.Join(t.TempDir(), "config.yaml")
-	raw, err := os.ReadFile(real)
+	rawApp, err := os.ReadFile(realApp)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(work, raw, 0o644); err != nil {
+	rawData, err := os.ReadFile(realData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	combined := append(append([]byte(nil), rawApp...), '\n')
+	combined = append(combined, rawData...)
+	if err := os.WriteFile(work, combined, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -170,6 +177,68 @@ func TestPatchYAMLFilePreservesComments(t *testing.T) {
 	}
 	if c.API.PublicBaseURL != "http://patched-api:8888" {
 		t.Errorf("conf 读到 api.public_base_url = %q", c.API.PublicBaseURL)
+	}
+}
+
+// TestApplyRuntimeConfigPatchSplitFiles 验证 moe-service-app.yaml + moe-service-data.yaml 拆分目录下，
+// ApplyRuntimeConfigPatch 能将 api/app_client 写回 moe-service-app.yaml、image 写回 moe-service-data.yaml，且保留各自注释。
+func TestApplyRuntimeConfigPatchSplitFiles(t *testing.T) {
+	realApp := filepath.Join("..", "config", conf.AppConfigFileName)
+	realData := filepath.Join("..", "config", conf.DataConfigFileName)
+	if _, err := os.Stat(realApp); err != nil {
+		t.Skipf("未找到 %s，跳过拆分写回测试", realApp)
+	}
+	dir := t.TempDir()
+	workApp := filepath.Join(dir, conf.AppConfigFileName)
+	workData := filepath.Join(dir, conf.DataConfigFileName)
+	rawApp, err := os.ReadFile(realApp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawData, err := os.ReadFile(realData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(workApp, rawApp, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(workData, rawData, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	appCommentsBefore, _ := countCommentLines(t, workApp)
+	dataCommentsBefore, _ := countCommentLines(t, workData)
+
+	conf.ResetForTest()
+	t.Cleanup(conf.ResetForTest)
+	if _, err := conf.LoadFile(workApp); err != nil {
+		t.Fatal(err)
+	}
+
+	newAPI := "http://split-api:8888"
+	newMax := int64(2097152)
+	view, err := ApplyRuntimeConfigPatch(RuntimeConfigPatch{
+		ApiPublicBaseUrl: &newAPI,
+		ImageMaxBytes:    &newMax,
+	})
+	if err != nil {
+		t.Fatalf("ApplyRuntimeConfigPatch 失败: %v", err)
+	}
+	if view.ApiPublicBaseUrl != newAPI || view.ImageMaxBytes != newMax {
+		t.Errorf("view = %+v, want api=%q max=%d", view, newAPI, newMax)
+	}
+
+	appCommentsAfter, _ := countCommentLines(t, workApp)
+	dataCommentsAfter, _ := countCommentLines(t, workData)
+	if appCommentsAfter != appCommentsBefore || dataCommentsAfter != dataCommentsBefore {
+		t.Errorf("拆分写回破坏了注释：app %d→%d, data %d→%d",
+			appCommentsBefore, appCommentsAfter, dataCommentsBefore, dataCommentsAfter)
+	}
+	if got := flattenYAML(t, workApp)["api.public_base_url"]; got != newAPI {
+		t.Errorf("moe-service-app.yaml api.public_base_url = %q, want %q", got, newAPI)
+	}
+	if got := flattenYAML(t, workData)["image.max_bytes"]; got != "2097152" {
+		t.Errorf("moe-service-data.yaml image.max_bytes = %q, want 2097152", got)
 	}
 }
 

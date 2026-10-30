@@ -18,6 +18,26 @@ type Config struct {
 	ClientPublicApiBaseUrl string `json:"-" yaml:"-"`
 }
 
+// DefaultConfig 返回原 api/etc/moe.yaml 片段承载的基础缺省值（端口 :8888、JWT 5 天、
+// 本地推理兜底、图片存储缺省目录与 1GB 上限）。运行时值随后由 ApplyUnifiedConfigOverrides 覆盖。
+func DefaultConfig() Config {
+	var c Config
+	c.Name = "moe-social"
+	c.Host = "0.0.0.0"
+	c.Port = 8888
+	c.Auth.AccessExpire = 432000
+	c.LLMInference = LLMInferenceConf{
+		BaseUrl:        "http://127.0.0.1:6633",
+		ApiStyle:       "openai",
+		TimeoutSeconds: 300,
+	}
+	c.Image = ImageConf{
+		LocalDir: "/app/data/images",
+		MaxBytes: 1073741824,
+	}
+	return c
+}
+
 type LLMInferenceConf struct {
 	BaseUrl             string `json:"BaseUrl" yaml:"BaseUrl"`
 	ApiStyle            string `json:"ApiStyle" yaml:"ApiStyle"`

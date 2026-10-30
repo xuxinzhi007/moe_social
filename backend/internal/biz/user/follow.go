@@ -85,6 +85,9 @@ func normalizeFollowPage(p FollowListPage) (page, pageSize, offset int32) {
 	if pageSize <= 0 {
 		pageSize = 10
 	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 	offset = (page - 1) * pageSize
 	return page, pageSize, offset
 }

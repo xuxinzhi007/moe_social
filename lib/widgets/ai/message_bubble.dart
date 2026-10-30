@@ -23,6 +23,7 @@ class AiMessageBubble extends StatefulWidget {
   final String? language; // 代码语言
   final bool isUser;
   final bool isLoading;
+  final bool isStreamingContent;
   final VoidCallback? onContentExpanded;
   final String? agentLabel;
   final Widget? assistantAvatar;
@@ -45,6 +46,7 @@ class AiMessageBubble extends StatefulWidget {
     this.language,
     required this.isUser,
     this.isLoading = false,
+    this.isStreamingContent = false,
     this.onContentExpanded,
     this.agentLabel,
     this.assistantAvatar,
@@ -137,6 +139,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
       return AiRichMessageBody(
         content: widget.content,
         isUser: widget.isUser,
+        isStreaming: widget.isStreamingContent,
         onExpanded: widget.onContentExpanded,
       );
     }

@@ -187,18 +187,84 @@ func loadLocked() (*Config, error) {
 	return loaded.cfg, nil
 }
 
+const (
+	AppConfigFileName  = "moe-service-app.yaml"
+	DataConfigFileName = "moe-service-data.yaml"
+	legacyConfigName   = "config.yaml"
+)
+
 func resolvePath() (string, error) {
 	for _, dir := range searchDirs {
-		p := filepath.Join(dir, "config.yaml")
+		appPath := filepath.Join(dir, AppConfigFileName)
+		if _, err := os.Stat(appPath); err == nil {
+			return appPath, nil
+		}
+		p := filepath.Join(dir, legacyConfigName)
 		if _, err := os.Stat(p); err == nil {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("conf: 未在 %v 找到 config.yaml", searchDirs)
+	return "", fmt.Errorf("conf: 未在 %v 找到 %s 或 %s", searchDirs, AppConfigFileName, legacyConfigName)
+}
+
+// resolveSplitPair 检查 path 所在目录是否存在 moe-service-app.yaml + moe-service-data.yaml 拆分对。
+// 当调用方传的是目录、config.yaml、moe-service-app.yaml 或 moe-service-data.yaml，
+// 且同目录同时存在 moe-service-app.yaml 与 moe-service-data.yaml（且若传的是 config.yaml 但磁盘上没有独立单文件 config.yaml，或同目录为拆分配置）时，
+// 返回两者的路径以便合并加载；否则返回空串，按单文件加载。
+func resolveSplitPair(path string) (appFile, dataFile string, ok bool) {
+	info, err := os.Stat(path)
+	var dir string
+	if err == nil && info.IsDir() {
+		dir = path
+	} else {
+		base := filepath.Base(path)
+		if base != legacyConfigName && base != AppConfigFileName && base != DataConfigFileName {
+			return "", "", false
+		}
+		// 若调用方显式指定了一个真实存在的单文件 config.yaml（例如单测在 TempDir 写的 config.yaml），
+		// 则优先按单文件加载；仅当 config.yaml 不存在（旧启动命令传入 -f config/config.yaml）
+		// 或显式传入 moe-service-app.yaml / moe-service-data.yaml 时走双文件合并。
+		if base == legacyConfigName && err == nil && !info.IsDir() {
+			return "", "", false
+		}
+		dir = filepath.Dir(path)
+	}
+	a := filepath.Join(dir, AppConfigFileName)
+	d := filepath.Join(dir, DataConfigFileName)
+	if stA, errA := os.Stat(a); errA == nil && !stA.IsDir() {
+		if stD, errD := os.Stat(d); errD == nil && !stD.IsDir() {
+			return a, d, true
+		}
+	}
+	return "", "", false
 }
 
 func read(path string) (*state, error) {
 	v := viper.New()
+	if appFile, dataFile, ok := resolveSplitPair(path); ok {
+		v.SetConfigFile(appFile)
+		if err := v.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("conf: 读取 %s 失败: %w", appFile, err)
+		}
+		vData := viper.New()
+		vData.SetConfigFile(dataFile)
+		if err := vData.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("conf: 读取 %s 失败: %w", dataFile, err)
+		}
+		if err := v.MergeConfigMap(vData.AllSettings()); err != nil {
+			return nil, fmt.Errorf("conf: 合并 %s 失败: %w", dataFile, err)
+		}
+		var cfg Config
+		if err := v.Unmarshal(&cfg); err != nil {
+			return nil, fmt.Errorf("conf: 解析 %s + %s 失败: %w", appFile, dataFile, err)
+		}
+		abs, err := filepath.Abs(appFile)
+		if err != nil {
+			abs = appFile
+		}
+		return &state{cfg: &cfg, v: v, path: abs}, nil
+	}
+
 	v.SetConfigFile(path)
 	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("conf: 读取 %s 失败: %w", path, err)

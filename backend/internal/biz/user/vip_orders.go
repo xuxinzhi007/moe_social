@@ -32,6 +32,9 @@ func ListVipOrders(ctx context.Context, store UserStore, userIDRaw string, page 
 	if ps <= 0 {
 		ps = 10
 	}
+	if ps > 100 {
+		ps = 100
+	}
 	offset := int((p - 1) * ps)
 
 	total, err := store.CountVipOrders(ctx, userID)

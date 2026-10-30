@@ -35,6 +35,9 @@ func GetTransactions(ctx context.Context, store UserStore, in *userv1.GetTransac
 	if pageSize <= 0 {
 		pageSize = 10
 	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 	offset := int((page - 1) * pageSize)
 
 	total, err := store.CountTransactions(ctx, userID)

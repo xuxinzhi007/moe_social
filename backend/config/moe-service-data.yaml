@@ -1,0 +1,58 @@
+# Moe Social 数据与基础设施配置（MySQL / 媒体存储 / LLM 推理 / ComfyUI）
+
+database:
+  host: "47.106.175.49"
+  port: 3306
+  user: "root"
+  password: "123456xxZ."
+  dbname: "go_react_demo"
+  charset: "utf8mb4"
+  parseTime: true
+  loc: "Local"
+
+image:
+  driver: qiniu             # qiniu | oss | local
+  local_dir: "/app/data/images"
+  public_base_url: ""       # 留空则回退至 api.public_base_url
+  max_bytes: 1073741824     # 单次上传上限（字节），1GB
+  qiniu:
+    bucket: "moe-image"
+    cdn_domain: "http://tm6hu0nnn.hn-bkt.clouddn.com"
+    region: "z2"            # 华南
+    prefix: "media"
+    access_key: "c2RytiFZrxjm8CF4ZpPrbhBdEUR_MIb8gJKvRKpN" # 可由 MOE_QINIU_ACCESS_KEY 兜底
+    secret_key: "rus_ItGAPWc9VQrZizz7abgBvGzhBUyQczYR4Yzv" # 可由 MOE_QINIU_SECRET_KEY 兜底
+    private: true
+    proxy_via_api: true
+  oss:
+    endpoint: "oss-cn-shenzhen.aliyuncs.com"
+    bucket: "moe-social-media"
+    access_key_id: ""       # 可由 MOE_OSS_ACCESS_KEY_ID 兜底
+    access_key_secret: ""   # 可由 MOE_OSS_ACCESS_KEY_SECRET 兜底
+    prefix: "media"
+    public_base_url: ""
+    region: "cn-shenzhen"
+    proxy_via_api: false
+
+llm_inference:
+  provider: ollama
+  base_url: "http://47.106.175.49:11434" # 可由 MOE_LLM_BASE_URL 覆盖
+  api_style: ollama                      # ollama | openai（可由 MOE_LLM_API_STYLE 覆盖）
+  timeout_seconds: 300
+  memory_model: "qwen2.5:3b-instruct"    # 可由 MOE_LLM_MODEL 覆盖
+  api_key: ""                            # 可由 MOE_LLM_API_KEY 覆盖
+  context_tokens: 32768
+  game_base_url: "http://127.0.0.1:6633" # 留空则复用 base_url
+  game_model: ""
+  game_llm_mode: "narrator"              # narrator | agent
+  model_management:
+    user_quota: 3
+    global_quota: 12
+    write_concurrency: 1
+    model_sync_timeout_seconds: 120
+    allowed_base_models: []              # 空列表仅允许默认模型
+
+comfy:
+  base_url: "http://127.0.0.1:8188"
+  checkpoint: "meinamix_v12Final.safetensors"
+  timeout_seconds: 180

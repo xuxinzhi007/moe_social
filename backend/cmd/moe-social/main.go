@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	mediabiz "backend/internal/biz/media"
@@ -27,7 +28,7 @@ import (
 )
 
 var (
-	configFile        = flag.String("f", "config/config.yaml", "Unified config (SSOT)")
+	configFile        = flag.String("f", "config/moe-service-app.yaml", "Unified config (moe-service-app.yaml + moe-service-data.yaml)")
 	apiConfig         = flag.String("f-api", "", "Optional override: API struct fragment YAML")
 	migrate           = flag.Bool("migrate", false, "run schema migrate before starting")
 	migrateMediaQiniu = flag.Bool("migrate-media-qiniu", false, "upload image.local_dir to qiniu and exit")
@@ -53,19 +54,22 @@ func main() {
 
 func uploadLocalImages(configFile, apiFile string, dryRun bool) error {
 	paths := moesocial.ResolveStartupPaths(configFile, apiFile)
-	var fragment apiconfig.Config
-	if err := yamlconf.Load(paths.APIFragment, &fragment); err != nil {
-		return fmt.Errorf("load api fragment %s: %w", paths.APIFragment, err)
+	fragment := apiconfig.DefaultConfig()
+	if f := strings.TrimSpace(paths.APIFragment); f != "" {
+		if _, err := os.Stat(f); err == nil {
+			if err := yamlconf.Load(f, &fragment); err != nil {
+				return fmt.Errorf("load api fragment %s: %w", f, err)
+			}
+		}
 	}
 	runserver.ApplyUnifiedConfigOverrides(&fragment)
 	img := moewiring.ImageConfigFromAPI(fragment.Image)
-	fillQiniuFromFiles(&img, paths.Unified, paths.APIFragment)
+	fillQiniuFromFiles(&img, paths.Unified, filepath.Join(filepath.Dir(paths.Unified), conf.DataConfigFileName), paths.APIFragment)
 	log.Printf("config %s", conf.Path())
-	log.Printf("fragment %s", paths.APIFragment)
 	log.Printf("qiniu bucket=%s cdn_domain=%s access_key=%s secret_key=%s",
 		fieldState(img.Qiniu.Bucket), fieldState(img.Qiniu.CDNDomain), fieldState(img.Qiniu.AccessKey), fieldState(img.Qiniu.SecretKey))
 	if img.Qiniu.AccessKey == "" || img.Qiniu.SecretKey == "" || img.Qiniu.Bucket == "" || img.Qiniu.CDNDomain == "" {
-		return fmt.Errorf("qiniu config incomplete in %s and %s", conf.Path(), paths.APIFragment)
+		return fmt.Errorf("qiniu config incomplete in %s", conf.Path())
 	}
 	_, _, err := mediabiz.MigrateLocalToQiniu(context.Background(), img, dryRun)
 	return err

@@ -22,6 +22,9 @@ func ListGifts(ctx context.Context, store GiftStore, page, pageSize int32, viewe
 	if pageSize <= 0 {
 		pageSize = 10
 	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 	total, err := store.CountGifts(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -71,6 +74,9 @@ func ListPurchaseOrders(ctx context.Context, store GiftStore, userIDRaw string, 
 	}
 	if pageSize <= 0 {
 		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
 	}
 	offset := int((page - 1) * pageSize)
 	total, err := store.CountPurchaseOrders(ctx, uint(uid))

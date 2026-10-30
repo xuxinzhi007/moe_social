@@ -517,10 +517,10 @@ func TestGetIsLenient(t *testing.T) {
 	}
 }
 
-// TestRealConfigYAMLLoads 对仓库真实的 config.yaml 做一次冒烟：
+// TestRealConfigYAMLLoads 对仓库真实的 config/（moe-service-app.yaml + moe-service-data.yaml）做一次冒烟：
 // 能解析、端口与库名非空。文件缺失（如 CI 未挂载）时跳过。
 func TestRealConfigYAMLLoads(t *testing.T) {
-	path := filepath.Join("..", "..", "config", "config.yaml")
+	path := filepath.Join("..", "..", "config", AppConfigFileName)
 	if _, err := os.Stat(path); err != nil {
 		t.Skipf("未找到 %s，跳过真实配置冒烟", path)
 	}
@@ -529,7 +529,7 @@ func TestRealConfigYAMLLoads(t *testing.T) {
 
 	c, err := LoadFile(path)
 	if err != nil {
-		t.Fatalf("真实 config.yaml 解析失败: %v", err)
+		t.Fatalf("真实配置解析失败: %v", err)
 	}
 	if c.Runtime.HTTPPort <= 0 {
 		t.Errorf("runtime.http_port = %d, want > 0", c.Runtime.HTTPPort)
@@ -552,6 +552,41 @@ func TestRealConfigYAMLLoads(t *testing.T) {
 	}
 	if Path() == "" {
 		t.Error("Path() 为空，应返回实际使用的绝对路径")
+	}
+}
+
+// TestSplitAppAndDataMerge 验证同目录下 moe-service-app.yaml + moe-service-data.yaml 自动合并加载。
+func TestSplitAppAndDataMerge(t *testing.T) {
+	dir := t.TempDir()
+	appBody := "runtime:\n  http_port: 8899\nmoe:\n  single_process: true\n  vip_api_in_process: false\n"
+	dataBody := "database:\n  host: \"10.0.0.1\"\n  port: 3306\n  dbname: \"split_db\"\n  parseTime: true\nimage:\n  max_bytes: 2048\n"
+	if err := os.WriteFile(filepath.Join(dir, AppConfigFileName), []byte(appBody), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, DataConfigFileName), []byte(dataBody), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ResetForTest()
+	t.Cleanup(ResetForTest)
+
+	c, err := LoadFile(filepath.Join(dir, AppConfigFileName))
+	if err != nil {
+		t.Fatalf("LoadFile(%s) 合并失败: %v", AppConfigFileName, err)
+	}
+	if c.Runtime.HTTPPort != 8899 {
+		t.Errorf("Runtime.HTTPPort = %d, want 8899", c.Runtime.HTTPPort)
+	}
+	if c.Database.Host != "10.0.0.1" || c.Database.DBName != "split_db" || !c.Database.ParseTime {
+		t.Errorf("Database 合并异常: %+v", c.Database)
+	}
+	if c.Image.MaxBytes != 2048 {
+		t.Errorf("Image.MaxBytes = %d, want 2048", c.Image.MaxBytes)
+	}
+	if DomainInProcess("vip") {
+		t.Error("vip 显式 false，合并后 IsSet 应保持生效")
+	}
+	if !DomainInProcess("user") {
+		t.Error("user 未设置，应继承 single_process = true")
 	}
 }
 

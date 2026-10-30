@@ -6,6 +6,7 @@ import '../../utils/ai_chat_message_utils.dart';
 import '../../utils/ai_message_format_parser.dart';
 import '../moe_toast.dart';
 import 'ai_brand_tokens.dart';
+import 'ai_draw_card.dart';
 
 /// 酒馆 / flai 风格：Markdown 段落 + 代码/JSON 围栏块。
 class AiRichMessageBody extends StatelessWidget {
@@ -13,11 +14,13 @@ class AiRichMessageBody extends StatelessWidget {
     super.key,
     required this.content,
     required this.isUser,
+    this.isStreaming = false,
     this.onExpanded,
   });
 
   final String content;
   final bool isUser;
+  final bool isStreaming;
   final VoidCallback? onExpanded;
 
   @override
@@ -56,6 +59,11 @@ class AiRichMessageBody extends StatelessWidget {
                 content: blocks[i].content,
                 language: blocks[i].language,
                 isUser: isUser,
+              ),
+            AiMessageBlockKind.draw => AiDrawCard(
+                prompt: blocks[i].content,
+                isIncomplete: blocks[i].isIncomplete,
+                autoGenerateOnMount: isStreaming,
               ),
           },
         ],

@@ -1,8 +1,10 @@
 package mediabiz
 
 import (
+	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewBlobStoreQiniuIncomplete(t *testing.T) {
@@ -77,3 +79,30 @@ func TestQiniuZoneRejectsUnknown(t *testing.T) {
 		t.Fatal("unknown region should fail")
 	}
 }
+
+func TestQiniuS3SignatureWhenTestDomainReclaimed(t *testing.T) {
+	s3Region, s3Host := qiniuS3RegionAndHost("z2")
+	if s3Region != "cn-south-1" || s3Host != "s3.cn-south-1.qiniucs.com" {
+		t.Fatalf("unexpected z2 s3 endpoint: %s %s", s3Region, s3Host)
+	}
+	req, err := http.NewRequest(
+		http.MethodGet,
+		"https://"+s3Host+"/moe-image/media/1_xxz/gen/1_gen.png",
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signQiniuS3GetRequest(
+		req,
+		"test-ak",
+		"test-sk",
+		"z2",
+		time.Date(2026, 10, 31, 0, 0, 0, 0, time.UTC),
+	)
+	auth := req.Header.Get("Authorization")
+	if !strings.HasPrefix(auth, "AWS4-HMAC-SHA256 Credential=test-ak/20261031/cn-south-1/s3/aws4_request") {
+		t.Fatalf("unexpected Authorization header: %q", auth)
+	}
+}
+

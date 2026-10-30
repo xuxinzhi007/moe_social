@@ -4,6 +4,7 @@ import (
 	"context"
 
 	userv1 "backend/api/user/v1"
+	apicomm "backend/internal/platform/apicomm"
 )
 
 func (s *Server) GetTransaction(ctx context.Context, in *userv1.GetTransactionReq) (*userv1.GetTransactionResp, error) {
@@ -19,6 +20,11 @@ func (s *Server) GetTransactions(ctx context.Context, in *userv1.GetTransactions
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.GetTransactions(ctx, in)
 }
 
@@ -27,5 +33,10 @@ func (s *Server) Recharge(ctx context.Context, in *userv1.RechargeReq) (*userv1.
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.Recharge(ctx, in)
 }

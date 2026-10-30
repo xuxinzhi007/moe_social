@@ -17,6 +17,7 @@ import '../../services/ai_provider_usage_service.dart';
 import '../../services/ai_tts_helper.dart';
 import '../../services/companion_model_presence.dart';
 import '../../services/companion_service.dart';
+import '../../services/comfy_draw_preferences.dart';
 import '../../services/llm_api_service.dart';
 import '../../services/companion_interaction_coordinator.dart';
 import '../../theme/moe_tokens.dart';
@@ -103,6 +104,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       }());
     }
     unawaited(_loadThinkPref());
+    unawaited(ComfyDrawPreferences.load());
     unawaited(_loadProviderStatus());
     unawaited(CompanionModelPresence.instance.refresh());
   }
@@ -776,25 +778,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             ),
           ),
         ),
-        actions: [
-          _ComposerCircleButton(
-            size: 36,
-            tooltip: '聊天工具',
-            onTap: _openChatTools,
-            background: MoeTokens.cardBackground,
-            borderColor: AiBrandTokens.companionBorder,
-            child: Badge(
-              isLabelVisible: _voiceEnabled && _autoSpeak,
-              smallSize: 7,
-              backgroundColor: AiBrandTokens.primary,
-              child: const Icon(
-                Icons.more_horiz_rounded,
-                size: 18,
-                color: MoeTokens.titleText,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
+        actions: const [
+          SizedBox(width: 8),
         ],
       ),
       body: AiChatBackground(
@@ -960,6 +945,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                   isUser: item.role == 'user',
                   isLoading:
                       item.isStreaming && visibleAnswer.isEmpty && !showChain,
+                  isStreamingContent: isAssistant && item.isStreaming,
                   isError: item.isError,
                   richFormat: isAssistant && !item.isError,
                   onErrorAction: item.isError && !_isSending
@@ -1382,6 +1368,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             children: [
               _buildContextMeter(),
               const SizedBox(height: 8),
+              _buildComposerQuickTray(hasError: hasError),
+              const SizedBox(height: 8),
               if (_listening || _isSending) ...[
                 _ComposerStatus(
                   label: _listening ? '正在听你说…' : 'TA 正在组织回应…',
@@ -1497,77 +1485,96 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     if (mounted) unawaited(_loadProviderStatus());
   }
 
-  Future<void> _openChatTools() async {
-    final action = await MoeSheet.show<String>(
-      context,
-      backgroundColor: MoeTokens.surface1,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '聊天工具',
-                  style: TextStyle(
-                    fontSize: MoeTokens.textLg,
-                    fontWeight: FontWeight.w800,
-                    color: MoeTokens.titleText,
-                  ),
+  /// 底部内联快捷胶囊托盘（替代原右上角 `...` 菜单式弹窗）。
+  Widget _buildComposerQuickTray({required bool hasError}) {
+    final currentVoiceLabel = AiTtsHelper.chineseVoices
+        .firstWhere(
+          (v) => v.id == _ttsHelper.voice,
+          orElse: () => AiTtsHelper.chineseVoices.first,
+        )
+        .label
+        .split('·')
+        .first
+        .trim();
+
+    return ValueListenableBuilder<String>(
+      valueListenable: ComfyDrawPreferences.styleNotifier,
+      builder: (context, drawStyle, _) {
+        final isAnime = drawStyle == ComfyDrawPreferences.styleAnime;
+        return SizedBox(
+          height: 30,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _ComposerTrayPill(
+                icon: Icons.palette_outlined,
+                label: '让 TA 画图',
+                active: false,
+                onTap: hasError
+                    ? null
+                    : () {
+                        final current = _controller.text.trim();
+                        if (current.isEmpty) {
+                          _controller.text = '给我画一张图：';
+                          _controller.selection = TextSelection.fromPosition(
+                            TextPosition(offset: _controller.text.length),
+                          );
+                        }
+                        _focusNode.requestFocus();
+                      },
+              ),
+              const SizedBox(width: 6),
+              _ComposerTrayPill(
+                icon: Icons.auto_fix_high_rounded,
+                label: isAnime ? '画风 · 动漫' : '画风 · 写实',
+                active: true,
+                onTap: () async {
+                  final next = await ComfyDrawPreferences.toggleStyle();
+                  if (!mounted) return;
+                  MoeToast.info(
+                    this.context,
+                    next == ComfyDrawPreferences.styleAnime
+                        ? '已切换为「动漫」画风（默认）'
+                        : '已切换为「写实」画风',
+                  );
+                },
+              ),
+              if (_voiceEnabled) ...[
+                const SizedBox(width: 6),
+                _ComposerTrayPill(
+                  icon: _autoSpeak
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_outlined,
+                  label: _autoSpeak ? '朗读 · 开' : '朗读 · 关',
+                  active: _autoSpeak,
+                  onTap: () {
+                    setState(() => _autoSpeak = !_autoSpeak);
+                    MoeToast.info(
+                      context,
+                      _autoSpeak ? '已开启自动朗读' : '已关闭自动朗读',
+                    );
+                  },
                 ),
-                const SizedBox(height: 8),
-                _ChatToolTile(
-                    icon: Icons.tune_rounded,
-                    title: '模型设置',
-                    subtitle: _providerLabel,
-                    onTap: () => Navigator.pop(sheetContext, 'provider')),
-                if (_voiceEnabled)
-                  _ChatToolTile(
-                    icon: _autoSpeak
-                        ? Icons.record_voice_over_rounded
-                        : Icons.volume_up_outlined,
-                    title: _autoSpeak ? '自动朗读 · 开' : '自动朗读 · 关',
-                    subtitle:
-                        _autoSpeak ? 'TA 说完会自动朗读，点此关闭' : '开启后，TA 说完会朗读给你听',
-                    onTap: () => Navigator.pop(sheetContext, 'auto_speak'),
-                  ),
-                if (_voiceEnabled)
-                  _ChatToolTile(
-                    icon: Icons.record_voice_over_outlined,
-                    title: '朗读音色',
-                    subtitle: AiTtsHelper.chineseVoices
-                        .firstWhere(
-                          (v) => v.id == _ttsHelper.voice,
-                          orElse: () => AiTtsHelper.chineseVoices.first,
-                        )
-                        .label,
-                    onTap: () => Navigator.pop(sheetContext, 'tts_voice'),
-                  ),
+                const SizedBox(width: 6),
+                _ComposerTrayPill(
+                  icon: Icons.record_voice_over_outlined,
+                  label: '声线 · $currentVoiceLabel',
+                  active: false,
+                  onTap: _pickTtsVoice,
+                ),
               ],
-            ),
+              const SizedBox(width: 6),
+              _ComposerTrayPill(
+                icon: Icons.tune_rounded,
+                label: _providerLabel,
+                active: _activeProvider != null,
+                onTap: _openProviderSettings,
+              ),
+            ],
           ),
-        ),
-      ),
-    );
-    if (!mounted || action == null) return;
-    switch (action) {
-      case 'provider':
-        await _openProviderSettings();
-      case 'auto_speak':
-        setState(() => _autoSpeak = !_autoSpeak);
-        if (!mounted) return;
-        MoeToast.success(
-          context,
-          _autoSpeak ? '已开启：TA 说完会朗读' : '已关闭自动朗读',
         );
-      case 'tts_voice':
-        await _pickTtsVoice();
-    }
+      },
+    );
   }
 
   Future<void> _pickTtsVoice() async {

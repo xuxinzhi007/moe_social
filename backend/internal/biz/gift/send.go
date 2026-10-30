@@ -23,15 +23,15 @@ func Send(ctx context.Context, store GiftStore, notifyStore notifybiz.NotifyStor
 	}
 	fromUserID, err := strconv.ParseUint(strings.TrimSpace(fromRaw), 10, 64)
 	if err != nil || fromUserID == 0 {
-		return &giftv1.SendGiftReply{Success: false, Message: "invalid sender id"}, nil
+		return nil, ErrInvalidSenderID
 	}
 	toUserID, err := strconv.ParseUint(strings.TrimSpace(toRaw), 10, 64)
 	if err != nil || toUserID == 0 {
-		return &giftv1.SendGiftReply{Success: false, Message: "invalid receiver id"}, nil
+		return nil, ErrInvalidReceiverID
 	}
 	giftID, err := strconv.ParseUint(strings.TrimSpace(giftRaw), 10, 64)
 	if err != nil || giftID == 0 {
-		return &giftv1.SendGiftReply{Success: false, Message: "invalid gift id"}, nil
+		return nil, ErrInvalidGiftID
 	}
 	if quantity <= 0 {
 		quantity = 1
@@ -39,15 +39,24 @@ func Send(ctx context.Context, store GiftStore, notifyStore notifybiz.NotifyStor
 
 	sender, err := store.GetUserByID(ctx, uint(fromUserID))
 	if err != nil {
-		return &giftv1.SendGiftReply{Success: false, Message: "sender not found"}, nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
 	}
 	receiver, err := store.GetUserByID(ctx, uint(toUserID))
 	if err != nil {
-		return &giftv1.SendGiftReply{Success: false, Message: "receiver not found"}, nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
 	}
 	gift, err := store.GetGiftByID(ctx, uint(giftID))
 	if err != nil {
-		return &giftv1.SendGiftReply{Success: false, Message: "gift not found"}, nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrGiftNotFound
+		}
+		return nil, err
 	}
 
 	var record model.GiftRecord
@@ -99,10 +108,7 @@ func Send(ctx context.Context, store GiftStore, notifyStore notifybiz.NotifyStor
 	})
 
 	if err != nil {
-		if errors.Is(err, ErrInsufficientBal) {
-			return &giftv1.SendGiftReply{Success: false, Message: "insufficient balance"}, nil
-		}
-		return &giftv1.SendGiftReply{Success: false, Message: "failed to send gift: " + err.Error()}, nil
+		return nil, err
 	}
 
 	addValue := float64(gift.Price) * float64(quantity)

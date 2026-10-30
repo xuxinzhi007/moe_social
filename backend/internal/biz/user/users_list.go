@@ -21,6 +21,9 @@ func GetUsers(ctx context.Context, store UserStore, in *userv1.GetUsersReq) (*us
 	if pageSize <= 0 {
 		pageSize = 10
 	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 	offset := int((page - 1) * pageSize)
 
 	total, err := store.CountUsers(ctx)

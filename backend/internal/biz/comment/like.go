@@ -55,18 +55,20 @@ func Like(ctx context.Context, st CommentStore, commentIDStr, userIDStr string) 
 			tx.Rollback()
 			return LikeResult{}, err
 		}
-		if err := tx.UpdateCommentLikes(comment.ID, comment.Likes-1); err != nil {
+		if err := tx.UpdateCommentLikes(comment.ID, -1); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
-		comment.Likes--
+		if comment.Likes > 0 {
+			comment.Likes--
+		}
 	} else {
 		newLike := model.Like{TargetID: uint(commentID), UserID: uint(userID), TargetType: "comment"}
 		if err := tx.CreateLike(&newLike); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}
-		if err := tx.UpdateCommentLikes(comment.ID, comment.Likes+1); err != nil {
+		if err := tx.UpdateCommentLikes(comment.ID, 1); err != nil {
 			tx.Rollback()
 			return LikeResult{}, err
 		}

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultUnifiedConfig = "config/config.yaml"
+	defaultUnifiedConfig = "config/moe-service-app.yaml"
 	defaultAPIFragment   = "api/etc/moe.yaml"
 )
 

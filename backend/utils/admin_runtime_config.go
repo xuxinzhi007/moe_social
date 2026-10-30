@@ -46,6 +46,9 @@ func resolveUnifiedConfigPath() (string, error) {
 		}
 	}
 	candidates := []string{
+		"./config/" + conf.AppConfigFileName,
+		"../config/" + conf.AppConfigFileName,
+		"../../config/" + conf.AppConfigFileName,
 		"./config/config.yaml",
 		"../config/config.yaml",
 		"../../config/config.yaml",
@@ -59,7 +62,7 @@ func resolveUnifiedConfigPath() (string, error) {
 			return abs, nil
 		}
 	}
-	return "", fmt.Errorf("未找到 backend/config/config.yaml")
+	return "", fmt.Errorf("未找到 backend/config/%s", conf.AppConfigFileName)
 }
 
 // yamlEdit 是一处定点改值：key 是 config.yaml 里的蛇形点路径，value 是 string 或 int64。
@@ -311,34 +314,66 @@ func ReadRuntimeConfig() (RuntimeConfigView, error) {
 	}, nil
 }
 
-// ApplyRuntimeConfigPatch 写入 config.yaml 并返回最新视图。
+// ApplyRuntimeConfigPatch 写入配置文件并返回最新视图。
+// 当同目录存在 app.yaml + data.yaml 拆分对时，按域写回对应文件（api/app_client → app.yaml，image → data.yaml），
+// 若 path 本身是 config.yaml 且存在，也同步更新 config.yaml 保持镜像一致。
 func ApplyRuntimeConfigPatch(patch RuntimeConfigPatch) (RuntimeConfigView, error) {
 	path, err := resolveUnifiedConfigPath()
 	if err != nil {
 		return RuntimeConfigView{}, err
 	}
-	// 键名必须是 config.yaml 实际使用的蛇形键；写成 Image.PublicBaseUrl 会被小写化为
+	// 键名必须是配置文件实际使用的蛇形键；写成 Image.PublicBaseUrl 会被小写化为
 	// 无下划线的 publicbaseurl 死键，运行时优先读 public_base_url，改动静默丢失。
-	var edits []yamlEdit
+	var appEdits, dataEdits, allEdits []yamlEdit
 	if patch.PublicApiBaseUrl != nil {
-		edits = append(edits, yamlEdit{"app_client.public_api_base_url", conf.TrimURL(*patch.PublicApiBaseUrl)})
+		e := yamlEdit{"app_client.public_api_base_url", conf.TrimURL(*patch.PublicApiBaseUrl)}
+		appEdits = append(appEdits, e)
+		allEdits = append(allEdits, e)
 	}
 	if patch.ApiPublicBaseUrl != nil {
-		edits = append(edits, yamlEdit{"api.public_base_url", conf.TrimURL(*patch.ApiPublicBaseUrl)})
+		e := yamlEdit{"api.public_base_url", conf.TrimURL(*patch.ApiPublicBaseUrl)}
+		appEdits = append(appEdits, e)
+		allEdits = append(allEdits, e)
 	}
 	if patch.ImagePublicBaseUrl != nil {
-		edits = append(edits, yamlEdit{"image.public_base_url", conf.TrimURL(*patch.ImagePublicBaseUrl)})
+		e := yamlEdit{"image.public_base_url", conf.TrimURL(*patch.ImagePublicBaseUrl)}
+		dataEdits = append(dataEdits, e)
+		allEdits = append(allEdits, e)
 	}
 	if patch.ImageLocalDir != nil {
-		edits = append(edits, yamlEdit{"image.local_dir", strings.TrimSpace(*patch.ImageLocalDir)})
+		e := yamlEdit{"image.local_dir", strings.TrimSpace(*patch.ImageLocalDir)}
+		dataEdits = append(dataEdits, e)
+		allEdits = append(allEdits, e)
 	}
 	if patch.ImageMaxBytes != nil {
-		edits = append(edits, yamlEdit{"image.max_bytes", *patch.ImageMaxBytes})
+		e := yamlEdit{"image.max_bytes", *patch.ImageMaxBytes}
+		dataEdits = append(dataEdits, e)
+		allEdits = append(allEdits, e)
 	}
 	// 一处没改就不落盘：旧实现即便空 patch 也会 WriteConfig，白抹一遍全文注释。
-	if len(edits) > 0 {
-		if err := patchYAMLFile(path, edits); err != nil {
-			return RuntimeConfigView{}, err
+	if len(allEdits) > 0 {
+		dir := filepath.Dir(path)
+		base := filepath.Base(path)
+		appFile := filepath.Join(dir, conf.AppConfigFileName)
+		dataFile := filepath.Join(dir, conf.DataConfigFileName)
+		hasSplit := (base == conf.AppConfigFileName || base == conf.DataConfigFileName) &&
+			fileExists(appFile) && fileExists(dataFile)
+
+		if hasSplit {
+			if len(appEdits) > 0 {
+				if err := patchYAMLFile(appFile, appEdits); err != nil {
+					return RuntimeConfigView{}, err
+				}
+			}
+			if len(dataEdits) > 0 {
+				if err := patchYAMLFile(dataFile, dataEdits); err != nil {
+					return RuntimeConfigView{}, err
+				}
+			}
+		} else {
+			if err := patchYAMLFile(path, allEdits); err != nil {
+				return RuntimeConfigView{}, err
+			}
 		}
 		// pkg/conf 没有 setter，写完必须让进程内的缓存指向刚写的文件，
 		// 否则其余读者到重启前都看不到本次改动 —— load.go 的 Reload 注释就是这条要求。
@@ -352,4 +387,9 @@ func ApplyRuntimeConfigPatch(patch RuntimeConfigPatch) (RuntimeConfigView, error
 	}
 	view.ConfigFile = path
 	return view, nil
+}
+
+func fileExists(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && !st.IsDir()
 }

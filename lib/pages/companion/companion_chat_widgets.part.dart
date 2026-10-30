@@ -61,35 +61,56 @@ int _partialTagSuffix(String text, String tag) {
   return 0;
 }
 
-class _ChatToolTile extends StatelessWidget {
-  const _ChatToolTile({
+class _ComposerTrayPill extends StatelessWidget {
+  const _ComposerTrayPill({
     required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
+    required this.label,
+    required this.active,
+    this.onTap,
   });
 
   final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return MoeActionRow(
-      icon: icon,
-      iconColor: MoeTokens.primary,
-      title: title,
-      subtitle: Text(
-        subtitle,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontSize: MoeTokens.textSm,
-          color: MoeTokens.inkMuted,
+    final bg = active
+        ? MoeTokens.primary.withValues(alpha: 0.12)
+        : MoeTokens.softChipBg;
+    final border = active
+        ? MoeTokens.primary.withValues(alpha: 0.32)
+        : MoeTokens.surfaceBorder;
+    final fg = active ? MoeTokens.primary : MoeTokens.inkMuted;
+
+    return Material(
+      color: bg,
+      shape: StadiumBorder(side: BorderSide(color: border)),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: fg),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: MoeTokens.textXs,
+                  fontWeight: FontWeight.w700,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      onTap: onTap,
     );
   }
 }

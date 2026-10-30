@@ -50,8 +50,8 @@ func ListByPost(ctx context.Context, st CommentStore, f ListFilter) ([]*commentv
 	if pageSize <= 0 {
 		pageSize = 50
 	}
-	if pageSize > 500 {
-		pageSize = 500
+	if pageSize > 100 {
+		pageSize = 100
 	}
 	offset := int((page - 1) * pageSize)
 

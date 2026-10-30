@@ -4,16 +4,21 @@ import (
 	"context"
 
 	vipv1 "backend/api/vip/v1"
+	apicomm "backend/internal/platform/apicomm"
 	userapp "backend/internal/service/user"
+
+	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// Server 实现 vip.v1.VipService gRPC（P4-C；UserApp 委托；与 Super 并存）。
+// Server 实现 vip.v1.VipService HTTP/gRPC 适配。
 type Server struct {
 	vipv1.UnimplementedVipServiceServer
 	app *userapp.AppService
 }
 
-// New 构造 Vip gRPC 服务。
+// New 构造 Vip 服务。
 func New(app *userapp.AppService) *Server {
 	return &Server{app: app}
 }
@@ -30,6 +35,11 @@ func (s *Server) GetVipRecords(ctx context.Context, in *vipv1.GetVipRecordsReq) 
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.GetVipRecords(ctx, in)
 }
 
@@ -46,6 +56,11 @@ func (s *Server) CreateVipOrder(ctx context.Context, in *vipv1.CreateVipOrderReq
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.CreateVipOrder(ctx, in)
 }
 
@@ -57,10 +72,21 @@ func (s *Server) GetUserVipStatus(ctx context.Context, in *vipv1.GetUserVipStatu
 	return app.GetUserVipStatus(ctx, in)
 }
 
+// UpdateUserVip 仅允许携带有效管理员 token（X-Admin-Token / admin_id context）的调用方执行，
+// 防止普通用户调用 PUT /api/user/{user_id}/vip 免费给自己或他人开通 VIP。
 func (s *Server) UpdateUserVip(ctx context.Context, in *vipv1.UpdateUserVipReq) (*vipv1.UpdateUserVipResp, error) {
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
+	}
+	if ctx.Value("admin_id") == nil {
+		if req, ok := khttp.RequestFromServerContext(ctx); ok && req != nil {
+			if _, br := apicomm.RequireAdminToken(req); br != nil {
+				return nil, status.Error(codes.PermissionDenied, "仅管理员可修改用户 VIP 状态")
+			}
+		} else if _, uerr := apicomm.UserIDString(ctx); uerr == nil {
+			return nil, status.Error(codes.PermissionDenied, "仅管理员可修改用户 VIP 状态")
+		}
 	}
 	return app.UpdateUserVip(ctx, in)
 }
@@ -70,6 +96,11 @@ func (s *Server) UpdateAutoRenew(ctx context.Context, in *vipv1.UpdateAutoRenewR
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.UpdateAutoRenew(ctx, in)
 }
 
@@ -86,6 +117,11 @@ func (s *Server) GetVipOrders(ctx context.Context, in *vipv1.GetVipOrdersReq) (*
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.GetVipOrders(ctx, in)
 }
 
@@ -94,5 +130,10 @@ func (s *Server) SyncUserVipStatus(ctx context.Context, in *vipv1.SyncUserVipSta
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.SyncUserVipStatus(ctx, in)
 }

@@ -97,14 +97,14 @@ func Create(ctx context.Context, st CommentStore, in CreateInput) (CreateResult,
 		tx.Rollback()
 		return CreateResult{}, err
 	}
-	if err := tx.UpdatePostComments(post.ID, post.Comments+1); err != nil {
+	if err := tx.UpdatePostComments(post.ID, 1); err != nil {
 		tx.Rollback()
 		return CreateResult{}, err
 	}
 
 	notifyContent := content
-	if len(notifyContent) > 200 {
-		notifyContent = notifyContent[:200]
+	if runes := []rune(notifyContent); len(runes) > 200 {
+		notifyContent = string(runes[:200])
 	}
 	alreadyNotified := map[uint]struct{}{uint(userID): {}}
 	if parentID > 0 {

@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	configFile = flag.String("f", "config/config.yaml", "Unified config (SSOT)")
+	configFile = flag.String("f", "config/moe-service-app.yaml", "Unified config (moe-service-app.yaml + moe-service-data.yaml)")
 	apiConfig  = flag.String("f-api", "", "Optional override: API struct fragment YAML")
 	migrate    = flag.Bool("migrate", false, "run schema migrate before starting")
 	withAgent  = flag.Bool("agent", false, "start deploy-agent on :19010 (optional devtools / deploy proxy)")

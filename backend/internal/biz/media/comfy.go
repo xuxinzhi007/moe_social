@@ -19,9 +19,10 @@ import (
 
 const (
 	defaultComfyURL        = "http://127.0.0.1:8188"
-	defaultComfyCheckpoint = "Realistic_Vision_V5.1_fp16-no-ema.safetensors"
+	defaultComfyCheckpoint = "meinamix_v12Final.safetensors"
 	defaultComfyTimeout    = 180 * time.Second
 	defaultDrawNegative    = "cartoon, anime, illustration, painting, drawing, lowres, bad anatomy, bad hands, extra fingers, missing fingers, blurry, watermark, text, deformed, oversaturated"
+	defaultAnimeNegative   = "realistic, photorealistic, 3d, bad anatomy, bad hands, extra fingers, missing fingers, worst quality, low quality, blurry, watermark, text, deformed, ugly"
 	maxPromptRunes         = 2000
 	minDrawEdge            = 512
 	maxDrawEdge            = 768
@@ -46,10 +47,11 @@ var (
 	ErrUnknownCheckpoint = errors.New("unknown checkpoint")
 )
 
-// DrawRequest 是一次写实文生图。零值字段用 ComfyConfig 和写实模型默认值补齐。
+// DrawRequest 是一次文生图请求。Style 支持 "anime"（动漫，默认）或 "realistic"（写实）。
 type DrawRequest struct {
 	Prompt     string  `json:"prompt"`
 	Negative   string  `json:"negative"`
+	Style      string  `json:"style"`
 	Width      int     `json:"width"`
 	Height     int     `json:"height"`
 	Steps      int     `json:"steps"`
@@ -98,8 +100,38 @@ func storageURL(cfg ImageConfig, key string) string {
 func (in DrawRequest) normalized(cfg ComfyConfig) DrawRequest {
 	in.Prompt = strings.TrimSpace(in.Prompt)
 	in.Negative = strings.TrimSpace(in.Negative)
+	in.Style = strings.ToLower(strings.TrimSpace(in.Style))
+	chosen := strings.TrimSpace(in.Checkpoint)
+	if chosen == "" {
+		if in.Style == "anime" {
+			chosen = defaultComfyCheckpoint
+		} else if in.Style == "realistic" {
+			chosen = "Realistic_Vision_V5.1_fp16-no-ema.safetensors"
+		} else {
+			chosen = strings.TrimSpace(cfg.Checkpoint)
+		}
+	}
+	if chosen == "" {
+		chosen = defaultComfyCheckpoint
+	}
+	in.Checkpoint = filepath.Base(chosen)
+
+	isAnime := in.Style == "anime" ||
+		strings.Contains(strings.ToLower(in.Checkpoint), "meina") ||
+		strings.Contains(strings.ToLower(in.Checkpoint), "anime") ||
+		strings.Contains(strings.ToLower(in.Checkpoint), "anything") ||
+		strings.Contains(strings.ToLower(in.Checkpoint), "counterfeit")
+
+	if isAnime && !strings.Contains(strings.ToLower(in.Prompt), "anime") {
+		in.Prompt = "masterpiece, best quality, anime style, 2d illustration, " + in.Prompt
+	}
+
 	if in.Negative == "" {
-		in.Negative = defaultDrawNegative
+		if isAnime {
+			in.Negative = defaultAnimeNegative
+		} else {
+			in.Negative = defaultDrawNegative
+		}
 	}
 	if in.Width == 0 {
 		in.Width = minDrawEdge
@@ -111,16 +143,12 @@ func (in DrawRequest) normalized(cfg ComfyConfig) DrawRequest {
 		in.Steps = 25
 	}
 	if in.CFG == 0 {
-		in.CFG = 5
+		if isAnime {
+			in.CFG = 6.5
+		} else {
+			in.CFG = 5
+		}
 	}
-	chosen := strings.TrimSpace(in.Checkpoint)
-	if chosen == "" {
-		chosen = strings.TrimSpace(cfg.Checkpoint)
-	}
-	if chosen == "" {
-		chosen = defaultComfyCheckpoint
-	}
-	in.Checkpoint = filepath.Base(chosen)
 	if strings.TrimSpace(in.Prefix) == "" {
 		in.Prefix = fmt.Sprintf("moe_%d", time.Now().UnixNano())
 	}
@@ -201,6 +229,7 @@ func (c *comfyClient) Draw(ctx context.Context, in DrawRequest) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
+	in.Checkpoint = pickCheckpointForRequest(names, in)
 	if !containsString(names, in.Checkpoint) {
 		return nil, fmt.Errorf("%w: %s", ErrUnknownCheckpoint, in.Checkpoint)
 	}
@@ -273,6 +302,58 @@ func containsString(list []string, want string) bool {
 	return false
 }
 
+// pickCheckpointForRequest 当请求指定了 style（anime / realistic）且未显式指定具体底模，
+// 或指定的底模不在已安装列表中时，自动从本机 ComfyUI 已安装的底模里挑选最匹配的模型（如 MeinaMix vs Realistic_Vision）。
+func pickCheckpointForRequest(installed []string, in DrawRequest) string {
+	style := strings.ToLower(strings.TrimSpace(in.Style))
+	if style == "anime" {
+		if isAnimeCheckpointName(in.Checkpoint) && containsString(installed, in.Checkpoint) {
+			return in.Checkpoint
+		}
+		for _, name := range installed {
+			if isAnimeCheckpointName(name) {
+				return name
+			}
+		}
+	} else if style == "realistic" {
+		if isRealisticCheckpointName(in.Checkpoint) && containsString(installed, in.Checkpoint) {
+			return in.Checkpoint
+		}
+		for _, name := range installed {
+			if isRealisticCheckpointName(name) {
+				return name
+			}
+		}
+	}
+	if containsString(installed, in.Checkpoint) {
+		return in.Checkpoint
+	}
+	if len(installed) > 0 && in.Style != "" {
+		return installed[0]
+	}
+	return in.Checkpoint
+}
+
+func isAnimeCheckpointName(name string) bool {
+	lower := strings.ToLower(name)
+	for _, kw := range []string{"meina", "anime", "anything", "counterfeit", "pastel", "abyss", "toon", "2d"} {
+		if strings.Contains(lower, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func isRealisticCheckpointName(name string) bool {
+	lower := strings.ToLower(name)
+	for _, kw := range []string{"realistic", "chillout", "majicmix", "photoreal", "real"} {
+		if strings.Contains(lower, kw) {
+			return true
+		}
+	}
+	return false
+}
+
 // ListCheckpoints 列出本机 ComfyUI 底模。
 func ListCheckpoints(ctx context.Context, cfg ComfyConfig) ([]string, error) {
 	return newComfyClient(cfg).Checkpoints(ctx)
@@ -315,6 +396,10 @@ func (c *comfyClient) submit(ctx context.Context, in DrawRequest) (string, error
 }
 
 func realisticGraph(in DrawRequest, seed int64) map[string]any {
+	clipStop := -1
+	if in.Style == "anime" || isAnimeCheckpointName(in.Checkpoint) {
+		clipStop = -2
+	}
 	return map[string]any{
 		"4": map[string]any{
 			"class_type": "CheckpointLoaderSimple",
@@ -324,7 +409,7 @@ func realisticGraph(in DrawRequest, seed int64) map[string]any {
 			"class_type": "CLIPSetLastLayer",
 			"inputs": map[string]any{
 				"clip":               []any{"4", 1},
-				"stop_at_clip_layer": -1,
+				"stop_at_clip_layer": clipStop,
 			},
 		},
 		"6": map[string]any{

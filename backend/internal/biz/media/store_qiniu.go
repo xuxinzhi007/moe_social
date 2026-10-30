@@ -34,9 +34,12 @@ const (
 	qiniuPutTryTimes    = 3
 )
 
-// qiniuBlobStore 把用户媒体写到七牛 Kodo，下载走 CDN 域名。
+// qiniuBlobStore 把用户媒体写到七牛 Kodo，下载优先走 CDN 域名，测试域名失效时自动回退七牛官方 S3 源站（AWS SigV4）。
 type qiniuBlobStore struct {
 	mac         *qbox.Mac
+	accessKey   string
+	secretKey   string
+	region      string
 	bucket      string
 	prefix      string
 	cdnDomain   string
@@ -60,8 +63,8 @@ func newQiniuBlobStore(cfg ImageConfig) (*qiniuBlobStore, error) {
 	}
 	bucket := strings.TrimSpace(qn.Bucket)
 	domain := normalizeQiniuDomain(qn.CDNDomain)
-	if accessKey == "" || secretKey == "" || bucket == "" || domain == "" {
-		return nil, fmt.Errorf("qiniu config incomplete: need access_key, secret_key, bucket, cdn_domain (or %s / %s)", envQiniuAccessKey, envQiniuSecretKey)
+	if accessKey == "" || secretKey == "" || bucket == "" {
+		return nil, fmt.Errorf("qiniu config incomplete: need access_key, secret_key, bucket (or %s / %s)", envQiniuAccessKey, envQiniuSecretKey)
 	}
 	zone, err := qiniuZone(qn.Region)
 	if err != nil {
@@ -69,10 +72,13 @@ func newQiniuBlobStore(cfg ImageConfig) (*qiniuBlobStore, error) {
 	}
 	mac := qbox.NewMac(accessKey, secretKey)
 	st := &storage.Config{Zone: zone, UseHTTPS: true}
-	// 私有空间的签名地址会过期，不能 302 给带一年缓存的取图接口。
-	proxy := qn.ProxyViaAPI || qn.Private
+	// 私有空间的签名地址或未配置 CDN 域名时，强制由 API 反代下载。
+	proxy := qn.ProxyViaAPI || qn.Private || domain == ""
 	return &qiniuBlobStore{
 		mac:         mac,
+		accessKey:   accessKey,
+		secretKey:   secretKey,
+		region:      qn.Region,
 		bucket:      bucket,
 		prefix:      strings.Trim(strings.TrimSpace(qn.Prefix), "/"),
 		cdnDomain:   domain,
@@ -180,32 +186,57 @@ func (s *qiniuBlobStore) Open(ctx context.Context, folder, filename string) (Blo
 	if obj.ContentType == "" {
 		obj.ContentType = contentTypeForName(filename)
 	}
-	download := s.downloadURL(key)
-	if !s.proxyViaAPI {
-		obj.PublicURL = download
+	if !s.proxyViaAPI && s.cdnDomain != "" && !strings.Contains(s.cdnDomain, ".clouddn.com") {
+		obj.PublicURL = s.downloadURL(key)
 		return obj, nil
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, download, nil)
+	resp, err := s.fetchObjectStream(ctx, key)
 	if err != nil {
-		return BlobObject{}, fmt.Errorf("qiniu download request: %w", err)
-	}
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return BlobObject{}, fmt.Errorf("qiniu download %s: %w", key, err)
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		_ = resp.Body.Close()
-		return BlobObject{}, os.ErrNotExist
-	}
-	if resp.StatusCode != http.StatusOK {
-		_ = resp.Body.Close()
-		return BlobObject{}, fmt.Errorf("qiniu download %s: status %d", key, resp.StatusCode)
+		return BlobObject{}, err
 	}
 	if obj.Size == 0 && resp.ContentLength > 0 {
 		obj.Size = resp.ContentLength
 	}
 	obj.Body = resp.Body
 	return obj, nil
+}
+
+// fetchObjectStream 优先尝试配置的 CDN 域名（若非已回收的测试域名），失败或测试域名不可用时走七牛官方 S3 源站域名（AWS SigV4）。
+func (s *qiniuBlobStore) fetchObjectStream(ctx context.Context, key string) (*http.Response, error) {
+	if s.cdnDomain != "" && !strings.Contains(s.cdnDomain, ".clouddn.com") {
+		download := s.downloadURL(key)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, download, nil)
+		if err == nil {
+			resp, doErr := s.httpClient.Do(req)
+			if doErr == nil {
+				if resp.StatusCode == http.StatusOK {
+					return resp, nil
+				}
+				_ = resp.Body.Close()
+			}
+		}
+	}
+
+	_, s3Host := qiniuS3RegionAndHost(s.region)
+	s3URL := fmt.Sprintf("https://%s/%s/%s", s3Host, s.bucket, strings.TrimPrefix(key, "/"))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s3URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("qiniu s3 request: %w", err)
+	}
+	signQiniuS3GetRequest(req, s.accessKey, s.secretKey, s.region, time.Now())
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("qiniu s3 download %s: %w", key, err)
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		_ = resp.Body.Close()
+		return nil, os.ErrNotExist
+	}
+	if resp.StatusCode != http.StatusOK {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("qiniu s3 download %s: status %d", key, resp.StatusCode)
+	}
+	return resp, nil
 }
 
 func (s *qiniuBlobStore) ListFolder(ctx context.Context, folder string) ([]BlobMeta, error) {

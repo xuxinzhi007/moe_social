@@ -47,7 +47,11 @@ func CreateVipOrder(ctx context.Context, store UserStore, in *vipv1.CreateVipOrd
 
 	orderNo := "ORD" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	now := time.Now()
-	vipEnd := now.AddDate(0, 0, plan.Duration)
+	baseTime := now
+	if user.IsVip && user.VipEndAt != nil && user.VipEndAt.After(now) {
+		baseTime = *user.VipEndAt
+	}
+	vipEnd := baseTime.AddDate(0, 0, plan.Duration)
 
 	if err := tx.DeactivateVipOrders(user.ID); err != nil {
 		return nil, err
@@ -205,7 +209,7 @@ func SyncUserVipStatus(ctx context.Context, store UserStore, in *vipv1.SyncUserV
 	return &vipv1.SyncUserVipStatusResp{IsVip: isVip, ExpiresAt: vipEndAt}, nil
 }
 
-// UpdateAutoRenew 占位（模型暂无字段）。
+// UpdateAutoRenew 更新用户 VIP 自动续费开关。
 func UpdateAutoRenew(ctx context.Context, store UserStore, in *vipv1.UpdateAutoRenewReq) (*vipv1.UpdateAutoRenewResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
@@ -218,6 +222,9 @@ func UpdateAutoRenew(ctx context.Context, store UserStore, in *vipv1.UpdateAutoR
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
+		return nil, err
+	}
+	if err := store.UpdateUserFields(ctx, userID, map[string]interface{}{"auto_renew": in.GetAutoRenew()}); err != nil {
 		return nil, err
 	}
 	return &vipv1.UpdateAutoRenewResp{}, nil
@@ -235,6 +242,9 @@ func GetVipRecords(ctx context.Context, store UserStore, in *vipv1.GetVipRecords
 	pageSize := in.GetPageSize()
 	if pageSize <= 0 {
 		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
 	}
 	offset := int((page - 1) * pageSize)
 

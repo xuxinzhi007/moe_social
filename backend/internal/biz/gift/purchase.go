@@ -21,11 +21,11 @@ func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userRaw), 10, 64)
 	if err != nil || userID == 0 {
-		return &giftv1.PurchaseGiftReply{Success: false, Message: "invalid user id"}, nil
+		return nil, ErrInvalidUserID
 	}
 	giftID, err := strconv.ParseUint(strings.TrimSpace(giftRaw), 10, 64)
 	if err != nil || giftID == 0 {
-		return &giftv1.PurchaseGiftReply{Success: false, Message: "invalid gift id"}, nil
+		return nil, ErrInvalidGiftID
 	}
 	if qty <= 0 {
 		qty = 1
@@ -33,7 +33,10 @@ func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty
 
 	gift, err := store.GetGiftByID(ctx, uint(giftID))
 	if err != nil {
-		return &giftv1.PurchaseGiftReply{Success: false, Message: "gift not found"}, nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrGiftNotFound
+		}
+		return nil, err
 	}
 
 	cost := float64(gift.Price) * float64(qty)
@@ -84,10 +87,7 @@ func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty
 	})
 
 	if err != nil {
-		if errors.Is(err, ErrInsufficientBal) {
-			return &giftv1.PurchaseGiftReply{Success: false, Message: "insufficient balance"}, nil
-		}
-		return &giftv1.PurchaseGiftReply{Success: false, Message: "purchase failed: " + err.Error()}, nil
+		return nil, err
 	}
 
 	return &giftv1.PurchaseGiftReply{

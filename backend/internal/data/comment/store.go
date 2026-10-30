@@ -165,8 +165,13 @@ func (t *txWrapper) CreateComment(comment *model.Comment) error {
 	return t.tx.Create(comment).Error
 }
 
-func (t *txWrapper) UpdatePostComments(postID uint, comments int) error {
-	return t.tx.Model(&model.Post{}).Where("id = ?", postID).Update("comments", comments).Error
+func (t *txWrapper) UpdatePostComments(postID uint, delta int) error {
+	if delta < 0 {
+		return t.tx.Model(&model.Post{}).Where("id = ?", postID).
+			Update("comments", gorm.Expr("CASE WHEN comments + ? < 0 THEN 0 ELSE comments + ? END", delta, delta)).Error
+	}
+	return t.tx.Model(&model.Post{}).Where("id = ?", postID).
+		Update("comments", gorm.Expr("comments + ?", delta)).Error
 }
 
 func (t *txWrapper) CreateNotification(n *model.Notification) error {
@@ -181,8 +186,13 @@ func (t *txWrapper) CreateLike(like *model.Like) error {
 	return t.tx.Create(like).Error
 }
 
-func (t *txWrapper) UpdateCommentLikes(commentID uint, likes int) error {
-	return t.tx.Model(&model.Comment{}).Where("id = ?", commentID).Update("likes", likes).Error
+func (t *txWrapper) UpdateCommentLikes(commentID uint, delta int) error {
+	if delta < 0 {
+		return t.tx.Model(&model.Comment{}).Where("id = ?", commentID).
+			Update("likes", gorm.Expr("CASE WHEN likes + ? < 0 THEN 0 ELSE likes + ? END", delta, delta)).Error
+	}
+	return t.tx.Model(&model.Comment{}).Where("id = ?", commentID).
+		Update("likes", gorm.Expr("likes + ?", delta)).Error
 }
 
 func (t *txWrapper) Commit() error   { return t.tx.Commit().Error }

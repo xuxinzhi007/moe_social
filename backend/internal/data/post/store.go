@@ -259,8 +259,13 @@ func (t *txWrapper) CreateLike(like *model.Like) error {
 	return t.tx.Create(like).Error
 }
 
-func (t *txWrapper) UpdatePostLikes(postID uint, likes int) error {
-	return t.tx.Model(&model.Post{}).Where("id = ?", postID).Update("likes", likes).Error
+func (t *txWrapper) UpdatePostLikes(postID uint, delta int) error {
+	if delta < 0 {
+		return t.tx.Model(&model.Post{}).Where("id = ?", postID).
+			Update("likes", gorm.Expr("CASE WHEN likes + ? < 0 THEN 0 ELSE likes + ? END", delta, delta)).Error
+	}
+	return t.tx.Model(&model.Post{}).Where("id = ?", postID).
+		Update("likes", gorm.Expr("likes + ?", delta)).Error
 }
 
 func (t *txWrapper) Commit() error   { return t.tx.Commit().Error }

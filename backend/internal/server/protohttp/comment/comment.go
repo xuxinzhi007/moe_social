@@ -4,16 +4,17 @@ import (
 	"context"
 
 	commentv1 "backend/api/comment/v1"
+	apicomm "backend/internal/platform/apicomm"
 	commentapp "backend/internal/service/comment"
 )
 
-// Server 实现 comment.v1.CommentService gRPC（P4-C；与 Super 并存）。
+// Server 实现 comment.v1.CommentService HTTP/gRPC 适配。
 type Server struct {
 	commentv1.UnimplementedCommentServiceServer
 	app *commentapp.AppService
 }
 
-// New 构造 Comment gRPC 服务。
+// New 构造 Comment 服务。
 func New(app *commentapp.AppService) *Server {
 	return &Server{app: app}
 }
@@ -30,6 +31,9 @@ func (s *Server) GetPostComments(ctx context.Context, in *commentv1.GetPostComme
 	if err != nil {
 		return nil, err
 	}
+	if in.GetViewerUserId() == "" {
+		in.ViewerUserId = apicomm.ResolveActorUserID(ctx, "")
+	}
 	out, err := app.GetPostComments(ctx, in)
 	if err != nil {
 		return nil, mapCommentError(err)
@@ -42,6 +46,11 @@ func (s *Server) CreateComment(ctx context.Context, in *commentv1.CreateCommentR
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	out, err := app.CreateComment(ctx, in)
 	if err != nil {
 		return nil, mapCommentError(err)
@@ -54,6 +63,11 @@ func (s *Server) LikeComment(ctx context.Context, in *commentv1.LikeCommentReque
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	out, err := app.LikeComment(ctx, in)
 	if err != nil {
 		return nil, mapCommentError(err)

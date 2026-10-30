@@ -29,11 +29,9 @@ backend/api/super
 backend/rpc/super
 backend/api/api.exe
 backend/rpc/rpc.exe
-backend/cmd/moe-social
-backend/cmd/moe-kratos
-backend/cmd/moe-platform
-backend/cmd/moe-platform/moe-platform
+backend/cmd/moe-social/moe-social
 backend/cmd/moe-kratos/moe-kratos
+backend/cmd/moe-platform/moe-platform
 *.exe
 backend/deploy/config.yaml
 backend/deploy/config.local.yaml

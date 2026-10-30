@@ -13,8 +13,7 @@ FROM alpine:latest
 WORKDIR /app
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /app/moe-social /app/moe-social
-COPY api/etc/moe.yaml /app/api/etc/moe.yaml
-COPY config/config.yaml /app/config/config.yaml
+COPY config/ /app/config/
 RUN mkdir -p /app/data/images
 EXPOSE 8888
-CMD ["/app/moe-social", "-f", "config/config.yaml"]
+CMD ["/app/moe-social", "-f", "config/moe-service-app.yaml"]

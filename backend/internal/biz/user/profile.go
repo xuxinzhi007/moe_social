@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	userv1 "backend/api/user/v1"
 	"backend/utils"
@@ -41,7 +42,7 @@ func UpdateUserInfo(ctx context.Context, store ProfileStore, in *userv1.UpdateUs
 		user.Avatar = utils.NormalizeAvatarForStorage(in.GetAvatar())
 	}
 	if in.GetSignature() != "" {
-		if len(in.GetSignature()) > 100 {
+		if utf8.RuneCountInString(in.GetSignature()) > 100 {
 			return nil, ErrInvalidArgument
 		}
 		user.Signature = in.GetSignature()

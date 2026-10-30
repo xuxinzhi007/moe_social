@@ -1,0 +1,86 @@
+# Moe Social 应用与业务配置（与同目录 moe-service-data.yaml 合并加载）
+
+runtime:
+  http_host: "0.0.0.0"
+  http_port: 8888
+  hand_draw_require_moderation: false
+
+api:
+  public_base_url: "http://47.106.175.49:8888" # 对外公网 API 根地址；留空回调自动按此拼接
+
+app_client:
+  public_api_base_url: "" # 留空则回退至 api.public_base_url
+
+auth:
+  access_secret: "u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4" # 可由 MOE_AUTH_ACCESS_SECRET 覆盖
+  access_expire_seconds: 432000                     # 5 天
+
+admin:
+  jwt_secret: "moe-admin-local-jwt-change-me" # 可由 MOE_ADMIN_JWT_SECRET 覆盖
+  token_expire_hours: 168                     # 7 天
+  bootstrap:
+    username: "admin"
+    password: "admin123"
+
+oauth:
+  allowed_return_urls: # 精确回跳白名单（scheme/host/port/path 全等）
+    - "moesocial://feishu/oauth"
+    - "moesocial://wechat/oauth"
+  auth_ttl_seconds: 600   # 授权 state 有效期（秒）
+  ticket_ttl_seconds: 60  # 一次性交换 ticket 有效期（秒）
+  max_pending_auths: 4096 # 内存并发授权事务上限
+
+feishu:
+  enabled: true
+  app_id: "cli_aa805993a6a3dcc4"
+  app_secret: "YCNyyGx73ZWBa7S3vyjUveJq6ortsaIb"
+  receive_id: "xinzhi.xu@feishu.cn"
+  receive_id_type: "email" # email | chat_id | open_id | user_id | union_id
+  redirect_uri: ""         # 留空则按 api.public_base_url 拼接 /api/auth/feishu/callback
+  oauth_scope: "contact:user.email:readonly"
+  auto_add_to_directory: false
+  default_department_id: ""
+  enterprise_invite_url: "https://xcnwo3uyqh3i.feishu.cn/invite/member/b1FV8k8WIKA"
+  enterprise_notice: "机器人仅可向企业内成员发送通知。如需推送，可申请加入企业；不加入也可正常使用 App。"
+
+wechat:
+  enabled: true
+  redirect_uri: "" # 留空则按 api.public_base_url 拼接 /api/auth/wechat/callback
+  oauth_scope: "snsapi_userinfo"
+  app:
+    app_id: "wx67e8f053879adcc8"
+    app_secret: "54b017a98b99db757be90a19af72163a"
+  website:
+    app_id: ""
+    app_secret: ""
+  mp:
+    app_id: ""
+    app_secret: ""
+
+temp_mail:
+  enabled: true
+  base_url: "https://api.mail.tm"
+  fallback_domain: "web-library.net"
+  timeout_seconds: 30
+
+private_message:
+  retention_days_default: 30
+  retention_days_normal: 7  # 普通用户消息保留天数
+  retention_days_vip: 90    # 有效 VIP 消息保留天数
+  body_max_runes: 8000
+  image_paths_max: 9
+
+moe:
+  single_process: true      # 单进程 Kratos HTTP 总闸（各域 *_api_in_process 默认继承此值）
+  api_in_process: true
+  life_engine_enabled: true
+  bot_post_model: "qwen2"
+  bot_scheduler_enabled: true
+  bot_scheduler_tick_seconds: 60
+  dream_scheduler_enabled: true
+  dream_scheduler_tick_seconds: 300
+  bot_smart_retry_minutes: 30
+  bot_smart_min_interval_hours: 0
+  life_tick_seconds: 300    # 数字生命世界 tick 间隔（秒）
+  life_flush_seconds: 300   # 数字生命状态落盘间隔（秒）
+  world_tick_seconds: 45    # 文字游戏后台世界时钟（秒）

@@ -10,7 +10,7 @@ import (
 
 func TestMain(m *testing.M) {
 	for _, root := range []string{".", "../..", "../../.."} {
-		if _, err := os.Stat(filepath.Join(root, "config", "config.yaml")); err == nil {
+		if _, err := os.Stat(filepath.Join(root, "config", conf.AppConfigFileName)); err == nil {
 			_ = os.Chdir(root)
 			break
 		}
@@ -29,7 +29,7 @@ func TestResolveStartupPathsDefault(t *testing.T) {
 }
 
 func TestNormalizeOptions(t *testing.T) {
-	o := Options{UnifiedConfigFile: "config/config.yaml"}
+	o := Options{UnifiedConfigFile: defaultUnifiedConfig}
 	o.NormalizeOptions()
 	if o.APIConfigFile == "" {
 		t.Fatalf("api=%q", o.APIConfigFile)
@@ -37,8 +37,12 @@ func TestNormalizeOptions(t *testing.T) {
 }
 
 func TestHTTPPortFromUnified(t *testing.T) {
-	if p := httpPortFromUnified("config/config.yaml"); p != 8888 {
+	if p := httpPortFromUnified(defaultUnifiedConfig); p != 8888 {
 		t.Fatalf("http port want 8888, got %d", p)
+	}
+	// 向后兼容旧启动命令传入 -f config/config.yaml
+	if p := httpPortFromUnified("config/config.yaml"); p != 8888 {
+		t.Fatalf("legacy config/config.yaml http port want 8888, got %d", p)
 	}
 }
 

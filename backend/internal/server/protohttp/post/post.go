@@ -4,16 +4,17 @@ import (
 	"context"
 
 	postv1 "backend/api/post/v1"
+	apicomm "backend/internal/platform/apicomm"
 	postapp "backend/internal/service/post"
 )
 
-// Server 实现 post.v1.PostService gRPC（P4-C；与 Super 并存）。
+// Server 实现 post.v1.PostService HTTP/gRPC 适配。
 type Server struct {
 	postv1.UnimplementedPostServiceServer
 	app *postapp.AppService
 }
 
-// New 构造 Post gRPC 服务。
+// New 构造 Post 服务。
 func New(app *postapp.AppService) *Server {
 	return &Server{app: app}
 }
@@ -30,6 +31,9 @@ func (s *Server) GetPost(ctx context.Context, in *postv1.GetPostRequest) (*postv
 	if err != nil {
 		return nil, err
 	}
+	if in.GetViewerUserId() == "" {
+		in.ViewerUserId = apicomm.ResolveActorUserID(ctx, "")
+	}
 	return app.GetPost(ctx, in)
 }
 
@@ -38,6 +42,9 @@ func (s *Server) GetPostHandDraw(ctx context.Context, in *postv1.GetPostHandDraw
 	if err != nil {
 		return nil, err
 	}
+	if in.GetViewerUserId() == "" {
+		in.ViewerUserId = apicomm.ResolveActorUserID(ctx, "")
+	}
 	return app.GetPostHandDraw(ctx, in)
 }
 
@@ -45,6 +52,9 @@ func (s *Server) GetPosts(ctx context.Context, in *postv1.GetPostsRequest) (*pos
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
+	}
+	if in.GetViewerUserId() == "" {
+		in.ViewerUserId = apicomm.ResolveActorUserID(ctx, "")
 	}
 	return app.GetPosts(ctx, in)
 }
@@ -62,6 +72,11 @@ func (s *Server) CreatePost(ctx context.Context, in *postv1.CreatePostRequest) (
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	out, err := app.CreatePost(ctx, in)
 	if err != nil {
 		return nil, mapPostError(err)
@@ -74,6 +89,11 @@ func (s *Server) LikePost(ctx context.Context, in *postv1.LikePostRequest) (*pos
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.LikePost(ctx, in)
 }
 
@@ -82,6 +102,11 @@ func (s *Server) UpdatePost(ctx context.Context, in *postv1.UpdatePostRequest) (
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	out, err := app.UpdatePost(ctx, in)
 	if err != nil {
 		return nil, mapPostError(err)
@@ -94,6 +119,11 @@ func (s *Server) DeletePost(ctx context.Context, in *postv1.DeletePostRequest) (
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	out, err := app.DeletePost(ctx, in)
 	if err != nil {
 		return nil, mapPostError(err)
@@ -106,6 +136,11 @@ func (s *Server) ReportPost(ctx context.Context, in *postv1.ReportPostRequest) (
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetReporterUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.ReporterUserId = uid
 	out, err := app.ReportPost(ctx, in)
 	if err != nil {
 		return nil, mapPostError(err)

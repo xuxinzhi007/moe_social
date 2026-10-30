@@ -4,6 +4,7 @@ import (
 	"context"
 
 	userv1 "backend/api/user/v1"
+	apicomm "backend/internal/platform/apicomm"
 )
 
 func (s *Server) GetUserInfo(ctx context.Context, in *userv1.GetUserInfoReq) (*userv1.GetUserInfoResp, error) {
@@ -19,6 +20,11 @@ func (s *Server) UpdateUserInfo(ctx context.Context, in *userv1.UpdateUserInfoRe
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.UpdateUserInfo(ctx, in)
 }
 
@@ -27,6 +33,11 @@ func (s *Server) UpdateUserPassword(ctx context.Context, in *userv1.UpdateUserPa
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.UpdateUserPassword(ctx, in)
 }
 
@@ -43,6 +54,11 @@ func (s *Server) DeleteUser(ctx context.Context, in *userv1.DeleteUserReq) (*use
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.DeleteUser(ctx, in)
 }
 

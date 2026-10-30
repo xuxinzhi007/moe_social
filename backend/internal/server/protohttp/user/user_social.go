@@ -4,6 +4,7 @@ import (
 	"context"
 
 	userv1 "backend/api/user/v1"
+	apicomm "backend/internal/platform/apicomm"
 )
 
 func (s *Server) FollowUser(ctx context.Context, in *userv1.FollowUserReq) (*userv1.FollowUserResp, error) {
@@ -11,6 +12,11 @@ func (s *Server) FollowUser(ctx context.Context, in *userv1.FollowUserReq) (*use
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.Follow(ctx, in)
 }
 
@@ -19,6 +25,11 @@ func (s *Server) UnfollowUser(ctx context.Context, in *userv1.UnfollowUserReq) (
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.Unfollow(ctx, in)
 }
 
@@ -51,7 +62,12 @@ func (s *Server) ListFriends(ctx context.Context, in *userv1.ListFriendsReq) (*u
 	if err != nil {
 		return nil, err
 	}
-	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	claimed := fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, claimed)
+	if err != nil {
+		return nil, err
+	}
+	in.ActorUserId = uid
 	return app.ListFriends(ctx, in)
 }
 
@@ -60,7 +76,12 @@ func (s *Server) GetFriendRelation(ctx context.Context, in *userv1.GetFriendRela
 	if err != nil {
 		return nil, err
 	}
-	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	claimed := fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, claimed)
+	if err != nil {
+		return nil, err
+	}
+	in.ActorUserId = uid
 	return app.GetFriendRelation(ctx, in)
 }
 
@@ -69,7 +90,12 @@ func (s *Server) SendFriendRequest(ctx context.Context, in *userv1.SendFriendReq
 	if err != nil {
 		return nil, err
 	}
-	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	claimed := fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, claimed)
+	if err != nil {
+		return nil, err
+	}
+	in.ActorUserId = uid
 	return app.SendFriendRequest(ctx, in)
 }
 
@@ -78,7 +104,12 @@ func (s *Server) AcceptFriendRequest(ctx context.Context, in *userv1.AcceptFrien
 	if err != nil {
 		return nil, err
 	}
-	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	claimed := fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, claimed)
+	if err != nil {
+		return nil, err
+	}
+	in.ActorUserId = uid
 	return app.AcceptFriendRequest(ctx, in)
 }
 
@@ -87,7 +118,12 @@ func (s *Server) RejectFriendRequest(ctx context.Context, in *userv1.RejectFrien
 	if err != nil {
 		return nil, err
 	}
-	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	claimed := fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, claimed)
+	if err != nil {
+		return nil, err
+	}
+	in.ActorUserId = uid
 	return app.RejectFriendRequest(ctx, in)
 }
 
@@ -96,6 +132,11 @@ func (s *Server) ListIncomingFriendRequests(ctx context.Context, in *userv1.List
 	if err != nil {
 		return nil, err
 	}
-	in.ActorUserId = fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	claimed := fillActorUserID(in.GetActorUserId(), in.GetUserId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, claimed)
+	if err != nil {
+		return nil, err
+	}
+	in.ActorUserId = uid
 	return app.ListIncomingFriendRequests(ctx, in)
 }

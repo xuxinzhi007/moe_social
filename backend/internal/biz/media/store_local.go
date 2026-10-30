@@ -1,6 +1,7 @@
 package mediabiz
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -187,7 +188,22 @@ func (s *hybridBlobStore) ObjectURL(folder, filename string) string {
 }
 
 func (s *hybridBlobStore) Put(ctx context.Context, folder, filename string, r io.Reader, contentType string) error {
-	return s.primary.Put(ctx, folder, filename, r, contentType)
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	var localErr error
+	if s.fallback != nil {
+		localErr = s.fallback.Put(ctx, folder, filename, bytes.NewReader(data), contentType)
+	}
+	if err := s.primary.Put(ctx, folder, filename, bytes.NewReader(data), contentType); err != nil {
+		// 当主存储（如七牛测试域名/配置异常）失败但本地回退写入成功时，允许降级落盘。
+		if localErr == nil && s.fallback != nil {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *hybridBlobStore) Delete(ctx context.Context, folder, filename string) error {
@@ -197,11 +213,13 @@ func (s *hybridBlobStore) Delete(ctx context.Context, folder, filename string) e
 }
 
 func (s *hybridBlobStore) Open(ctx context.Context, folder, filename string) (BlobObject, error) {
-	obj, err := s.primary.Open(ctx, folder, filename)
-	if err == nil {
-		return obj, nil
+	// 优先读本地磁盘（0 延迟，且不依赖七牛测试域名是否过期）；本地没有再去主存储拉。
+	if s.fallback != nil {
+		if obj, err := s.fallback.Open(ctx, folder, filename); err == nil {
+			return obj, nil
+		}
 	}
-	return s.fallback.Open(ctx, folder, filename)
+	return s.primary.Open(ctx, folder, filename)
 }
 
 func (s *hybridBlobStore) ListFolder(ctx context.Context, folder string) ([]BlobMeta, error) {

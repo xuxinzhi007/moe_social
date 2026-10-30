@@ -25,14 +25,15 @@ func externalHTTPPort(unified, apiFragment string) int {
 	if p := httpPortFromUnified(unified); p > 0 {
 		return p
 	}
-	var c struct {
-		Port int `yaml:"Port"`
+	if f := strings.TrimSpace(apiFragment); f != "" {
+		var c struct {
+			Port int `yaml:"Port"`
+		}
+		if err := yamlconf.Load(f, &c); err == nil && c.Port > 0 {
+			return c.Port
+		}
 	}
-	yamlconf.MustLoad(apiFragment, &c)
-	if c.Port <= 0 {
-		return 8888
-	}
-	return c.Port
+	return 8888
 }
 
 func apiListenAddr(configFile string) string {
@@ -40,7 +41,9 @@ func apiListenAddr(configFile string) string {
 		Host string `yaml:"Host"`
 		Port int    `yaml:"Port"`
 	}
-	yamlconf.MustLoad(configFile, &c)
+	if f := strings.TrimSpace(configFile); f != "" {
+		_ = yamlconf.Load(f, &c)
+	}
 	if c.Port <= 0 {
 		c.Port = 8888
 	}

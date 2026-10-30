@@ -6,6 +6,7 @@ import (
 	userv1 "backend/api/user/v1"
 	emojibiz "backend/internal/biz/emoji"
 	userbiz "backend/internal/biz/user"
+	apicomm "backend/internal/platform/apicomm"
 )
 
 func (s *Server) GetUserAvatar(ctx context.Context, in *userv1.GetUserAvatarReq) (*userv1.GetUserAvatarResp, error) {
@@ -21,6 +22,11 @@ func (s *Server) UpdateUserAvatar(ctx context.Context, in *userv1.UpdateUserAvat
 	if err != nil {
 		return nil, err
 	}
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = uid
 	return app.UpdateUserAvatar(ctx, in)
 }
 
@@ -62,7 +68,11 @@ func (s *Server) PurchaseAvatarOutfit(ctx context.Context, in *userv1.PurchaseAv
 	if err != nil {
 		return nil, err
 	}
-	purchaseID, err := app.PurchaseAvatarOutfit(ctx, in.GetUserId(), in.GetOutfitId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	purchaseID, err := app.PurchaseAvatarOutfit(ctx, uid, in.GetOutfitId())
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +116,11 @@ func (s *Server) FavoriteEmojiPack(ctx context.Context, in *userv1.FavoriteEmoji
 	if err != nil {
 		return nil, err
 	}
-	if err := app.FavoriteEmojiPack(ctx, in.GetUserId(), in.GetPackId()); err != nil {
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	if err := app.FavoriteEmojiPack(ctx, uid, in.GetPackId()); err != nil {
 		return nil, err
 	}
 	return &userv1.FavoriteEmojiPackResp{}, nil
@@ -117,7 +131,11 @@ func (s *Server) PurchaseEmojiPack(ctx context.Context, in *userv1.PurchaseEmoji
 	if err != nil {
 		return nil, err
 	}
-	purchaseID, err := app.PurchaseEmojiPack(ctx, in.GetUserId(), in.GetPackId())
+	uid, err := apicomm.RequireSelfOrUnbound(ctx, in.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	purchaseID, err := app.PurchaseEmojiPack(ctx, uid, in.GetPackId())
 	if err != nil {
 		return nil, err
 	}

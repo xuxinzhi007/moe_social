@@ -205,12 +205,19 @@ class ApiService {
   /// 单次 HTTP 超时（原 http 包无默认超时，隧道/弱网下会长时间挂起，表现为「间歇性刷不出」）
   static const Duration _httpTimeout = Duration(seconds: 18);
 
+  /// 本地 ComfyUI 文生图超时（与后端 defaultComfyTimeout=180s 对齐）。
+  static const Duration _comfyHttpTimeout = Duration(seconds: 185);
+
   // 防止并发刷新 token。进行中的刷新共用同一个 Future，避免失败后每个请求再刷一次并反复跳登录页。
   static Future<String?>? _refreshInFlight;
 
   // 通用请求方法（私有）
-  static Future<Map<String, dynamic>> _request(String path,
-      {String method = 'GET', dynamic body}) async {
+  static Future<Map<String, dynamic>> _request(
+    String path, {
+    String method = 'GET',
+    dynamic body,
+    Duration? timeout,
+  }) async {
     try {
       if (path != '/api/user/login' &&
           path != _refreshTokenEndpoint &&
@@ -218,7 +225,8 @@ class ApiService {
           _currentToken!.isNotEmpty) {
         await _proactiveRefreshIfNeeded();
       }
-      final result = await _performRequest(path, method, body);
+      final result =
+          await _performRequest(path, method, body, timeout: timeout);
       return result;
     } on ApiException catch (e) {
       if (path == '/api/user/login' || path == _refreshTokenEndpoint) {
@@ -237,7 +245,7 @@ class ApiService {
         }
         final newToken = await _refreshToken();
         if (newToken != null) {
-          return await _performRequest(path, method, body);
+          return await _performRequest(path, method, body, timeout: timeout);
         } else {
           _onLogoutCallback?.call();
           throw ApiException('登录已过期，请重新登录', 401);
@@ -253,8 +261,49 @@ class ApiService {
   }
 
   // 公开的 POST 请求方法
-  static Future<Map<String, dynamic>> post(String path, {dynamic body}) async {
-    return await _request(path, method: 'POST', body: body);
+  static Future<Map<String, dynamic>> post(
+    String path, {
+    dynamic body,
+    Duration? timeout,
+  }) async {
+    return await _request(path, method: 'POST', body: body, timeout: timeout);
+  }
+
+  /// 调用后端 `/api/images/generate`（本地 ComfyUI 文生图），使用 185s 长超时。
+  static Future<Map<String, dynamic>> generateComfyImage({
+    required String prompt,
+    String? style,
+    String? negative,
+    int? width,
+    int? height,
+    int? steps,
+    double? cfg,
+    int? seed,
+    String? checkpoint,
+  }) {
+    final payload = <String, dynamic>{
+      'prompt': prompt.trim(),
+      if (style != null && style.trim().isNotEmpty) 'style': style.trim(),
+      if (negative != null && negative.trim().isNotEmpty)
+        'negative': negative.trim(),
+      if (width != null && width > 0) 'width': width,
+      if (height != null && height > 0) 'height': height,
+      if (steps != null && steps > 0) 'steps': steps,
+      if (cfg != null && cfg > 0) 'cfg': cfg,
+      if (seed != null && seed > 0) 'seed': seed,
+      if (checkpoint != null && checkpoint.trim().isNotEmpty)
+        'checkpoint': checkpoint.trim(),
+    };
+    return post(
+      '/api/images/generate',
+      body: payload,
+      timeout: _comfyHttpTimeout,
+    );
+  }
+
+  /// 获取本机 ComfyUI 已安装的底模列表（`GET /api/comfy/checkpoints`）。
+  static Future<Map<String, dynamic>> listComfyCheckpoints() {
+    return get('/api/comfy/checkpoints');
   }
 
   // 公开的 PUT 请求方法
@@ -268,12 +317,14 @@ class ApiService {
   }
 
   static Future<http.Response> _httpWithTimeout(
-    Future<http.Response> inner,
-  ) {
+    Future<http.Response> inner, {
+    Duration? timeout,
+  }) {
+    final effective = timeout ?? _httpTimeout;
     return inner.timeout(
-      _httpTimeout,
+      effective,
       onTimeout: () => throw ApiException(
-        '请求超时（${_httpTimeout.inSeconds}秒），请检查网络或稍后重试',
+        '请求超时（${effective.inSeconds}秒），请检查网络或稍后重试',
         504,
       ),
     );
@@ -281,7 +332,11 @@ class ApiService {
 
   // 执行实际的HTTP请求
   static Future<Map<String, dynamic>> _performRequest(
-      String path, String method, dynamic body) async {
+    String path,
+    String method,
+    dynamic body, {
+    Duration? timeout,
+  }) async {
     final sw = Stopwatch()..start();
     try {
       final uri = Uri.parse('$baseUrl$path');
@@ -309,25 +364,37 @@ class ApiService {
       // 发送请求
       http.Response response;
       if (method == 'GET') {
-        response = await _httpWithTimeout(http.get(uri, headers: headers));
+        response = await _httpWithTimeout(
+          http.get(uri, headers: headers),
+          timeout: timeout,
+        );
       } else if (method == 'POST') {
-        response = await _httpWithTimeout(http.post(
-          uri,
-          headers: headers,
-          body: body != null ? json.encode(body) : null,
-        ));
+        response = await _httpWithTimeout(
+          http.post(
+            uri,
+            headers: headers,
+            body: body != null ? json.encode(body) : null,
+          ),
+          timeout: timeout,
+        );
       } else if (method == 'PUT') {
-        response = await _httpWithTimeout(http.put(
-          uri,
-          headers: headers,
-          body: body != null ? json.encode(body) : null,
-        ));
+        response = await _httpWithTimeout(
+          http.put(
+            uri,
+            headers: headers,
+            body: body != null ? json.encode(body) : null,
+          ),
+          timeout: timeout,
+        );
       } else if (method == 'DELETE') {
-        response = await _httpWithTimeout(http.delete(
-          uri,
-          headers: headers,
-          body: body != null ? json.encode(body) : null,
-        ));
+        response = await _httpWithTimeout(
+          http.delete(
+            uri,
+            headers: headers,
+            body: body != null ? json.encode(body) : null,
+          ),
+          timeout: timeout,
+        );
       } else {
         throw ApiException('不支持的HTTP方法: $method', null);
       }

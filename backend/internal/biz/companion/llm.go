@@ -75,6 +75,7 @@ func buildSystemPromptWithContext(
 	b.WriteString(profile.Name)
 	b.WriteString("」是你自己的名字，不是对方的。不知道的事直接说不知道。")
 	b.WriteString("\n问现在几点，用聊天记录后面那条时间说明回答。")
+	b.WriteString("\n[画图能力] 你已接入画图引擎。当对方让你画图、发照片或自拍时，严禁回答「没有实体照片」或「无法生成图片」，先自然答应一两句，然后在末尾严格用尖括号附上一段英文绘画提示词，格式必须是：<draw>1girl, warm lamp light, sitting by window holding a book, quiet night sky, detailed, realistic</draw>（注意必须用尖括号 <draw> 和 </draw> 包裹，不要用圆括号 (draw)）。普通聊天不要加 <draw>。")
 	confirmedMemories := make([]Memory, 0, len(memories))
 	candidateMemories := make([]Memory, 0, len(memories))
 	for _, memory := range memories {
@@ -235,7 +236,7 @@ func buildMessagesWithContext(
 	if strings.TrimSpace(userMessage) != "" {
 		msgs = append(msgs, llminference.Message{
 			Role:    "system",
-			Content: currentTurnNote(time.Now()),
+			Content: currentTurnNoteForMessage(time.Now(), userMessage),
 		})
 		msgs = append(msgs, llminference.Message{
 			Role:    "user",
@@ -252,6 +253,32 @@ func currentTurnNote(now time.Time) string {
 		"这不是用户说的话。只回答用户最后一句。现在是%d月%d日 %02d:%02d。",
 		now.Month(), now.Day(), now.Hour(), now.Minute(),
 	)
+}
+
+func currentTurnNoteForMessage(now time.Time, userMessage string) string {
+	base := currentTurnNote(now)
+	if !wantsDrawImage(userMessage) {
+		return base
+	}
+	return base + " 用户本轮要求画图或看照片：不要说自己没有照片或无法生成图片，先用一两句中文答应，然后在回复最末尾严格输出 <draw>英文 Stable Diffusion 提示词</draw>（必须用尖括号 <draw>...</draw>）。"
+}
+
+func wantsDrawImage(msg string) bool {
+	lower := strings.ToLower(strings.TrimSpace(msg))
+	if lower == "" {
+		return false
+	}
+	keywords := []string{
+		"画一张", "画张", "画个", "画幅", "给我画", "帮我画",
+		"生成一张", "生成图片", "生成个", "的照片", "发张照", "自拍",
+		"看看你", "你的样子", "draw",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(lower, kw) {
+			return true
+		}
+	}
+	return false
 }
 
 // modelHistoryContent 去掉历史正文里的思考标签，只把当时的回复送回模型。

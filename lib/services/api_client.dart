@@ -51,4 +51,30 @@ class ApiClient {
     String category = MediaCategory.album,
   }) =>
       ApiService.uploadImageInfo(image, category: category);
+
+  static Future<Map<String, dynamic>> generateComfyImage({
+    required String prompt,
+    String? style,
+    String? negative,
+    int? width,
+    int? height,
+    int? steps,
+    double? cfg,
+    int? seed,
+    String? checkpoint,
+  }) =>
+      ApiService.generateComfyImage(
+        prompt: prompt,
+        style: style,
+        negative: negative,
+        width: width,
+        height: height,
+        steps: steps,
+        cfg: cfg,
+        seed: seed,
+        checkpoint: checkpoint,
+      );
+
+  static Future<Map<String, dynamic>> listComfyCheckpoints() =>
+      ApiService.listComfyCheckpoints();
 }
