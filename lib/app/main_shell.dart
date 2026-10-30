@@ -105,6 +105,7 @@ class _MainPageState extends State<MainPage> {
   void _scheduleCompanionAttentionSheet() {
     if (!mounted ||
         _selectedIndex != 0 ||
+        ModalRoute.of(context)?.isCurrent != true ||
         !_presence.hasAttention ||
         _presence.attentionMessage.trim().isEmpty ||
         _companionNudgeShown ||
@@ -120,6 +121,7 @@ class _MainPageState extends State<MainPage> {
   Future<void> _showCompanionAttentionSheet() async {
     if (!mounted ||
         _selectedIndex != 0 ||
+        ModalRoute.of(context)?.isCurrent != true ||
         !_presence.hasAttention ||
         _presence.attentionMessage.trim().isEmpty ||
         _companionNudgeShown ||
@@ -155,6 +157,9 @@ class _MainPageState extends State<MainPage> {
 
   void _selectTab(int index) {
     if (index == _selectedIndex) return;
+    if (index == 2) {
+      CompanionAttentionSheet.dismiss();
+    }
     setState(() {
       _loadedPages[index] ??= _pageBuilders[index]();
       _selectedIndex = index;

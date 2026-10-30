@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/ai_agent.dart';
-import '../../models/ai_lorebook.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_provider_service.dart';
@@ -40,11 +39,10 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   List<AiProviderProfile> _providerProfiles = [
     AiProviderProfile.builtinBackend(),
   ];
-  List<AiLorebook> _lorebooks = [];
   String _providerProfileId = AiProviderProfile.builtinBackendId;
   String? _lorebookId;
-  bool _createRealModel = false;
-  bool _syncModelOnEdit = false;
+  final bool _createRealModel = false;
+  final bool _syncModelOnEdit = false;
   bool _publishToPlaza = false;
   int _facet = 0;
   String? _templateId;
@@ -96,7 +94,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       _publishToPlaza = agent.isPublic;
     }
     _loadProviders();
-    _loadLorebooks();
     _loadModelCapabilities();
   }
 
@@ -141,22 +138,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         _providerProfileId = AiProviderProfile.builtinBackendId;
       }
     });
-  }
-
-  Future<void> _loadLorebooks() async {
-    try {
-      final lorebooks = await AiAgentCloudService().getLorebooks();
-      if (!mounted || !_pageActive) return;
-      setState(() {
-        _lorebooks = lorebooks;
-        final exists = lorebooks.any((item) => item.id == _lorebookId);
-        if (!exists) {
-          _lorebookId = null;
-        }
-      });
-    } catch (_) {
-      // Ignore local lorebook errors for now.
-    }
   }
 
   void _fillTemplate(AiStarterAgentTemplate result) {
@@ -765,38 +746,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     );
   }
 
-  Widget _buildLoreRow() {
-    if (_lorebooks.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: MoeTokens.spaceLg),
-        _sectionLabel('世界书'),
-        const SizedBox(height: MoeTokens.spaceSm),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
-          child: Wrap(
-            spacing: MoeTokens.spaceSm,
-            runSpacing: MoeTokens.spaceSm,
-            children: [
-              _tinyChip(
-                label: '不绑',
-                selected: _lorebookId == null,
-                onTap: () => setState(() => _lorebookId = null),
-              ),
-              for (final book in _lorebooks)
-                _tinyChip(
-                  label: book.name,
-                  selected: _lorebookId == book.id,
-                  onTap: () => setState(() => _lorebookId = book.id),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSaveBar(bool isCreate) {
     return Material(
       color: MoeTokens.pageBackground.withValues(alpha: 0.92),
@@ -876,7 +825,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                   _sectionLabel('写法'),
                   const SizedBox(height: 6),
                   _buildFacetEditor(),
-                  _buildLoreRow(),
                 ],
               ),
             ),
