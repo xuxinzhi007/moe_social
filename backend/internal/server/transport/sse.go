@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"backend/internal/biz/moe/moebridge"
-	"backend/internal/legacy/types"
 	apicomm "backend/internal/platform/apicomm"
 	moeadmin "backend/internal/service/moe"
 	"backend/model"
@@ -20,13 +19,18 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
+type adminBrainPipelineSSEResp struct {
+	apicomm.BaseResp
+	Data moebridge.AdminGetMoeBrainPipelineData `json:"data"`
+}
+
 func registerSSE(r *khttp.Router, admin *moeadmin.AdminService) {
 	r.GET("/api/admin/moe/brain/pipeline/stream", streamMoeBrainPipeline(admin))
 	r.POST("/api/admin/moe/inference/chat/stream", streamMoeInferenceChat(admin))
 }
 
-func moeAdminUnavailable() types.BaseResp {
-	return types.BaseResp{Code: -1, Message: "MoeAdmin unavailable", Success: false}
+func moeAdminUnavailable() apicomm.BaseResp {
+	return apicomm.BaseResp{Code: -1, Message: "MoeAdmin unavailable", Success: false}
 }
 
 func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) error {
@@ -37,13 +41,13 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 		// 也不能用 ctx.BindQuery（它认 json tag，而这个 legacy 结构体只有 form tag）。
 		agentKey := r.URL.Query().Get("agent_key")
 		if agentKey == "" {
-			_ = apicomm.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
+			_ = apicomm.WriteSSE(w, "error", adminBrainPipelineSSEResp{
 				BaseResp: apicomm.HandleError(fmt.Errorf("agent_key is required")),
 			})
 			return nil
 		}
 		if admin == nil {
-			_ = apicomm.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
+			_ = apicomm.WriteSSE(w, "error", adminBrainPipelineSSEResp{
 				BaseResp: moeAdminUnavailable(),
 			})
 			return nil
@@ -55,12 +59,12 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 		send := func() bool {
 			snap, err := admin.GetBrainPipeline(r.Context(), agentKey)
 			if err != nil {
-				_ = apicomm.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
+				_ = apicomm.WriteSSE(w, "error", adminBrainPipelineSSEResp{
 					BaseResp: apicomm.HandleError(err),
 				})
 				return false
 			}
-			if err := apicomm.WriteSSE(w, "pipeline", types.AdminGetMoeBrainPipelineResp{
+			if err := apicomm.WriteSSE(w, "pipeline", adminBrainPipelineSSEResp{
 				BaseResp: apicomm.HandleError(nil),
 				Data:     moebridge.PipelineDataFromBiz(snap),
 			}); err != nil {

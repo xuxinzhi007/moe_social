@@ -7,8 +7,6 @@ import (
 	"context"
 )
 
-// Package userapp 钱包与交易。
-
 func (s *AppService) GetTransactions(ctx context.Context, in *userv1.GetTransactionsReq) (*userv1.GetTransactionsResp, error) {
 	return userbiz.GetTransactions(ctx, s.store, in)
 }

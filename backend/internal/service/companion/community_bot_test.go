@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	companionbiz "backend/internal/biz/companion"
+	companiondata "backend/internal/data/companion"
 	"backend/model"
 
 	"gorm.io/driver/sqlite"
@@ -31,7 +32,7 @@ func TestEnsureCommunityBotRebindsHistoricalBot(t *testing.T) {
 		t.Fatalf("create historical bot: %v", err)
 	}
 
-	service := &AppService{db: db}
+	service := &AppService{identityStore: companiondata.NewIdentityStore(db)}
 	profile := &companionbiz.Profile{AgentID: "new-agent", Name: "啾啾"}
 	bot, agentID, err := service.ensureCommunityBot(context.Background(), 1, profile)
 	if err != nil {
@@ -71,7 +72,7 @@ func TestEnsureCommunityBotDoesNotAdoptRegularUser(t *testing.T) {
 		t.Fatalf("create regular user: %v", err)
 	}
 
-	service := &AppService{db: db}
+	service := &AppService{identityStore: companiondata.NewIdentityStore(db)}
 	profile := &companionbiz.Profile{AgentID: "new-agent"}
 	if _, _, err := service.ensureCommunityBot(context.Background(), 1, profile); err == nil {
 		t.Fatal("ensure community bot succeeded with a conflicting regular username")
@@ -102,7 +103,7 @@ func TestEnsureCommunityBotKeepsUsernameWhenDisplayNameTaken(t *testing.T) {
 	if err := db.Create(&taken).Error; err != nil {
 		t.Fatalf("create human: %v", err)
 	}
-	service := &AppService{db: db}
+	service := &AppService{identityStore: companiondata.NewIdentityStore(db)}
 	bot, _, err := service.ensureCommunityBot(context.Background(), 2, &companionbiz.Profile{
 		AgentID: "companion-2",
 		Name:    "啾啾",

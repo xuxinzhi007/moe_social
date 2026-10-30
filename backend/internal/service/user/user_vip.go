@@ -7,8 +7,6 @@ import (
 	"context"
 )
 
-// Package userapp VIP 状态与订单。
-
 // GetUserVipStatus VIP 状态。
 func (s *AppService) GetUserVipStatus(ctx context.Context, in *vipv1.GetUserVipStatusReq) (*vipv1.GetUserVipStatusResp, error) {
 	uid, err := parseUserID(in.GetUserId())

@@ -2,14 +2,11 @@ package companionapp
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	companionbiz "backend/internal/biz/companion"
 	"backend/model"
-
-	"gorm.io/gorm"
 )
 
 // ensureCommunityBot 保证伙伴有可发帖的 bot 用户：无则创建，有则同步展示名/头像。
@@ -18,7 +15,7 @@ func (s *AppService) ensureCommunityBot(
 	ownerUserID uint,
 	profile *companionbiz.Profile,
 ) (*model.User, string, error) {
-	if s == nil || s.db == nil || profile == nil {
+	if s == nil || s.identityStore == nil || profile == nil {
 		return nil, "", nil
 	}
 
@@ -32,148 +29,16 @@ func (s *AppService) ensureCommunityBot(
 		}
 	}
 
-	var botUser model.User
-	err := s.db.WithContext(ctx).
-		Where("is_bot = ? AND bot_agent_key = ?", true, agentID).
-		First(&botUser).Error
-	if err == nil {
-		s.syncCommunityBotAppearance(ctx, &botUser, profile)
-		return &botUser, agentID, nil
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, "", fmt.Errorf("lookup companion bot for agent %s: %w", agentID, err)
-	}
-
-	username := fmt.Sprintf("bot_c_%d", ownerUserID)
-	email := fmt.Sprintf("companion-%d@bot.local", ownerUserID)
-	botUser, err = s.findCommunityBotByStableIdentity(ctx, agentID, username, email)
+	botUser, err := s.identityStore.EnsureCommunityBot(
+		ctx,
+		ownerUserID,
+		agentID,
+		profile.Name,
+		profile.AvatarURL,
+		profile.Persona,
+	)
 	if err != nil {
 		return nil, "", err
 	}
-	if botUser.ID != 0 {
-		s.syncCommunityBotAppearance(ctx, &botUser, profile)
-		return &botUser, agentID, nil
-	}
-	avatar := strings.TrimSpace(profile.AvatarURL)
-
-	botUser = model.User{
-		Username:    username,
-		Email:       email,
-		Password:    fmt.Sprintf("bot-companion-%d-no-login", ownerUserID),
-		Avatar:      avatar,
-		Signature:   strings.TrimSpace(profile.Persona),
-		IsBot:       true,
-		BotAgentKey: agentID,
-		Role:        "user",
-	}
-	if err := s.db.WithContext(ctx).Create(&botUser).Error; err != nil {
-		existing, findErr := s.findCommunityBotByStableIdentity(ctx, agentID, username, email)
-		if findErr != nil {
-			return nil, "", findErr
-		}
-		if existing.ID != 0 {
-			s.syncCommunityBotAppearance(ctx, &existing, profile)
-			return &existing, agentID, nil
-		}
-		return nil, "", fmt.Errorf("create companion bot for agent %s: %w", agentID, err)
-	}
-	s.syncCommunityBotAppearance(ctx, &botUser, profile)
-	return &botUser, agentID, nil
-}
-
-func (s *AppService) findCommunityBotByStableIdentity(
-	ctx context.Context,
-	agentID string,
-	username string,
-	email string,
-) (model.User, error) {
-	var botUser model.User
-	err := s.db.WithContext(ctx).
-		Where("is_bot = ? AND bot_agent_key = ?", true, agentID).
-		First(&botUser).Error
-	if err == nil {
-		return botUser, nil
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return model.User{}, fmt.Errorf("lookup companion bot for agent %s: %w", agentID, err)
-	}
-
-	err = s.db.WithContext(ctx).
-		Where("is_bot = ? AND (username = ? OR email = ?)", true, username, email).
-		First(&botUser).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return model.User{}, nil
-	}
-	if err != nil {
-		return model.User{}, fmt.Errorf("lookup historical companion bot for agent %s: %w", agentID, err)
-	}
-	if strings.TrimSpace(botUser.BotAgentKey) == agentID {
-		return botUser, nil
-	}
-	if err := s.db.WithContext(ctx).
-		Model(&botUser).
-		Update("bot_agent_key", agentID).Error; err != nil {
-		return model.User{}, fmt.Errorf("rebind companion bot for agent %s: %w", agentID, err)
-	}
-	botUser.BotAgentKey = agentID
-	return botUser, nil
-}
-
-func (s *AppService) syncCommunityBotAppearance(
-	ctx context.Context,
-	bot *model.User,
-	profile *companionbiz.Profile,
-) {
-	if s == nil || s.db == nil || bot == nil || profile == nil {
-		return
-	}
-	updates := map[string]interface{}{}
-	avatar := strings.TrimSpace(profile.AvatarURL)
-	if avatar != "" && strings.TrimSpace(bot.Avatar) != avatar {
-		updates["avatar"] = avatar
-	}
-	persona := strings.TrimSpace(profile.Persona)
-	if persona != "" && strings.TrimSpace(bot.Signature) != persona {
-		updates["signature"] = truncateRunes(persona, 100)
-	}
-	if display := companionBotDisplayName(profile.Name); display != "" && bot.Username != display {
-		var taken int64
-		if err := s.db.WithContext(ctx).Model(&model.User{}).
-			Where("username = ? AND id <> ?", display, bot.ID).
-			Count(&taken).Error; err == nil && taken == 0 {
-			updates["username"] = display
-		}
-	}
-	if len(updates) == 0 {
-		return
-	}
-	_ = s.db.WithContext(ctx).Model(bot).Updates(updates).Error
-	if v, ok := updates["avatar"].(string); ok {
-		bot.Avatar = v
-	}
-	if v, ok := updates["signature"].(string); ok {
-		bot.Signature = v
-	}
-	if v, ok := updates["username"].(string); ok {
-		bot.Username = v
-	}
-}
-
-func truncateRunes(s string, max int) string {
-	if max <= 0 || s == "" {
-		return s
-	}
-	r := []rune(s)
-	if len(r) <= max {
-		return s
-	}
-	return string(r[:max])
-}
-
-func companionBotDisplayName(name string) string {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return ""
-	}
-	return truncateRunes(name, 50)
+	return botUser, agentID, nil
 }

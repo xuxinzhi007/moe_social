@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"backend/internal/legacy/types"
 	"backend/utils"
 )
 
@@ -64,9 +63,9 @@ func ClientIP(r *http.Request) string {
 }
 
 // WriteAdminUnauthorized 返回统一的管理员未授权 JSON。
-func WriteAdminUnauthorized(w http.ResponseWriter, r *http.Request, br *types.BaseResp) {
+func WriteAdminUnauthorized(w http.ResponseWriter, r *http.Request, br *BaseResp) {
 	if br == nil {
-		br = &types.BaseResp{Code: -1, Message: "请先登录管理后台", Success: false}
+		br = &BaseResp{Code: -1, Message: "请先登录管理后台", Success: false}
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(map[string]any{

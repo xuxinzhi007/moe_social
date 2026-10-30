@@ -1,42 +1,70 @@
 package moebridge
 
 import (
-	"strconv"
-
 	moebiz "backend/internal/biz/moe"
-	"backend/internal/legacy/types"
-	"backend/model"
-	"backend/pkg/moe/brain"
-	"backend/pkg/moe/runtime"
 )
 
-func RuntimeItemFromModel(rt model.MoeAgentRuntime) types.MoeAgentRuntimeItem {
-	item := runtime.ItemFromModel(rt)
-	return types.MoeAgentRuntimeItem{
-		AgentKey:          item.AgentKey,
-		DisplayName:       item.DisplayName,
-		BotUserId:         item.BotUserId,
-		CapabilityTier:    item.CapabilityTier,
-		ModelName:         item.ModelName,
-		ProviderProfileId: item.ProviderProfileId,
-		ToolsEnabled:      item.ToolsEnabled,
-		PostQuotaDaily:    item.PostQuotaDaily,
-		PostsToday:        item.PostsToday,
-		Enabled:           item.Enabled,
-		LastRunAt:         item.LastRunAt,
-		LastPostId:        item.LastPostId,
-		PostScheduleMode:  item.PostScheduleMode,
-		ScheduleCron:      item.ScheduleCron,
-		NextRunAt:         item.NextRunAt,
-		SystemPrompt:      item.SystemPrompt,
-		PostRules:         item.PostRules,
-		ForbiddenTags:     item.ForbiddenTags,
-		PreferredTags:     item.PreferredTags,
-	}
+// MoeHostMetrics 推理与主机资源指标。
+type MoeHostMetrics struct {
+	ProcAllocMB      int64  `json:"proc_alloc_mb,optional"`
+	ProcSysMB        int64  `json:"proc_sys_mb,optional"`
+	NumCPU           int    `json:"num_cpu,optional"`
+	NumGoroutine     int    `json:"num_goroutine,optional"`
+	InferenceOnline  bool   `json:"inference_online,optional"`
+	InferenceBaseURL string `json:"inference_base_url,optional"`
+	InferenceModels  int    `json:"inference_models,optional"`
+	GpuNote          string `json:"gpu_note,optional"`
 }
 
-func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPipelineData {
-	data := types.AdminGetMoeBrainPipelineData{
+// MoeGenAttemptItem 生成重试项。
+type MoeGenAttemptItem struct {
+	Attempt int    `json:"attempt"`
+	Outcome string `json:"outcome"`
+	Snippet string `json:"snippet,optional"`
+	Note    string `json:"note,optional"`
+}
+
+// MoePipelineStepItem 管线步骤项。
+type MoePipelineStepItem struct {
+	Key        string `json:"key"`
+	Label      string `json:"label"`
+	Status     string `json:"status"`
+	Detail     string `json:"detail,optional"`
+	DurationMs int64  `json:"duration_ms,optional"`
+}
+
+// MoePipelineToolInvokeItem 管线工具调用项。
+type MoePipelineToolInvokeItem struct {
+	Tool      string `json:"tool"`
+	Ok        bool   `json:"ok"`
+	LatencyMs int    `json:"latency_ms,optional"`
+	CreatedAt string `json:"created_at,optional"`
+}
+
+// AdminGetMoeBrainPipelineData Moe 大脑管线实时状态。
+type AdminGetMoeBrainPipelineData struct {
+	AgentKey         string                      `json:"agent_key"`
+	RunAt            string                      `json:"run_at,optional"`
+	Ok               bool                        `json:"ok"`
+	Detail           string                      `json:"detail,optional"`
+	PostId           string                      `json:"post_id,optional"`
+	TotalDurationMs  int64                       `json:"total_duration_ms,optional"`
+	HostMetrics      MoeHostMetrics              `json:"host_metrics,optional"`
+	GenerateAttempts []MoeGenAttemptItem         `json:"generate_attempts,optional"`
+	Steps            []MoePipelineStepItem       `json:"steps"`
+	ToolsInvoked     []MoePipelineToolInvokeItem `json:"tools_invoked,optional"`
+	StabilityScore   int                         `json:"stability_score,optional"`
+	StabilityDelta   int                         `json:"stability_delta,optional"`
+	RunFeedback      string                      `json:"run_feedback,optional"`
+	Running          bool                        `json:"running,optional"`
+	CurrentPhase     string                      `json:"current_phase,optional"`
+	RunStartedAt     string                      `json:"run_started_at,optional"`
+	ActiveStepKey    string                      `json:"active_step_key,optional"`
+}
+
+// PipelineDataFromBiz 将 biz 快照转换为管线 JSON 数据。
+func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) AdminGetMoeBrainPipelineData {
+	data := AdminGetMoeBrainPipelineData{
 		AgentKey:        snap.AgentKey,
 		Ok:              snap.OK,
 		Detail:          snap.Detail,
@@ -45,7 +73,7 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 		Running:         snap.Running,
 		CurrentPhase:    snap.CurrentPhase,
 		ActiveStepKey:   snap.ActiveStepKey,
-		Steps:           make([]types.MoePipelineStepItem, 0, len(snap.Steps)),
+		Steps:           make([]MoePipelineStepItem, 0, len(snap.Steps)),
 	}
 	if snap.HasRun {
 		data.RunAt = snap.RunAt.Format("2006-01-02 15:04:05")
@@ -55,7 +83,7 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 	}
 	m := snap.Metrics
 	if m.NumCPU != 0 || m.ProcAllocMB != 0 || m.InferenceOnline || m.GpuNote != "" {
-		data.HostMetrics = types.MoeHostMetrics{
+		data.HostMetrics = MoeHostMetrics{
 			ProcAllocMB:      m.ProcAllocMB,
 			ProcSysMB:        m.ProcSysMB,
 			NumCPU:           m.NumCPU,
@@ -67,7 +95,7 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 		}
 	}
 	for _, a := range snap.GenerateAttempts {
-		data.GenerateAttempts = append(data.GenerateAttempts, types.MoeGenAttemptItem{
+		data.GenerateAttempts = append(data.GenerateAttempts, MoeGenAttemptItem{
 			Attempt: a.Attempt,
 			Outcome: a.Outcome,
 			Snippet: a.Snippet,
@@ -75,7 +103,7 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 		})
 	}
 	for _, s := range snap.Steps {
-		data.Steps = append(data.Steps, types.MoePipelineStepItem{
+		data.Steps = append(data.Steps, MoePipelineStepItem{
 			Key:        s.Key,
 			Label:      s.Label,
 			Status:     s.Status,
@@ -84,7 +112,7 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 		})
 	}
 	for _, t := range snap.ToolsInvoked {
-		data.ToolsInvoked = append(data.ToolsInvoked, types.MoePipelineToolInvokeItem{
+		data.ToolsInvoked = append(data.ToolsInvoked, MoePipelineToolInvokeItem{
 			Tool:      t.Tool,
 			Ok:        t.Ok,
 			LatencyMs: t.LatencyMs,
@@ -101,122 +129,4 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 		data.RunStartedAt = snap.RunStartedAt.Format("2006-01-02 15:04:05")
 	}
 	return data
-}
-
-func BrainDataFromSnapshot(s *brain.Snapshot) types.AdminGetMoeBrainData {
-	if s == nil {
-		return types.AdminGetMoeBrainData{}
-	}
-	out := types.AdminGetMoeBrainData{
-		AgentKey:      s.AgentKey,
-		DisplayName:   s.DisplayName,
-		BotUserId:     strconv.FormatUint(uint64(s.BotUserID), 10),
-		ForbiddenTags: s.ForbiddenTags,
-		PreferredTags: s.PreferredTags,
-	}
-	for _, t := range s.TagStats {
-		out.TagStats = append(out.TagStats, types.MoeBrainTagStat{Tag: t.Tag, Count: t.Count})
-	}
-	for _, e := range s.Episodes {
-		out.Episodes = append(out.Episodes, types.MoeBrainEpisodeItem{
-			Id:            e.ID,
-			PostId:        e.PostID,
-			Content:       e.Content,
-			Tags:          e.Tags,
-			MoodTag:       e.MoodTag,
-			StyleScore:    e.StyleScore,
-			QualityScore:  e.QualityScore,
-			Approved:      e.Approved,
-			RevisionCount: e.RevisionCount,
-			MemoryKey:     e.MemoryKey,
-			Source:        e.Source,
-			CreatedAt:     e.CreatedAt,
-		})
-	}
-	for _, m := range s.Memories {
-		out.Memories = append(out.Memories, types.MoeBrainMemoryItem{
-			Key:        m.Key,
-			Value:      m.Value,
-			MemoryType: m.MemoryType,
-			UpdatedAt:  m.UpdatedAt,
-		})
-	}
-	gm := s.GenerationMeta
-	out.GenerationMeta = types.MoeBrainGenerationMeta{
-		PostUsesToolMemory: gm.PostUsesToolMemory,
-		MemoriesSynced:     gm.MemoriesSynced,
-		EpisodesInPrompt:   gm.EpisodesInPrompt,
-		PromptMemoryLines:  gm.PromptMemoryLines,
-		PromptPreview:      gm.PromptPreview,
-		PromptEstTokens:    gm.PromptEstTokens,
-		ContextLimit:       gm.ContextLimit,
-		ContextUsedPct:     gm.ContextUsedPct,
-		Note:               gm.Note,
-	}
-	out.StabilityScore = s.StabilityScore
-	out.StabilityDelta = s.StabilityDelta
-	if len(s.Episodes) > 0 {
-		sum := 0
-		for _, e := range s.Episodes {
-			sum += e.QualityScore
-		}
-		out.AvgEpisodeQuality = sum / len(s.Episodes)
-	}
-	return out
-}
-
-func ToolStatsDataFromBiz(s moebiz.ToolStatsResult) types.AdminMoeToolStatsData {
-	out := types.AdminMoeToolStatsData{
-		TotalCalls:   s.TotalCalls,
-		SuccessCalls: s.SuccessCalls,
-		FailedCalls:  s.FailedCalls,
-	}
-	for _, row := range s.ByTool {
-		out.ByTool = append(out.ByTool, types.AdminMoeToolStatRow{
-			Tool:         row.Tool,
-			TotalCalls:   row.TotalCalls,
-			SuccessCalls: row.SuccessCalls,
-			FailedCalls:  row.FailedCalls,
-		})
-	}
-	for _, row := range s.ByDay {
-		out.ByDay = append(out.ByDay, types.AdminMoeToolDayStat{
-			Date:         row.Date,
-			TotalCalls:   row.TotalCalls,
-			SuccessCalls: row.SuccessCalls,
-		})
-	}
-	return out
-}
-
-func ToolCallsDataFromBiz(rows []moebiz.ToolCallRow, total int64) types.AdminListMoeToolCallsData {
-	out := types.AdminListMoeToolCallsData{Total: total}
-	for _, row := range rows {
-		out.Items = append(out.Items, types.AdminMoeToolCallItem{
-			Id:               strconv.FormatUint(uint64(row.ID), 10),
-			Tool:             row.Tool,
-			ActorUserId:      strconv.FormatUint(uint64(row.ActorUserID), 10),
-			AgentKey:         row.AgentKey,
-			Ok:               row.Ok,
-			ErrorMsg:         row.ErrorMsg,
-			LatencyMs:        row.LatencyMs,
-			Source:           row.Source,
-			ArgumentsPreview: row.ArgumentsPreview,
-			CreatedAt:        row.CreatedAt.Format("2006-01-02 15:04:05"),
-		})
-	}
-	return out
-}
-
-func RefineDataFromBiz(r brain.RefineResult) types.AdminRefineMoeBrainEpisodeData {
-	return types.AdminRefineMoeBrainEpisodeData{
-		EpisodeId:     r.EpisodeID,
-		Ok:            r.OK,
-		Approved:      r.Approved,
-		QualityScore:  r.QualityScore,
-		BeforeContent: r.BeforeContent,
-		AfterContent:  r.AfterContent,
-		Attempts:      r.Attempts,
-		Detail:        r.Detail,
-	}
 }

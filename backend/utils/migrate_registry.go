@@ -21,7 +21,6 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "users", Model: &model.User{}},
 		{Key: "vip_plans", Model: &model.VipPlan{}},
 		{Key: "vip_orders", Model: &model.VipOrder{}},
-		{Key: "vip_records", Model: &model.VipRecord{}},
 		{Key: "transactions", Model: &model.Transaction{}},
 		{Key: "posts", Model: &model.Post{}},
 		{Key: "post_reports", Model: &model.PostReport{}},

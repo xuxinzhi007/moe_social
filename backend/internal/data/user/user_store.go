@@ -341,19 +341,6 @@ func (s *userStore) ListVipOrdersWithPlan(ctx context.Context, userID uint64, of
 	return orders, err
 }
 
-func (s *userStore) ListVipOrdersByUserID(ctx context.Context, userID interface{}, offset, limit int) ([]model.VipOrder, error) {
-	var orders []model.VipOrder
-	err := s.db.WithContext(ctx).Preload("Plan").Where("user_id = ?", userID).
-		Offset(offset).Limit(limit).Find(&orders).Error
-	return orders, err
-}
-
-func (s *userStore) CountVipOrdersByUserID(ctx context.Context, userID interface{}) (int64, error) {
-	var total int64
-	err := s.db.WithContext(ctx).Model(&model.VipOrder{}).Where("user_id = ?", userID).Count(&total).Error
-	return total, err
-}
-
 func (s *userStore) GetActiveVipOrder(ctx context.Context, userID interface{}) (model.VipOrder, error) {
 	var order model.VipOrder
 	err := s.db.WithContext(ctx).Where("user_id = ? AND is_active = ? AND end_at > ? AND status = ?",

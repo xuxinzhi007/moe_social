@@ -235,6 +235,10 @@ func GetVipRecords(ctx context.Context, store UserStore, in *vipv1.GetVipRecords
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
+	userID, err := strconv.ParseUint(in.GetUserId(), 10, 64)
+	if err != nil || userID == 0 {
+		return nil, ErrInvalidArgument
+	}
 	page := in.GetPage()
 	if page <= 0 {
 		page = 1
@@ -248,11 +252,11 @@ func GetVipRecords(ctx context.Context, store UserStore, in *vipv1.GetVipRecords
 	}
 	offset := int((page - 1) * pageSize)
 
-	total, err := store.CountVipOrdersByUserID(ctx, in.GetUserId())
+	total, err := store.CountVipOrders(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	orders, err := store.ListVipOrdersByUserID(ctx, in.GetUserId(), offset, int(pageSize))
+	orders, err := store.ListVipOrdersWithPlan(ctx, userID, offset, int(pageSize))
 	if err != nil {
 		return nil, err
 	}

@@ -8,8 +8,6 @@ import (
 	"strconv"
 )
 
-// Package userapp 用户信息查询与更新。
-
 func parseUserID(raw string) (uint, error) {
 	n, err := strconv.ParseUint(raw, 10, 64)
 	if err != nil || n == 0 {

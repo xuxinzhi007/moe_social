@@ -71,8 +71,6 @@ type UserStore interface {
 
 	CountVipOrders(ctx context.Context, userID uint64) (int64, error)
 	ListVipOrdersWithPlan(ctx context.Context, userID uint64, offset, limit int) ([]model.VipOrder, error)
-	ListVipOrdersByUserID(ctx context.Context, userID interface{}, offset, limit int) ([]model.VipOrder, error)
-	CountVipOrdersByUserID(ctx context.Context, userID interface{}) (int64, error)
 	GetActiveVipOrder(ctx context.Context, userID interface{}) (model.VipOrder, error)
 	GetVipPlan(ctx context.Context, planID interface{}) (model.VipPlan, error)
 	DeactivateVipOrders(ctx context.Context, userID uint) error

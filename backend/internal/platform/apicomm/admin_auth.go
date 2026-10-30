@@ -5,12 +5,11 @@ import (
 	"strings"
 
 	"backend/common/errorcode"
-	"backend/internal/legacy/types"
 	"backend/utils"
 )
 
 // RequireAdminToken 解析 X-Admin-Token 或 Authorization: Bearer；失败返回 API BaseResp 错误语义。
-func RequireAdminToken(r *http.Request) (*utils.AdminClaims, *types.BaseResp) {
+func RequireAdminToken(r *http.Request) (*utils.AdminClaims, *BaseResp) {
 	token := strings.TrimSpace(r.Header.Get("X-Admin-Token"))
 	if token == "" && r != nil {
 		token = strings.TrimSpace(r.URL.Query().Get("admin_token"))
@@ -22,7 +21,7 @@ func RequireAdminToken(r *http.Request) (*utils.AdminClaims, *types.BaseResp) {
 		}
 	}
 	if token == "" {
-		return nil, &types.BaseResp{
+		return nil, &BaseResp{
 			Code:    errorcode.E_UNAUTHORIZED,
 			Message: "请先登录管理后台",
 			Success: false,
@@ -30,7 +29,7 @@ func RequireAdminToken(r *http.Request) (*utils.AdminClaims, *types.BaseResp) {
 	}
 	claims, err := utils.ParseAdminToken(token)
 	if err != nil {
-		return nil, &types.BaseResp{
+		return nil, &BaseResp{
 			Code:    errorcode.E_UNAUTHORIZED,
 			Message: "登录已过期，请重新登录",
 			Success: false,

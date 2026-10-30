@@ -13,8 +13,6 @@ import (
 	"backend/model"
 )
 
-// Package userapp 关注与好友关系。
-
 // Follow 关注用户。
 func (s *AppService) Follow(ctx context.Context, in *userv1.FollowUserReq) (*userv1.FollowUserResp, error) {
 	followerID, followingID, err := userbiz.ParseFollowPair(in.GetUserId(), in.GetFollowingId())

@@ -58,16 +58,16 @@ func IsFollowing(ctx context.Context, store UserStore, followerID, followingID u
 	return count > 0, err
 }
 
-// IsFollowingByStringID 使用字符串 ID 检查关注（与 legacy CheckFollow RPC 一致）。
-func IsFollowingByStringID(ctx context.Context, store UserStore, followerID, followingID string) (bool, error) {
+// IsFollowingByStringID 使用字符串 ID 检查关注（复用 store.CountActiveFollow，避免在 biz 层写裸 SQL）。
+func IsFollowingByStringID(ctx context.Context, store UserStore, followerIDRaw, followingIDRaw string) (bool, error) {
 	if store == nil {
 		return false, gorm.ErrInvalidDB
 	}
-	var count int64
-	err := store.Raw().WithContext(ctx).Model(&model.Follow{}).
-		Where("follower_id = ? AND following_id = ? AND deleted_at IS NULL", followerID, followingID).
-		Count(&count).Error
-	return count > 0, err
+	followerID, followingID, err := ParseFollowPair(followerIDRaw, followingIDRaw)
+	if err != nil {
+		return false, err
+	}
+	return IsFollowing(ctx, store, followerID, followingID)
 }
 
 // FollowListPage 分页参数。

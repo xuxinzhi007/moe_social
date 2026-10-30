@@ -11,7 +11,6 @@ import (
 
 	companionv1 "backend/api/companion/v1"
 	companionbiz "backend/internal/biz/companion"
-	"backend/model"
 	"backend/pkg/conf"
 	"backend/pkg/llminference"
 
@@ -372,28 +371,18 @@ func (s *AppService) MarkProactiveRead(
 	if err != nil {
 		return nil, err
 	}
-	if s.db == nil {
+	if s.identityStore == nil {
 		return nil, kerrors.ServiceUnavailable("COMPANION_UNAVAILABLE", "伙伴服务暂不可用")
 	}
 	notificationID := uint(in.GetNotificationId())
 	if notificationID == 0 {
 		return nil, kerrors.BadRequest("COMPANION_PROACTIVE_NOTIFICATION_INVALID", "主动消息 ID 无效")
 	}
-	var notice model.Notification
-	if err := s.db.WithContext(ctx).
-		Where("id = ? AND user_id = ? AND type = ?", notificationID, userID, 9).
-		First(&notice).Error; err != nil {
+	if err := s.identityStore.MarkProactiveNotificationRead(ctx, userID, notificationID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, kerrors.NotFound("COMPANION_PROACTIVE_NOT_FOUND", "主动消息不存在或无权限")
 		}
 		return nil, err
-	}
-	if !notice.IsRead {
-		if err := s.db.WithContext(ctx).Model(&model.Notification{}).
-			Where("id = ? AND user_id = ? AND type = ?", notificationID, userID, 9).
-			Update("is_read", true).Error; err != nil {
-			return nil, err
-		}
 	}
 	if err := engine.RecordProactiveRead(ctx, userID, notificationID); err != nil {
 		return nil, err
@@ -596,7 +585,7 @@ func (s *AppService) GetCommunityIdentity(ctx context.Context, userID uint, in *
 	if err != nil {
 		return nil, err
 	}
-	if s.db == nil {
+	if s.identityStore == nil {
 		return nil, kerrors.ServiceUnavailable("COMPANION_IDENTITY_UNAVAILABLE", "伙伴社区身份暂不可用")
 	}
 

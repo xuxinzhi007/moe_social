@@ -85,6 +85,13 @@ type LifeStore interface {
 	ListRecentEventLogsByEntity(ctx context.Context, worldID string, entityID uint, limit int) ([]model.LifeEventLog, error)
 }
 
+// IdentityStore 定义 Companion 社区身份与主动触达通知的持久化接口（由 data/companion 实现）。
+type IdentityStore interface {
+	CreateProactiveNotification(ctx context.Context, userID uint, content string) (uint, error)
+	MarkProactiveNotificationRead(ctx context.Context, userID, notificationID uint) error
+	EnsureCommunityBot(ctx context.Context, ownerUserID uint, agentID, displayName, avatarURL, persona string) (*model.User, error)
+}
+
 // World bind status values（写入 Profile / State，供前端展示）。
 const (
 	WorldBindUnbound = "unbound"

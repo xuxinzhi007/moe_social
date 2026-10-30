@@ -4,7 +4,7 @@ import (
 	"context"
 
 	companionbiz "backend/internal/biz/companion"
-	"backend/model"
+	companiondata "backend/internal/data/companion"
 	"backend/pkg/llminference"
 	"gorm.io/gorm"
 )
@@ -17,7 +17,7 @@ type InferenceResolver func(ctx context.Context, userID uint) (*llminference.Con
 type AppService struct {
 	engine           *companionbiz.Engine
 	hub              *companionbiz.CompanionWSHub
-	db               *gorm.DB
+	identityStore    companionbiz.IdentityStore
 	resolveInference InferenceResolver
 }
 
@@ -26,6 +26,7 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 	if engine == nil {
 		return &AppService{}
 	}
+	idStore := companiondata.NewIdentityStore(db)
 	if hub != nil {
 		hub.SetEngine(engine)
 	}
@@ -38,17 +39,10 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 			}
 		}
 		engine.OnProactive = func(userID uint, message, reason string) (uint, bool) {
-			if db != nil {
-				notice := &model.Notification{
-					UserID:  userID,
-					Type:    9,
-					Content: message,
-				}
-				if err := db.WithContext(context.Background()).Create(notice).Error; err != nil {
-					// WS delivery still proceeds when the inbox write is unavailable.
-				} else {
-					hub.BroadcastProactive(userID, message, reason, notice.ID)
-					return notice.ID, true
+			if idStore != nil {
+				if noticeID, err := idStore.CreateProactiveNotification(context.Background(), userID, message); err == nil {
+					hub.BroadcastProactive(userID, message, reason, noticeID)
+					return noticeID, true
 				}
 			}
 			hub.BroadcastProactive(userID, message, reason, 0)
@@ -57,7 +51,7 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 		engine.OnEvent = hub.BroadcastCompanionEvent
 	}
 
-	return &AppService{engine: engine, hub: hub, db: db}
+	return &AppService{engine: engine, hub: hub, identityStore: idStore}
 }
 
 // UseInferenceResolver 注入用户供应商解析。未注入时聊天使用服务端默认模型。
