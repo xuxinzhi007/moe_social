@@ -23,6 +23,7 @@ func wirePlatformServices(ctx *svc.ServiceContext, c apiconfig.ImageConf) {
 			Driver:        mediabiz.DriverLocal,
 			LocalDir:      cfg.LocalDir,
 			PublicBaseURL: cfg.PublicBaseURL,
+			Comfy:         cfg.Comfy,
 		})
 		if err != nil {
 			log.Printf("[media] local fallback also failed: %v", err)

@@ -23,6 +23,8 @@ const (
 	envQiniuSecretKey = "MOE_QINIU_SECRET_KEY"
 	// qiniuDownloadTTL 是服务端去七牛拉私有对象时签名的有效期。
 	qiniuDownloadTTL = time.Hour
+	// qiniuShareTTL 是返回给调用方的图片地址有效期。空间是私有的，不带签名打不开。
+	qiniuShareTTL = 7 * 24 * time.Hour
 	// qiniuNotFoundCode 是七牛「对象不存在」。
 	qiniuNotFoundCode = 612
 	qiniuListPageSize = 1000
@@ -262,10 +264,19 @@ func (s *qiniuBlobStore) listPrefix(ctx context.Context, prefix, forceFolder str
 }
 
 func (s *qiniuBlobStore) downloadURL(key string) string {
+	return s.signedURL(key, qiniuDownloadTTL)
+}
+
+// ObjectURL 是这张图在七牛上的地址。私有空间会带签名。
+func (s *qiniuBlobStore) ObjectURL(folder, filename string) string {
+	return s.signedURL(objectKey(s.prefix, folder, filename), qiniuShareTTL)
+}
+
+func (s *qiniuBlobStore) signedURL(key string, ttl time.Duration) string {
 	if !s.private {
 		return storage.MakePublicURL(s.cdnDomain, key)
 	}
-	deadline := time.Now().Add(qiniuDownloadTTL).Unix()
+	deadline := time.Now().Add(ttl).Unix()
 	return storage.MakePrivateURL(s.mac, s.cdnDomain, key, deadline)
 }
 

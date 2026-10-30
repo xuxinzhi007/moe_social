@@ -55,6 +55,14 @@ type ImageConfig struct {
 	PublicBaseURL string
 	OSS           OSSConfig
 	Qiniu         QiniuConfig
+	Comfy         ComfyConfig
+}
+
+// ComfyConfig 本机 ComfyUI。空字段在出图时用写实模型的默认值。
+type ComfyConfig struct {
+	BaseURL        string
+	Checkpoint     string
+	TimeoutSeconds int
 }
 
 // BlobMeta 对象元数据（列表用）。

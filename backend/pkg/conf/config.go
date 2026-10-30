@@ -38,6 +38,7 @@ type Config struct {
 	API            API            `mapstructure:"api"`
 	Database       Database       `mapstructure:"database"`
 	Image          Image          `mapstructure:"image"`
+	Comfy          Comfy          `mapstructure:"comfy"`
 	AppClient      AppClient      `mapstructure:"app_client"`
 	LLMInference   LLMInference   `mapstructure:"llm_inference"`
 	Ollama         Ollama         `mapstructure:"ollama"`
@@ -108,6 +109,13 @@ type Database struct {
 	Charset   string `mapstructure:"charset"`
 	ParseTime bool   `mapstructure:"parsetime"`
 	Loc       string `mapstructure:"loc"`
+}
+
+// Comfy 本机 ComfyUI。出图接口把提示词交给它，图片仍写入 image 配置的存储。
+type Comfy struct {
+	BaseURL        string `mapstructure:"base_url"`
+	Checkpoint     string `mapstructure:"checkpoint"`
+	TimeoutSeconds int    `mapstructure:"timeout_seconds"`
 }
 
 // Image 图片存储：driver=local 落盘，driver=oss 走阿里云，driver=qiniu 走七牛。

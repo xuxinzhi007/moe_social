@@ -1062,6 +1062,96 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/moe.v1.GetBrainPipelineReply'
+    /api/admin/moe/inference/chat:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_ChatInference
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.ChatInferenceRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.ChatInferenceReply'
+    /api/admin/moe/inference/models/create:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_CreateInferenceModel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.CreateInferenceModelRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.CreateInferenceModelReply'
+    /api/admin/moe/inference/models/delete:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_DeleteInferenceModel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.DeleteInferenceModelRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.DeleteInferenceModelReply'
+    /api/admin/moe/inference/models/pull:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_PullInferenceModel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.PullInferenceModelRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.PullInferenceModelReply'
+    /api/admin/moe/inference/models/show:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_ShowInferenceModel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.ShowInferenceModelRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.ShowInferenceModelReply'
     /api/admin/moe/inference/status:
         get:
             tags:
@@ -10281,6 +10371,36 @@ components:
                 count:
                     type: integer
                     format: int32
+        moe.v1.ChatInferenceReply:
+            type: object
+            properties:
+                model:
+                    type: string
+                content:
+                    type: string
+                durationMs:
+                    type: string
+        moe.v1.ChatInferenceRequest:
+            type: object
+            properties:
+                model:
+                    type: string
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/moe.v1.InferenceChatMessage'
+                temperature:
+                    type: number
+                    format: double
+                topP:
+                    type: number
+                    format: double
+                repeatPenalty:
+                    type: number
+                    format: double
+                maxTokens:
+                    type: integer
+                    format: int32
         moe.v1.CompressBrainMemoriesReply:
             type: object
             properties:
@@ -10316,6 +10436,33 @@ components:
                 days:
                     type: integer
                     format: int32
+        moe.v1.CreateInferenceModelReply:
+            type: object
+            properties:
+                ok:
+                    type: boolean
+                model:
+                    type: string
+                message:
+                    type: string
+        moe.v1.CreateInferenceModelRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                baseModel:
+                    type: string
+                systemPrompt:
+                    type: string
+                modelfile:
+                    type: string
+                parameters:
+                    type: object
+                    additionalProperties:
+                        type: number
+                        format: double
+                replaceExisting:
+                    type: boolean
         moe.v1.CurateBrainReply:
             type: object
             properties:
@@ -10350,6 +10497,20 @@ components:
         moe.v1.DeleteBrainEpisodeReply:
             type: object
             properties: {}
+        moe.v1.DeleteInferenceModelReply:
+            type: object
+            properties:
+                ok:
+                    type: boolean
+                model:
+                    type: string
+                message:
+                    type: string
+        moe.v1.DeleteInferenceModelRequest:
+            type: object
+            properties:
+                model:
+                    type: string
         moe.v1.ForgetBrainMemoryReply:
             type: object
             properties:
@@ -10587,6 +10748,13 @@ components:
                         $ref: '#/components/schemas/moe.v1.MoeToolSchemaItem'
                 openaiToolsJson:
                     type: string
+        moe.v1.InferenceChatMessage:
+            type: object
+            properties:
+                role:
+                    type: string
+                content:
+                    type: string
         moe.v1.ListRuntimesReply:
             type: object
             properties:
@@ -10710,6 +10878,22 @@ components:
                     type: array
                     items:
                         type: string
+        moe.v1.PullInferenceModelReply:
+            type: object
+            properties:
+                ok:
+                    type: boolean
+                model:
+                    type: string
+                status:
+                    type: string
+                message:
+                    type: string
+        moe.v1.PullInferenceModelRequest:
+            type: object
+            properties:
+                model:
+                    type: string
         moe.v1.QueryToolStatsReply:
             type: object
             properties:
@@ -10810,6 +10994,29 @@ components:
                     type: string
                 skipCurate:
                     type: boolean
+        moe.v1.ShowInferenceModelReply:
+            type: object
+            properties:
+                model:
+                    type: string
+                system:
+                    type: string
+                modelfile:
+                    type: string
+                template:
+                    type: string
+                parametersText:
+                    type: string
+                parameters:
+                    type: object
+                    additionalProperties:
+                        type: number
+                        format: double
+        moe.v1.ShowInferenceModelRequest:
+            type: object
+            properties:
+                model:
+                    type: string
         moe.v1.TidyBrainFragmentsReply:
             type: object
             properties:

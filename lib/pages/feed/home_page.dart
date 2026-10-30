@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../auth_service.dart';
+import '../../constants/feature_flags.dart';
 import '../../models/topic_tag.dart';
 import '../../models/post.dart';
 import '../../services/post_service.dart';
+import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/moe_error_copy.dart';
@@ -276,14 +278,23 @@ class _HomePageState extends State<HomePage> {
 
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     // 精简：去掉未上线的搜索、与「我的/悬浮助手」重复的 AI 设置入口。
+    final glassNav = FeatureFlags.glassNavigation;
     return SliverAppBar(
       pinned: true,
       floating: true,
       snap: true,
       elevation: 0,
-      backgroundColor: MoeTokens.surface1,
+      scrolledUnderElevation: 0,
+      backgroundColor: glassNav ? Colors.transparent : MoeTokens.surface1,
       surfaceTintColor: Colors.transparent,
       foregroundColor: MoeTokens.titleText,
+      flexibleSpace: glassNav
+          ? MoeGlassSurface(
+              tint: MoeTokens.surface1.withValues(alpha: 0.82),
+              showBorder: false,
+              child: const SizedBox.expand(),
+            )
+          : null,
       title: Row(
         children: [
           Container(

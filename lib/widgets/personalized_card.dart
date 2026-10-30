@@ -147,13 +147,13 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
             onTap: () => context.read<MainNavController>().requestTab(4),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: MoeTokens.surface1,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                 border: Border.all(color: MoeTokens.surfaceBorder),
               ),
               child: Row(
@@ -176,7 +176,7 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: MoeTokens.textBase,
                             fontWeight: FontWeight.w800,
                             color: MoeTokens.titleText,
                           ),
@@ -189,10 +189,10 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
                           ].join(' · '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
+                          style: const TextStyle(
+                            fontSize: MoeTokens.textXs,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade600,
+                            color: MoeTokens.inkMuted,
                           ),
                         ),
                       ],
@@ -244,12 +244,12 @@ class _WeatherChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: MoeTokens.surface0,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
         ),
         child: loading
             ? const SizedBox(
@@ -265,7 +265,7 @@ class _WeatherChip extends StatelessWidget {
                   Text(
                     temp,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: MoeTokens.textSm,
                       fontWeight: FontWeight.w800,
                       color: MoeTokens.titleText,
                     ),
@@ -277,10 +277,10 @@ class _WeatherChip extends StatelessWidget {
                       city,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade600,
+                        color: MoeTokens.inkMuted,
                       ),
                     ),
                   ),

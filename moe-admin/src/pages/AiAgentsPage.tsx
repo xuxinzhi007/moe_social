@@ -20,6 +20,7 @@ export function AiAgentsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [editRow, setEditRow] = useState<AiAgentRow | null>(null)
+  const [models, setModels] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const pageSize = 20
@@ -47,6 +48,19 @@ export function AiAgentsPage() {
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    void client
+      .getMoeInferenceStatus()
+      .then((res) => {
+        if (res.success && res.data?.models) {
+          setModels(res.data.models)
+        }
+      })
+      .catch(() => {
+        // 推理探测失败时不阻塞酒馆列表
+      })
+  }, [client])
 
   function parseName(payload: string) {
     try {
@@ -170,6 +184,7 @@ export function AiAgentsPage() {
         row={editRow}
         saving={saving}
         error={formError}
+        models={models}
         onClose={() => setEditRow(null)}
         onSave={(json) => void saveAgent(json)}
       />

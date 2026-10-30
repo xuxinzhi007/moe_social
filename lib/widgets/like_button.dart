@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/services/like_state_manager.dart';
+import 'package:moe_social/services/post_service.dart';
 import 'package:moe_social/widgets/moe_like_action_button.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 
@@ -45,7 +45,7 @@ class _LikeButtonState extends State<LikeButton> {
     while (mounted && _outstanding > 0) {
       try {
         final updated =
-            await ApiService.toggleLike(widget.postId, widget.userId);
+            await PostService.syncToggleLike(widget.postId, widget.userId);
         if (!mounted) return;
         _outstanding--;
         if (_outstanding == 0) {

@@ -25,3 +25,13 @@ func (s *AppService) OpenImage(ctx context.Context, key string) (mediabiz.ImageF
 func (s *AppService) UploadImage(ctx context.Context, in mediabiz.UploadInput) (mediabiz.ImageInfo, error) {
 	return mediabiz.UploadImageWithStore(ctx, s.store, in)
 }
+
+// GenerateImage 用本机 ComfyUI 出一张图，并存进该用户的 gen 目录。
+func (s *AppService) GenerateImage(ctx context.Context, userFolder string, in mediabiz.DrawRequest) (mediabiz.ImageInfo, error) {
+	return mediabiz.GenerateAndStore(ctx, s.cfg, userFolder, in)
+}
+
+// ListCheckpoints 列出本机 ComfyUI 已安装的底模。
+func (s *AppService) ListCheckpoints(ctx context.Context) ([]string, error) {
+	return mediabiz.ListCheckpoints(ctx, s.cfg.Comfy)
+}

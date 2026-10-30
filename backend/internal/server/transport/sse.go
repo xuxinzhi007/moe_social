@@ -1,14 +1,20 @@
 package transport
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"backend/internal/biz/moe/moebridge"
 	"backend/internal/legacy/types"
 	apicomm "backend/internal/platform/apicomm"
 	moeadmin "backend/internal/service/moe"
+	"backend/model"
+	"backend/pkg/conf"
+	"backend/pkg/llminference"
 	"backend/pkg/moe/runtime"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -16,6 +22,7 @@ import (
 
 func registerSSE(r *khttp.Router, admin *moeadmin.AdminService) {
 	r.GET("/api/admin/moe/brain/pipeline/stream", streamMoeBrainPipeline(admin))
+	r.POST("/api/admin/moe/inference/chat/stream", streamMoeInferenceChat(admin))
 }
 
 func moeAdminUnavailable() types.BaseResp {
@@ -91,5 +98,111 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 				}
 			}
 		}
+	}
+}
+
+type adminChatStreamReq struct {
+	Model         string  `json:"model"`
+	Temperature   float64 `json:"temperature"`
+	TopP          float64 `json:"top_p"`
+	RepeatPenalty float64 `json:"repeat_penalty"`
+	MaxTokens     int     `json:"max_tokens"`
+	Messages      []struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"messages"`
+}
+
+func streamMoeInferenceChat(admin *moeadmin.AdminService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		w := ctx.Response()
+		r := ctx.Request()
+		if admin == nil {
+			_ = apicomm.WriteSSE(w, "error", map[string]any{"message": "MoeAdmin unavailable"})
+			return nil
+		}
+		raw, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+		if err != nil {
+			_ = apicomm.WriteSSE(w, "error", map[string]any{"message": "读取请求体失败"})
+			return nil
+		}
+		var req adminChatStreamReq
+		if err := json.Unmarshal(raw, &req); err != nil {
+			_ = apicomm.WriteSSE(w, "error", map[string]any{"message": "无效的 JSON 请求体"})
+			return nil
+		}
+		messages := make([]llminference.Message, 0, len(req.Messages))
+		for _, m := range req.Messages {
+			role := strings.TrimSpace(m.Role)
+			content := strings.TrimSpace(m.Content)
+			if content == "" {
+				continue
+			}
+			if role == "" {
+				role = "user"
+			}
+			messages = append(messages, llminference.Message{Role: role, Content: content})
+		}
+		if len(messages) == 0 {
+			_ = apicomm.WriteSSE(w, "error", map[string]any{"message": "消息内容不能为空"})
+			return nil
+		}
+
+		cfg := conf.Inference()
+		if !cfg.Ready() {
+			_ = apicomm.WriteSSE(w, "error", map[string]any{"message": "llm_inference.base_url 未配置"})
+			return nil
+		}
+		modelName := strings.TrimSpace(req.Model)
+		if modelName == "" {
+			deps := runtime.Deps{Inference: cfg}
+			modelName = runtime.ConfiguredPostModel(deps, model.MoeAgentRuntime{})
+		}
+		opts := llminference.ChatOptions{
+			Temperature:   req.Temperature,
+			TopP:          req.TopP,
+			RepeatPenalty: req.RepeatPenalty,
+			MaxTokens:     req.MaxTokens,
+		}
+
+		apicomm.InitSSEHeaders(w)
+		w.WriteHeader(http.StatusOK)
+
+		started := time.Now()
+		sentChunks := 0
+		full, streamErr := llminference.ChatStream(r.Context(), cfg, modelName, messages, opts, func(chunk string) error {
+			sentChunks++
+			return apicomm.WriteSSE(w, "chunk", map[string]any{"delta": chunk})
+		})
+		if streamErr != nil && sentChunks == 0 && cfg.APIStyle != llminference.APIOllama {
+			ollamaCfg := cfg
+			base := strings.TrimRight(strings.TrimSpace(ollamaCfg.BaseURL), "/")
+			if strings.HasSuffix(base, "/v1") {
+				base = strings.TrimSuffix(base, "/v1")
+			}
+			ollamaCfg.BaseURL = base
+			ollamaCfg.APIStyle = llminference.APIOllama
+			if fallbackFull, fallbackErr := llminference.ChatStream(r.Context(), ollamaCfg, modelName, messages, opts, func(chunk string) error {
+				sentChunks++
+				return apicomm.WriteSSE(w, "chunk", map[string]any{"delta": chunk})
+			}); fallbackErr == nil {
+				full = fallbackFull
+				streamErr = nil
+			}
+		}
+		if streamErr != nil {
+			_ = apicomm.WriteSSE(w, "error", map[string]any{
+				"message": streamErr.Error(),
+				"partial": full,
+			})
+			return nil
+		}
+		_ = apicomm.WriteSSE(w, "done", map[string]any{
+			"ok":          true,
+			"model":       modelName,
+			"content":     full,
+			"duration_ms": time.Since(started).Milliseconds(),
+		})
+		return nil
 	}
 }

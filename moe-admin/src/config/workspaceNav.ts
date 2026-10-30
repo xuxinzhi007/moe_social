@@ -147,6 +147,13 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       title: '脑图与推理监控',
     },
     {
+      kind: 'item',
+      to: '/ai/models',
+      label: '模型与 Modelfile',
+      icon: 'data',
+      title: '小主机模型总览与 Modelfile',
+    },
+    {
       kind: 'group',
       id: 'ai-bots',
       label: '角色与 Bot',

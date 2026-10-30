@@ -177,6 +177,15 @@ type hybridBlobStore struct {
 	fallback BlobStore
 }
 
+func (s *hybridBlobStore) ObjectURL(folder, filename string) string {
+	if linker, ok := s.primary.(interface {
+		ObjectURL(folder, filename string) string
+	}); ok {
+		return linker.ObjectURL(folder, filename)
+	}
+	return ""
+}
+
 func (s *hybridBlobStore) Put(ctx context.Context, folder, filename string, r io.Reader, contentType string) error {
 	return s.primary.Put(ctx, folder, filename, r, contentType)
 }

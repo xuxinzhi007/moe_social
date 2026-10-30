@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../auth_service.dart';
+import '../../constants/feature_flags.dart';
 import '../../services/friend_request_sync.dart';
 import '../../services/presence_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../profile/friends_page.dart';
@@ -93,6 +95,7 @@ class _MessageCenterPageState extends State<MessageCenterPage>
       valueListenable: FriendRequestSync.incomingCount,
       builder: (context, incomingRequestCount, _) {
         final hasRequests = incomingRequestCount > 0;
+        final glassNav = FeatureFlags.glassNavigation;
 
         return AdaptivePageScaffold(
           template: PageTemplate.fullscreen,
@@ -100,7 +103,7 @@ class _MessageCenterPageState extends State<MessageCenterPage>
           body: Scaffold(
             backgroundColor: MoeTokens.pageBackground,
             appBar: AppBar(
-              title: Text(
+              title: const Text(
                 '好友',
                 style: TextStyle(
                   fontWeight: MoeTokens.fontWeightTitle,
@@ -111,9 +114,17 @@ class _MessageCenterPageState extends State<MessageCenterPage>
               centerTitle: true,
               elevation: 0,
               scrolledUnderElevation: 0,
-              backgroundColor: MoeTokens.surface1,
+              backgroundColor:
+                  glassNav ? Colors.transparent : MoeTokens.surface1,
               foregroundColor: MoeTokens.titleText,
               surfaceTintColor: Colors.transparent,
+              flexibleSpace: glassNav
+                  ? MoeGlassSurface(
+                      tint: MoeTokens.surface1.withValues(alpha: 0.82),
+                      showBorder: false,
+                      child: const SizedBox.expand(),
+                    )
+                  : null,
               shape: const Border(
                 bottom: BorderSide(color: MoeTokens.surfaceBorder),
               ),

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../services/auth_flow_service.dart';
-import '../../services/api_service.dart' show ApiException;
+import '../../services/api_client.dart' show ApiException;
 import 'reset_password_page.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';

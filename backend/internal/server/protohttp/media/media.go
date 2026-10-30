@@ -2,11 +2,14 @@ package mediahttp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+
+	"google.golang.org/protobuf/encoding/protojson"
 
 	mediav1 "backend/api/media/v1"
 	mediabiz "backend/internal/biz/media"
@@ -118,6 +121,111 @@ func (s *Server) UploadImage(ctx context.Context, _ *mediav1.UploadImageRequest)
 		return nil, err
 	}
 	return uploadReplyFromInfo(info), nil
+}
+
+func (s *Server) generateImageHTTP(ctx khttp.Context) error {
+	var in mediabiz.DrawRequest
+	if err := ctx.Bind(&in); err != nil {
+		return err
+	}
+	khttp.SetOperation(ctx, "/media.v1.Media/GenerateImage")
+	h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+		return s.generateImage(ctx, req.(*mediabiz.DrawRequest))
+	})
+	out, err := h(ctx, &in)
+	if err != nil {
+		return err
+	}
+	reply := out.(generateReply)
+	payload, err := generatePayload(reply.UploadImageReply, reply.fullURL)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(200, payload)
+}
+
+func (s *Server) generateImage(ctx context.Context, in *mediabiz.DrawRequest) (generateReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return generateReply{}, err
+	}
+	claims, err := claimsFromContext(ctx)
+	if err != nil {
+		return generateReply{}, err
+	}
+	info, err := app.GenerateImage(ctx, mediabiz.FolderNameForUser(claims.UserID, claims.Username), *in)
+	if err != nil {
+		return generateReply{}, generateError(err)
+	}
+	return generateReply{UploadImageReply: uploadReplyFromInfo(info), fullURL: info.StorageURL}, nil
+}
+
+type generateReply struct {
+	*mediav1.UploadImageReply
+	fullURL string
+}
+
+// generatePayload 保留原来的 url 路由。fullUrl 是图片在七牛上的地址。
+func generatePayload(reply *mediav1.UploadImageReply, storageURL string) (map[string]any, error) {
+	raw, err := (protojson.MarshalOptions{}).Marshal(reply)
+	if err != nil {
+		return nil, err
+	}
+	payload := map[string]any{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, err
+	}
+	if storageURL != "" {
+		payload["fullUrl"] = storageURL
+	}
+	return payload, nil
+}
+
+func (s *Server) listCheckpointsHTTP(ctx khttp.Context) error {
+	khttp.SetOperation(ctx, "/media.v1.Media/ListCheckpoints")
+	h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+		app, err := s.requireApp()
+		if err != nil {
+			return nil, err
+		}
+		if _, err := claimsFromContext(ctx); err != nil {
+			return nil, err
+		}
+		names, err := app.ListCheckpoints(ctx)
+		if err != nil {
+			return nil, generateError(err)
+		}
+		return map[string]any{
+			"checkpoints": names,
+			"default":     app.Config().Comfy.Checkpoint,
+		}, nil
+	})
+	out, err := h(ctx, nil)
+	if err != nil {
+		return err
+	}
+	return ctx.Result(200, out)
+}
+
+func generateError(err error) error {
+	switch {
+	case errors.Is(err, mediabiz.ErrEmptyPrompt):
+		return errEmptyPrompt
+	case errors.Is(err, mediabiz.ErrPromptTooLong):
+		return errPromptTooLong
+	case errors.Is(err, mediabiz.ErrBadDrawSize):
+		return errBadDrawSize
+	case errors.Is(err, mediabiz.ErrBadDrawSteps):
+		return errBadDrawSteps
+	case errors.Is(err, mediabiz.ErrBadDrawCFG):
+		return errBadDrawCFG
+	case errors.Is(err, mediabiz.ErrComfyUnavailable):
+		return errComfyDown
+	case errors.Is(err, mediabiz.ErrUnknownCheckpoint):
+		return errUnknownCheckpoint
+	default:
+		return err
+	}
 }
 
 func (s *Server) ServeImage(ctx context.Context, in *mediav1.ServeImageRequest) (*httpbody.HttpBody, error) {

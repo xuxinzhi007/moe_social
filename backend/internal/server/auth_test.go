@@ -110,6 +110,7 @@ func TestRequiresAuthSplitsReadAndWrite(t *testing.T) {
 	}{
 		// ---- 白名单读前缀下的写方法必须恢复鉴权 ----
 		{http.MethodDelete, "/api/images/a.png", true, "真机实测过的洞：被 /api/images/ 放行，原先只靠适配层自己再查一次 claims 才没出事"},
+		{http.MethodPost, "/api/images/generate", true, "写实出图是写操作，必须登录"},
 		// 当初暴露同一个洞的两条真实路由是 POST /api/llm/models/delete 与 /download，
 		// 已在 #42 死接口清理中连同 proto 一起删除。这里留一条合成路径当探针：
 		// requiresAuth 只看前缀与方法、不查路由表，所以 /api/llm/models 这条长前缀

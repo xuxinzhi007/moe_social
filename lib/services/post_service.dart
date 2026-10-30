@@ -85,7 +85,7 @@ class PostService {
     }
   }
 
-  // 点赞/取消点赞帖子
+  // 点赞/取消点赞帖子（供未自带乐观队列的调用方使用）
   static Future<Post> toggleLike(String postId, String userId) async {
     // 1. 乐观更新全局状态管理器（立即更新 UI）
     final manager = LikeStateManager();
@@ -104,11 +104,7 @@ class PostService {
 
     try {
       // 2. 调用 API
-      final updatedPost = await ApiService.toggleLike(postId, userId);
-
-      // 3. 成功后使用服务器返回的最新状态确认更新（修正可能存在的偏差）
-      manager.updateState(postId, updatedPost.isLiked, updatedPost.likes);
-
+      final updatedPost = await syncToggleLike(postId, userId);
       return updatedPost;
     } catch (e) {
       // 5. 失败回滚
@@ -116,6 +112,18 @@ class PostService {
       manager.setCount(postId, originalCount);
       rethrow;
     }
+  }
+
+  /// 向服务端发送一次点赞切换并把最终状态写回 [LikeStateManager]。
+  /// 适合已自行维护乐观队列的组件（如 [LikeButton]）。
+  static Future<Post> syncToggleLike(String postId, String userId) async {
+    final updatedPost = await ApiService.toggleLike(postId, userId);
+    LikeStateManager().updateState(
+      postId,
+      updatedPost.isLiked,
+      updatedPost.likes,
+    );
+    return updatedPost;
   }
 
   // 增加评论数

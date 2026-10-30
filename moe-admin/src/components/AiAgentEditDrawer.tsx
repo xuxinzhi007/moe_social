@@ -76,11 +76,12 @@ type Props = {
   row: AiAgentRow | null
   saving: boolean
   error: string
+  models?: string[]
   onClose: () => void
   onSave: (payloadJson: string) => void
 }
 
-export function AiAgentEditDrawer({ row, saving, error, onClose, onSave }: Props) {
+export function AiAgentEditDrawer({ row, saving, error, models = [], onClose, onSave }: Props) {
   const [form, setForm] = useState<AgentForm>(() =>
     row ? parsePayload(row.payload_json) : parsePayload('{}'),
   )
@@ -120,10 +121,18 @@ export function AiAgentEditDrawer({ row, saving, error, onClose, onSave }: Props
       </FormField>
       <FormField label="绑定模型 ID（聊天用）">
         <input
+          list="ai-agent-model-options"
           value={form.model_name}
           onChange={(e) => setForm({ ...form, model_name: e.target.value })}
-          placeholder="与 App 内一致，如 qwen2"
+          placeholder="从小主机模型列表选择，或留空使用默认"
         />
+        {models.length > 0 ? (
+          <datalist id="ai-agent-model-options">
+            {models.map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
+        ) : null}
       </FormField>
       <FormField label="系统提示 / 角色设定">
         <textarea

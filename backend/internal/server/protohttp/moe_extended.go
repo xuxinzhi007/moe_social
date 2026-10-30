@@ -21,6 +21,8 @@ import (
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Server) GetBotFlow(ctx context.Context, in *moev1pb.GetBotFlowRequest) (*moev1pb.BotFlowReply, error) {
@@ -94,6 +96,13 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 
 	client := utils.NewHTTPClient(cfg.TimeoutSeconds)
 	models, listErr := apicomm.ListModelNames(inferCtx, client, cfg)
+	if listErr != nil || len(models) == 0 {
+		ollamaModels, ollamaErr := llminference.ListModels(inferCtx, ollamaNativeConfig(s.resolveInferenceConfig()))
+		if ollamaErr == nil && len(ollamaModels) > 0 {
+			models = ollamaModels
+			listErr = nil
+		}
+	}
 	if listErr != nil {
 		out.Message = listErr.Error()
 		out.Online = apicomm.ProbeInferenceEndpoint(inferCtx, client, cfg)
@@ -137,6 +146,197 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 	out.ContextLimit = int32(slot.ContextLimit)
 	out.ContextSource = slot.Source
 	return out, nil
+}
+
+func (s *Server) resolveInferenceConfig() llminference.Config {
+	if strings.TrimSpace(s.inferenceCfg.BaseUrl) != "" {
+		return llminference.ConfigFrom(
+			s.inferenceCfg.BaseUrl,
+			s.inferenceCfg.ApiStyle,
+			s.inferenceCfg.TimeoutSeconds,
+			s.inferenceCfg.MemoryModel,
+			s.inferenceCfg.ApiKey,
+		)
+	}
+	return conf.Inference()
+}
+
+func ollamaNativeConfig(cfg llminference.Config) llminference.Config {
+	out := cfg
+	base := strings.TrimRight(strings.TrimSpace(out.BaseURL), "/")
+	if strings.HasSuffix(base, "/v1") {
+		base = strings.TrimSuffix(base, "/v1")
+	}
+	out.BaseURL = base
+	out.APIStyle = llminference.APIOllama
+	return out
+}
+
+func (s *Server) ShowInferenceModel(ctx context.Context, in *moev1pb.ShowInferenceModelRequest) (*moev1pb.ShowInferenceModelReply, error) {
+	if _, err := s.requireAdmin(); err != nil {
+		return nil, err
+	}
+	modelName := strings.TrimSpace(in.GetModel())
+	if modelName == "" {
+		return nil, status.Error(codes.InvalidArgument, "model 不能为空")
+	}
+	cfg := ollamaNativeConfig(s.resolveInferenceConfig())
+	if !cfg.Ready() {
+		return nil, status.Error(codes.FailedPrecondition, "llm_inference.base_url 未配置")
+	}
+	info, err := llminference.ShowModel(ctx, cfg, modelName)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, fmt.Sprintf("读取模型详情失败: %v", err))
+	}
+	return &moev1pb.ShowInferenceModelReply{
+		Model:          modelName,
+		System:         info.SystemPrompt(),
+		Modelfile:      info.Modelfile,
+		Template:       info.Template,
+		ParametersText: info.Parameters,
+		Parameters:     llminference.ParseAdminParameters(info.Parameters),
+	}, nil
+}
+
+func (s *Server) CreateInferenceModel(ctx context.Context, in *moev1pb.CreateInferenceModelRequest) (*moev1pb.CreateInferenceModelReply, error) {
+	if _, err := s.requireAdmin(); err != nil {
+		return nil, err
+	}
+	name := strings.TrimSpace(in.GetName())
+	if name == "" {
+		return nil, status.Error(codes.InvalidArgument, "模型名称不能为空")
+	}
+	baseModel := strings.TrimSpace(in.GetBaseModel())
+	modelfile := strings.TrimSpace(in.GetModelfile())
+	if baseModel == "" && modelfile == "" {
+		return nil, status.Error(codes.InvalidArgument, "请选择底座模型或填写 Modelfile")
+	}
+	cfg := ollamaNativeConfig(s.resolveInferenceConfig())
+	if !cfg.Ready() {
+		return nil, status.Error(codes.FailedPrecondition, "llm_inference.base_url 未配置")
+	}
+	if in.GetReplaceExisting() {
+		_ = llminference.DeleteModel(ctx, cfg, name)
+	}
+	err := llminference.CreateAdminModel(
+		ctx,
+		cfg,
+		name,
+		baseModel,
+		strings.TrimSpace(in.GetSystemPrompt()),
+		modelfile,
+		in.GetParameters(),
+	)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, fmt.Sprintf("创建模型失败: %v", err))
+	}
+	return &moev1pb.CreateInferenceModelReply{
+		Ok:      true,
+		Model:   name,
+		Message: "模型创建成功",
+	}, nil
+}
+
+func (s *Server) DeleteInferenceModel(ctx context.Context, in *moev1pb.DeleteInferenceModelRequest) (*moev1pb.DeleteInferenceModelReply, error) {
+	if _, err := s.requireAdmin(); err != nil {
+		return nil, err
+	}
+	modelName := strings.TrimSpace(in.GetModel())
+	if modelName == "" {
+		return nil, status.Error(codes.InvalidArgument, "model 不能为空")
+	}
+	cfg := ollamaNativeConfig(s.resolveInferenceConfig())
+	if !cfg.Ready() {
+		return nil, status.Error(codes.FailedPrecondition, "llm_inference.base_url 未配置")
+	}
+	if err := llminference.DeleteModel(ctx, cfg, modelName); err != nil {
+		return nil, status.Error(codes.Unavailable, fmt.Sprintf("删除模型失败: %v", err))
+	}
+	return &moev1pb.DeleteInferenceModelReply{
+		Ok:      true,
+		Model:   modelName,
+		Message: "模型已删除",
+	}, nil
+}
+
+func (s *Server) PullInferenceModel(ctx context.Context, in *moev1pb.PullInferenceModelRequest) (*moev1pb.PullInferenceModelReply, error) {
+	if _, err := s.requireAdmin(); err != nil {
+		return nil, err
+	}
+	modelName := strings.TrimSpace(in.GetModel())
+	if modelName == "" {
+		return nil, status.Error(codes.InvalidArgument, "请输入要拉取的模型名称")
+	}
+	cfg := ollamaNativeConfig(s.resolveInferenceConfig())
+	if !cfg.Ready() {
+		return nil, status.Error(codes.FailedPrecondition, "llm_inference.base_url 未配置")
+	}
+	st, err := llminference.PullModel(ctx, cfg, modelName)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, fmt.Sprintf("拉取模型失败: %v", err))
+	}
+	return &moev1pb.PullInferenceModelReply{
+		Ok:      true,
+		Model:   modelName,
+		Status:  st,
+		Message: "模型拉取完成",
+	}, nil
+}
+
+func (s *Server) ChatInference(ctx context.Context, in *moev1pb.ChatInferenceRequest) (*moev1pb.ChatInferenceReply, error) {
+	if _, err := s.requireAdmin(); err != nil {
+		return nil, err
+	}
+	cfg := s.resolveInferenceConfig()
+	if !cfg.Ready() {
+		return nil, status.Error(codes.FailedPrecondition, "llm_inference.base_url 未配置")
+	}
+	rawMessages := in.GetMessages()
+	if len(rawMessages) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "messages 不能为空")
+	}
+	messages := make([]llminference.Message, 0, len(rawMessages))
+	for _, m := range rawMessages {
+		role := strings.TrimSpace(m.GetRole())
+		content := strings.TrimSpace(m.GetContent())
+		if content == "" {
+			continue
+		}
+		if role == "" {
+			role = "user"
+		}
+		messages = append(messages, llminference.Message{Role: role, Content: content})
+	}
+	if len(messages) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "messages 内容不能为空")
+	}
+	modelName := strings.TrimSpace(in.GetModel())
+	if modelName == "" {
+		deps := runtime.Deps{Inference: conf.Inference()}
+		modelName = runtime.ConfiguredPostModel(deps, model.MoeAgentRuntime{})
+	}
+	opts := llminference.ChatOptions{
+		Temperature:   in.GetTemperature(),
+		TopP:          in.GetTopP(),
+		RepeatPenalty: in.GetRepeatPenalty(),
+		MaxTokens:     int(in.GetMaxTokens()),
+	}
+	started := time.Now()
+	replyText, err := llminference.Chat(ctx, cfg, modelName, messages, opts)
+	if err != nil && cfg.APIStyle != llminference.APIOllama {
+		if fallbackText, fallbackErr := llminference.Chat(ctx, ollamaNativeConfig(cfg), modelName, messages, opts); fallbackErr == nil {
+			replyText = fallbackText
+			err = nil
+		}
+	}
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, fmt.Sprintf("推理调用失败: %v", err))
+	}
+	return &moev1pb.ChatInferenceReply{
+		Model:      modelName,
+		Content:    replyText,
+		DurationMs: time.Since(started).Milliseconds(),
+	}, nil
 }
 
 func (s *Server) GetToolsSchema(ctx context.Context, _ *moev1pb.GetToolsSchemaRequest) (*moev1pb.GetToolsSchemaReply, error) {

@@ -178,7 +178,7 @@ image:
     bucket: "moe-image"
     cdn_domain: "http://tm6hu0nnn.hn-bkt.clouddn.com" # debug 和正式环境共用。测试域名大约 30 天有效，过期后只改这一处
     region: "z2"                                     # 华南，对应域名里的 hn
-    prefix: "media"                                  # 下面再按用户分 avatar / album / post / chat
+    prefix: "media"                                  # 下面再按用户分 avatar / album / post / chat / gen
     access_key: "c2RytiFZrxjm8CF4ZpPrbhBdEUR_MIb8gJKvRKpN"                                   # 留空，改用上面的环境变量
     secret_key: "rus_ItGAPWc9VQrZizz7abgBvGzhBUyQczYR4Yzv"
     private: true                                    # 空间不公开，由接口签名后再拉取
@@ -194,6 +194,13 @@ image:
     public_base_url: ""
     region: "cn-shenzhen"
     proxy_via_api: false
+
+# 本机出图。POST /api/images/generate 把提示词交给这里的 ComfyUI，图片仍进上面的七牛 gen 目录。
+# checkpoint 只是不传模型名时的默认底模。请求体里的 checkpoint 可以换成 ComfyUI 里任意已安装模型。
+comfy:
+  base_url: "http://127.0.0.1:8188"
+  checkpoint: "Realistic_Vision_V5.1_fp16-no-ema.safetensors"
+  timeout_seconds: 180
 
 # 私信持久化 private_messages 表（保留天数在写入时按发送方 VIP 快照；见 docs/private_messages.md）
 private_message:

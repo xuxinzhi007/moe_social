@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../game/arena/arena_view_model.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart' show ApiException;
 import '../../services/arena_service.dart';
 import '../../theme/moe_tokens.dart';
 
@@ -18,7 +18,8 @@ class ArenaHeroChatPage extends StatefulWidget {
 }
 
 class _HeroChatMessage {
-  const _HeroChatMessage({required this.text, required this.isUser, this.isError = false});
+  const _HeroChatMessage(
+      {required this.text, required this.isUser, this.isError = false});
 
   final String text;
   final bool isUser;
@@ -70,7 +71,8 @@ class _ArenaHeroChatPageState extends State<ArenaHeroChatPage> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(_HeroChatMessage(text: e.message, isUser: false, isError: true));
+        _messages.add(
+            _HeroChatMessage(text: e.message, isUser: false, isError: true));
       });
     } catch (_) {
       if (!mounted) return;

@@ -254,28 +254,38 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     }
 
     try {
-      final friends = await UserService.getFriends(currentUserId);
-      final incoming =
-          await UserService.getIncomingFriendRequests(currentUserId);
-      User? self;
-      try {
-        self = await UserService.getUserInfo(currentUserId);
-      } catch (_) {}
-      friends.sort((a, b) => a.username.compareTo(b.username));
-      Map<String, int>? serverDmUnread;
-      try {
-        final page = await ChatService.listPrivateConversations(
-          limit: 120,
-          offset: 0,
-        );
+      final friendsFuture = UserService.getFriends(currentUserId);
+      final incomingFuture =
+          UserService.getIncomingFriendRequests(currentUserId);
+      final selfFuture = UserService.getUserInfo(currentUserId)
+          .then<User?>((u) => u)
+          .catchError((_) => null);
+      final dmUnreadFuture = ChatService.listPrivateConversations(
+        limit: 120,
+        offset: 0,
+      ).then<Map<String, int>?>((page) {
         final nextUnread = <String, int>{};
         for (final item in page.items) {
           final peerId = item.peerUserId.trim();
           if (peerId.isEmpty) continue;
           nextUnread[peerId] = item.unreadCount;
         }
-        serverDmUnread = nextUnread;
-      } catch (_) {}
+        return nextUnread;
+      }).catchError((_) => null);
+
+      final results = await Future.wait<Object?>([
+        friendsFuture,
+        incomingFuture,
+        selfFuture,
+        dmUnreadFuture,
+      ]);
+
+      final friends = results[0] as List<User>;
+      final incoming = results[1] as List<Map<String, dynamic>>;
+      final self = results[2] as User?;
+      final serverDmUnread = results[3] as Map<String, int>?;
+
+      friends.sort((a, b) => a.username.compareTo(b.username));
       if (!mounted) return;
       setState(() {
         _friends = friends;

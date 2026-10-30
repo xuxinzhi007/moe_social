@@ -15,11 +15,12 @@ import (
 
 // ImageInfo 图片元数据。
 type ImageInfo struct {
-	ID        string
-	Filename  string
-	URL       string
-	Size      int64
-	CreatedAt string
+	ID         string
+	Filename   string
+	URL        string
+	StorageURL string
+	Size       int64
+	CreatedAt  string
 }
 
 // ListImagesInput 列表请求。
@@ -38,7 +39,7 @@ type ListImagesResult struct {
 // UploadInput 上传参数。
 type UploadInput struct {
 	UserFolder string
-	// Category 分类目录：avatar、album、post、chat。空则写在用户目录根下（旧数据）。
+	// Category 分类目录：avatar、album、post、chat、gen。空则写在用户目录根下（旧数据）。
 	Category string
 	OrigName string
 	Reader   io.Reader
@@ -231,6 +232,22 @@ func UploadImageWithStore(ctx context.Context, store BlobStore, in UploadInput) 
 		Size:      int64(len(data)),
 		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 	}, nil
+}
+
+// SaveGeneratedImage 把服务端生成的图片写入该用户的 gen 目录。存储驱动仍是 image.driver，当前为七牛。
+func SaveGeneratedImage(ctx context.Context, cfg ImageConfig, userFolder, origName string, data []byte) (ImageInfo, error) {
+	if len(data) == 0 {
+		return ImageInfo{}, fmt.Errorf("empty image data")
+	}
+	if strings.TrimSpace(origName) == "" {
+		origName = "gen.png"
+	}
+	return UploadImage(ctx, cfg, UploadInput{
+		UserFolder: userFolder,
+		Category:   CategoryGen,
+		OrigName:   origName,
+		Reader:     bytes.NewReader(data),
+	})
 }
 
 // SaveImageBytes 将内存中的图片写入用户目录（服务端生成缩略图等）。

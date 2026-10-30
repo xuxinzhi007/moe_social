@@ -37,6 +37,16 @@ func ImageConfigFromAPI(img apiconfig.ImageConf) mediabiz.ImageConfig {
 			Private:     img.Qiniu.Private,
 			ProxyViaAPI: img.Qiniu.ProxyViaAPI,
 		},
+		Comfy: comfyFromFile(),
+	}
+}
+
+func comfyFromFile() mediabiz.ComfyConfig {
+	c := conf.Get().Comfy
+	return mediabiz.ComfyConfig{
+		BaseURL:        strings.TrimSpace(c.BaseURL),
+		Checkpoint:     strings.TrimSpace(c.Checkpoint),
+		TimeoutSeconds: c.TimeoutSeconds,
 	}
 }
 

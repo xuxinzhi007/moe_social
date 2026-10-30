@@ -5,13 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
-import '../../models/achievement_badge.dart';
-import '../../models/user.dart';
 import '../../providers/user_level_provider.dart';
-import '../../services/achievement_service.dart';
-import '../../services/commerce_service.dart';
-import '../../services/post_service.dart';
-import '../../services/user_service.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
@@ -32,6 +26,7 @@ import '../commerce/wallet_page.dart';
 import '../gallery/cloud_gallery_page.dart';
 import 'followers_page.dart';
 import 'following_page.dart';
+import 'profile_viewmodel.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -42,183 +37,55 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   MoeTheme get _moe => MoeTheme.of(context);
-
-  User? _user;
-  bool _isLoading = true;
-  bool _isLoadingDetails = false;
-  bool _hasDetailsError = false;
-  Object? _loadError;
-  bool _isVip = false;
-  int _postCount = 0;
-  int _followingCount = 0;
-  int _followerCount = 0;
-  List<AchievementBadge> _userBadges = [];
-  final AchievementService _achievementService = AchievementService();
-
-  Future<void>? _ongoingProfileLoad;
+  late final ProfileViewModel _vm;
 
   @override
   void initState() {
     super.initState();
-    _loadUserInfo();
+    _vm = ProfileViewModel()..addListener(_onVmChanged);
+    unawaited(_loadUserInfo());
+  }
+
+  void _onVmChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _vm.removeListener(_onVmChanged);
+    _vm.dispose();
+    super.dispose();
   }
 
   // ─── Data loading ─────────────────────────────────────────────────────────
 
   Future<void> _loadUserInfo({bool forceRefresh = false}) {
-    if (_ongoingProfileLoad != null && !forceRefresh) {
-      return _ongoingProfileLoad!;
-    }
-    final f = _loadUserInfoImpl(forceRefresh: forceRefresh);
-    _ongoingProfileLoad = f;
-    f.whenComplete(() {
-      if (identical(_ongoingProfileLoad, f)) _ongoingProfileLoad = null;
-    });
-    return f;
-  }
-
-  Future<void> _loadUserInfoImpl({bool forceRefresh = false}) async {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _loadError = null;
+    return _vm.loadUserInfo(
+      forceRefresh: forceRefresh,
+      onDetailsLoaded: (userId) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            final lp = context.read<UserLevelProvider>();
+            if (lp.userLevel == null && !lp.isLoading) lp.loadUserLevel(userId);
+          }
         });
-      }
-      return;
-    }
-    final blockingLoad = _user == null;
-    if (mounted) {
-      setState(() {
-        if (blockingLoad) {
-          _isLoading = true;
-        } else {
-          _isLoadingDetails = true;
-        }
-        _loadError = null;
-      });
-    }
-    try {
-      // 与同好页等一致：优先读 AuthService 本地缓存，再按需拉远端
-      final user = await AuthService.getUserInfo(forceRefresh: forceRefresh);
-      if (!mounted) return;
-      setState(() {
-        _user = user;
-        _isLoading = false;
-        _isLoadingDetails = true;
-        _loadError = null;
-      });
-      unawaited(_loadProfileDetails(userId));
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isLoadingDetails = false;
-          _loadError = e;
-        });
-        if (_user != null) {
+      },
+      onRefreshErrorWithCachedUser: (e) {
+        if (mounted) {
           MoeToast.error(
             context,
             MoeErrorCopy.toast(e, scene: MoeErrorScene.profile),
           );
         }
-      }
-    }
-  }
-
-  Future<void> _loadProfileDetails(String userId) async {
-    final badges = _loadDetail(
-      () async {
-        await _achievementService.initializeUserBadges(userId);
-        return _achievementService.getUserBadges(userId);
       },
-      const <AchievementBadge>[],
     );
-    final vip = _loadDetail(
-      () => CommerceService.getUserVipStatus(userId)
-          .timeout(const Duration(seconds: 5)),
-      <String, dynamic>{},
-    );
-    final following = _loadDetail(
-      () => _getCount(
-        () => UserService.getFollowings(userId, page: 1, pageSize: 1),
-      ),
-      0,
-    );
-    final followers = _loadDetail(
-      () => _getCount(
-        () => UserService.getFollowers(userId, page: 1, pageSize: 1),
-      ),
-      0,
-    );
-    final posts = _loadDetail(() => _getPostCount(userId), 0);
-
-    final results =
-        await Future.wait([badges, vip, following, followers, posts]);
-    if (!mounted) return;
-
-    final badgesResult = results[0] as _ProfileDetail<List<AchievementBadge>>;
-    final vipResult = results[1] as _ProfileDetail<Map<String, dynamic>>;
-    final followingResult = results[2] as _ProfileDetail<int>;
-    final followersResult = results[3] as _ProfileDetail<int>;
-    final postsResult = results[4] as _ProfileDetail<int>;
-    final hasDetailsError = results.any((result) => !result.didLoad);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final lp = context.read<UserLevelProvider>();
-        if (lp.userLevel == null && !lp.isLoading) lp.loadUserLevel(userId);
-      }
-    });
-    setState(() {
-      if (vipResult.didLoad) {
-        _isVip = vipResult.value['is_vip'] as bool? ?? false;
-      }
-      if (followingResult.didLoad) _followingCount = followingResult.value;
-      if (followersResult.didLoad) _followerCount = followersResult.value;
-      if (postsResult.didLoad) _postCount = postsResult.value;
-      if (badgesResult.didLoad) _userBadges = badgesResult.value;
-      _hasDetailsError = hasDetailsError;
-      _isLoadingDetails = false;
-    });
-  }
-
-  Future<_ProfileDetail<T>> _loadDetail<T>(
-    Future<T> Function() loader,
-    T fallback,
-  ) async {
-    try {
-      return _ProfileDetail(value: await loader(), didLoad: true);
-    } catch (_) {
-      return _ProfileDetail(value: fallback, didLoad: false);
-    }
-  }
-
-  Future<int> _getCount(Future<Map<String, dynamic>> Function() fn) async {
-    final r = await fn().timeout(const Duration(seconds: 5));
-    return r['total'] as int? ?? 0;
-  }
-
-  Future<int> _getPostCount(String userId) async {
-    final viewer = AuthService.currentUser ?? '';
-    final r = await PostService.getPosts(
-      page: 1,
-      pageSize: 1,
-      viewerUserId: viewer.isEmpty ? null : viewer,
-      authorUserId: userId,
-    ).timeout(const Duration(seconds: 8));
-    final total = r['total'];
-    if (total is int) return total;
-    if (total is num) return total.toInt();
-    return 0;
   }
 
   // ─── Navigation helpers ───────────────────────────────────────────────────
 
   void _openEditProfile() {
     HapticFeedback.lightImpact();
-    final u = _user;
+    final u = _vm.user;
     if (u == null) return;
     Navigator.pushNamed(context, '/edit-profile', arguments: u).then((_) {
       if (mounted) _loadUserInfo();
@@ -226,7 +93,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _goToMyPosts() {
-    final u = _user;
+    final u = _vm.user;
     if (u == null) return;
     HapticFeedback.lightImpact();
     Navigator.pushNamed(context, '/user-profile', arguments: {
@@ -288,7 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final result = await Navigator.pushNamed(context, '/vip-center');
     if (mounted) {
       Future.delayed(const Duration(milliseconds: 250), () {
-        if (mounted && (result == true || !_isVip)) _loadUserInfo();
+        if (mounted && (result == true || !_vm.isVip)) _loadUserInfo();
       });
     }
   }
@@ -306,7 +173,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showAllBadges() {
-    final uid = _user?.id;
+    final uid = _vm.user?.id;
     if (uid == null || uid.isEmpty) return;
     Navigator.push(
       context,
@@ -318,7 +185,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading && _user == null) {
+    if (_vm.isLoading && _vm.user == null) {
       return AdaptivePageScaffold(
         template: PageTemplate.fullscreen,
         backgroundColor: MoeTheme.of(context).pageBackground,
@@ -335,7 +202,7 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
-    if (_loadError != null && _user == null) {
+    if (_vm.loadError != null && _vm.user == null) {
       return AdaptivePageScaffold(
         template: PageTemplate.fullscreen,
         backgroundColor: MoeTheme.of(context).pageBackground,
@@ -345,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Expanded(
               child: Center(
                 child: MoeErrorState.fromError(
-                  _loadError,
+                  _vm.loadError,
                   scene: MoeErrorScene.profile,
                   onRetry: () => _loadUserInfo(forceRefresh: true),
                 ),
@@ -383,7 +250,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: _buildQuickActions()),
                           const SizedBox(height: 18),
                           // Achievements preview
-                          if (_user != null) ...[
+                          if (_vm.user != null) ...[
                             MoeReveal(
                                 delay: const Duration(milliseconds: 80),
                                 child: _buildAchievementsPreview()),
@@ -475,17 +342,17 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_hasDetailsError)
+                          if (_vm.hasDetailsError)
                             IconButton(
                               tooltip: '刷新资料明细',
-                              onPressed: _isLoadingDetails || _user == null
-                                  ? null
-                                  : () {
-                                      setState(() => _isLoadingDetails = true);
-                                      unawaited(
-                                        _loadProfileDetails(_user!.id),
-                                      );
-                                    },
+                              onPressed:
+                                  _vm.isLoadingDetails || _vm.user == null
+                                      ? null
+                                      : () => unawaited(
+                                            _vm.loadProfileDetails(
+                                              _vm.user!.id,
+                                            ),
+                                          ),
                               icon: const Icon(
                                 Icons.refresh_rounded,
                                 color: Colors.white,
@@ -529,7 +396,8 @@ class _ProfilePageState extends State<ProfilePage> {
   // ─── Header (avatar + name + stats) ──────────────────────────────────────
 
   Widget _buildHeader() {
-    final sig = (_user?.signature ?? '').trim();
+    final user = _vm.user;
+    final sig = (user?.signature ?? '').trim();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
@@ -548,9 +416,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     shape: BoxShape.circle,
                   ),
                   child: DynamicAvatar(
-                    avatarUrl: _user?.avatar ?? '',
+                    avatarUrl: user?.avatar ?? '',
                     size: 52,
-                    frameId: _user?.equippedFrameId,
+                    frameId: user?.equippedFrameId,
                   ),
                 ),
               ),
@@ -563,7 +431,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         Flexible(
                           child: Text(
-                            _user?.username ?? '未知用户',
+                            user?.username ?? '未知用户',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -573,7 +441,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
-                        if (_isVip) ...[
+                        if (_vm.isVip) ...[
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -600,7 +468,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ],
-                        if (_isLoadingDetails) ...[
+                        if (_vm.isLoadingDetails) ...[
                           const SizedBox(width: 8),
                           const SizedBox(
                             width: 12,
@@ -635,16 +503,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        if ((_user?.moeNo ?? '').isNotEmpty)
+                        if ((user?.moeNo ?? '').isNotEmpty)
                           _glassPill(
                             onTap: () {
+                              final moeNo = user?.moeNo ?? '';
+                              if (moeNo.isEmpty) return;
                               Clipboard.setData(
-                                ClipboardData(text: _user!.moeNo),
+                                ClipboardData(text: moeNo),
                               );
                               MoeToast.success(context, '已复制 Moe 号');
                             },
                             child: Text(
-                              _user!.moeNo,
+                              user?.moeNo ?? '',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -679,33 +549,33 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 10),
           Row(
             children: [
-              _statItem('动态', '$_postCount', onTap: _goToMyPosts),
+              _statItem('动态', '${_vm.postCount}', onTap: _goToMyPosts),
               _statItem(
                 '关注',
-                '$_followingCount',
-                onTap: _user == null
+                '${_vm.followingCount}',
+                onTap: user == null
                     ? null
                     : () {
                         HapticFeedback.selectionClick();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FollowingPage(userId: _user!.id),
+                            builder: (_) => FollowingPage(userId: user.id),
                           ),
                         );
                       },
               ),
               _statItem(
                 '粉丝',
-                '$_followerCount',
-                onTap: _user == null
+                '${_vm.followerCount}',
+                onTap: user == null
                     ? null
                     : () {
                         HapticFeedback.selectionClick();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FollowersPage(userId: _user!.id),
+                            builder: (_) => FollowersPage(userId: user.id),
                           ),
                         );
                       },
@@ -770,7 +640,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // ─── Quick Actions ────────────────────────────────────────────────────────
 
   Widget _buildQuickActions() {
-    final unlockedBadges = _userBadges.where((b) => b.isUnlocked).length;
+    final unlockedBadges = _vm.unlockedBadgeCount;
     final actions = [
       _QuickAction(
         icon: Icons.event_available_rounded,
@@ -783,7 +653,7 @@ class _ProfilePageState extends State<ProfilePage> {
         icon: Icons.account_balance_wallet_rounded,
         iconColor: MoeTokens.pastelOrange,
         label: '钱包',
-        subtitle: '¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
+        subtitle: '¥${_vm.user?.balance.toStringAsFixed(2) ?? '0.00'}',
         onTap: () {
           HapticFeedback.lightImpact();
           Navigator.push(context,
@@ -793,11 +663,12 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       ),
       _QuickAction(
-        icon: _isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
-        iconColor: _isVip ? MoeTokens.pastelOrange : _moe.primary,
+        icon:
+            _vm.isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
+        iconColor: _vm.isVip ? MoeTokens.pastelOrange : _moe.primary,
         label: '会员',
-        subtitle: _isVip ? '权益生效中' : '开通享特权',
-        isCta: !_isVip,
+        subtitle: _vm.isVip ? '权益生效中' : '开通享特权',
+        isCta: !_vm.isVip,
         onTap: _openVipCenter,
       ),
       _QuickAction(
@@ -925,9 +796,9 @@ class _ProfilePageState extends State<ProfilePage> {
   // ─── Achievement preview strip ────────────────────────────────────────────
 
   Widget _buildAchievementsPreview() {
-    final stats = _achievementService.getBadgeStatistics(_user!.id);
-    final unlocked = _userBadges.where((b) => b.isUnlocked).toList();
-    final inProgress = _userBadges
+    final stats = _vm.badgeStatistics!;
+    final unlocked = _vm.userBadges.where((b) => b.isUnlocked).toList();
+    final inProgress = _vm.userBadges
         .where((b) => !b.isUnlocked && b.progress > 0)
         .take(3)
         .toList();
@@ -963,8 +834,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 7, vertical: 1),
                         decoration: BoxDecoration(
-                          color:
-                              MoeTokens.pastelOrange.withValues(alpha: 0.15),
+                          color: MoeTokens.pastelOrange.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -981,17 +851,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     stats.totalBadges == 0
                         ? '开始任务，点亮你的第一枚徽章'
                         : '已完成 ${(stats.totalBadges > 0 ? stats.unlockedBadges * 100 ~/ stats.totalBadges : 0)}%',
-                    style: TextStyle(
-                      color: Colors.grey[500],
+                    style: const TextStyle(
+                      color: MoeTokens.inkMuted,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 9),
                   preview.isEmpty
-                      ? Text('完成任务解锁成就 →',
+                      ? const Text('完成任务解锁成就 →',
                           style: TextStyle(
-                              color: Colors.grey[400], fontSize: 11.5))
+                              color: MoeTokens.hintText, fontSize: 11.5))
                       : Wrap(
                           spacing: 6,
                           runSpacing: 6,
@@ -1016,10 +886,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                 child: Center(
                                   child: Text(
                                     '+${preview.length - 4}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
-                                        color: Colors.grey[500]),
+                                        color: MoeTokens.inkMuted),
                                   ),
                                 ),
                               ),
@@ -1057,13 +927,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text('查看',
+                const Text('查看',
                     style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        color: Colors.grey[500])),
-                Icon(Icons.chevron_right_rounded,
-                    size: 17, color: Colors.grey[400]),
+                        color: MoeTokens.inkMuted)),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 17, color: MoeTokens.hintText),
               ],
             ),
           ],
@@ -1143,8 +1013,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               ),
                             ),
-                            Icon(Icons.arrow_forward_ios_rounded,
-                                color: Colors.grey[300], size: 15),
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                color: MoeTokens.lineSoft, size: 15),
                           ],
                         ),
                       ),
@@ -1199,13 +1069,6 @@ class _QuickAction {
     this.isCta = false,
     this.badge,
   });
-}
-
-class _ProfileDetail<T> {
-  const _ProfileDetail({required this.value, required this.didLoad});
-
-  final T value;
-  final bool didLoad;
 }
 
 class _MenuItem {

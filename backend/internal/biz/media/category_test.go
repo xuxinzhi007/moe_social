@@ -20,7 +20,7 @@ func TestSplitImageKeyCategory(t *testing.T) {
 func TestAlbumListHidesOtherCategories(t *testing.T) {
 	cfg := setupTestDir(t, "12_ada")
 	ctx := context.Background()
-	for _, category := range []string{CategoryAvatar, CategoryAlbum, CategoryPost} {
+	for _, category := range []string{CategoryAvatar, CategoryAlbum, CategoryPost, CategoryGen} {
 		if _, err := UploadImage(ctx, cfg, UploadInput{
 			UserFolder: "12_ada",
 			Category:   category,
@@ -46,7 +46,7 @@ func TestAlbumListHidesOtherCategories(t *testing.T) {
 		t.Fatalf("album total = %d, want album + 旧图", res.Total)
 	}
 	for _, item := range res.Items {
-		if strings.Contains(item.Filename, "avatar") || strings.Contains(item.Filename, "post") {
+		if strings.Contains(item.Filename, "avatar") || strings.Contains(item.Filename, "post") || strings.Contains(item.Filename, "gen") {
 			t.Fatalf("non-album image listed: %s", item.Filename)
 		}
 	}
@@ -58,6 +58,9 @@ func TestNormalizeCategoryRejectsUnknown(t *testing.T) {
 	}
 	if got, err := NormalizeCategory("头像"); err != nil || got != CategoryAvatar {
 		t.Fatalf("chinese alias = %q %v", got, err)
+	}
+	if got, err := NormalizeCategory("文生图"); err != nil || got != CategoryGen {
+		t.Fatalf("gen alias = %q %v", got, err)
 	}
 	got, err := NormalizeCategory("")
 	if err != nil || got != CategoryAlbum {

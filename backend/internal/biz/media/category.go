@@ -11,9 +11,10 @@ const (
 	CategoryAlbum  = "album"  // 云相册
 	CategoryPost   = "post"   // 帖子
 	CategoryChat   = "chat"   // 私信
+	CategoryGen    = "gen"    // 服务端生成图，和用户上传分开
 )
 
-// NormalizeCategory 把上传分类收成 avatar、album、post、chat。空值视为 album。
+// NormalizeCategory 把上传分类收成 avatar、album、post、chat、gen。空值视为 album。
 // 中文别名会收成对应英文目录，避免对象键里出现中文。
 func NormalizeCategory(raw string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
@@ -25,6 +26,8 @@ func NormalizeCategory(raw string) (string, error) {
 		return CategoryPost, nil
 	case CategoryChat, "私信":
 		return CategoryChat, nil
+	case CategoryGen, "生成", "文生图":
+		return CategoryGen, nil
 	default:
 		return "", fmt.Errorf("unknown media category %q", raw)
 	}

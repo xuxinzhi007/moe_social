@@ -17,6 +17,8 @@ func RegisterHTTPServer(s *khttp.Server, srv *Server) {
 	r.GET("/api/images", _Media_ListImages_HTTP_Handler(srv))
 	r.DELETE("/api/images/{filename}", _Media_DeleteImage_HTTP_Handler(srv))
 	r.POST("/api/upload", _Media_UploadImage_HTTP_Handler(srv))
+	r.POST("/api/images/generate", srv.generateImageHTTP)
+	r.GET("/api/comfy/checkpoints", srv.listCheckpointsHTTP)
 	r.GET("/api/images/{filename}", srv.ServeImageHTTP)
 }
 

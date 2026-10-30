@@ -102,7 +102,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
     if (data != null && mounted) {
       _vm.setHandDraw(data);
-      context.read<LoadingProvider>().setSuccess('手绘卡片已添加 ✨');
+      MoeToast.success(context, '手绘卡片已添加 ✨');
     }
   }
 
@@ -130,7 +130,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
           isSelectMode: true,
           onImageSelected: (imageUrl) {
             _vm.addCloudImageUrl(imageUrl);
-            context.read<LoadingProvider>().setSuccess('图片已添加');
+            if (mounted) {
+              MoeToast.success(this.context, '图片已添加');
+            }
           },
         ),
       ),
@@ -265,7 +267,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final validationError = _vm.validateContent(caption);
     if (validationError != null) {
       _formKey.currentState?.validate();
-      context.read<LoadingProvider>().setError(validationError);
+      MoeToast.warning(context, validationError);
       return;
     }
 
@@ -356,12 +358,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
         decoration: const BoxDecoration(gradient: MoeTokens.gradientPageBg),
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          extendBodyBehindAppBar: true,
           appBar: AppBar(
             title: _buildPageTitle(
               _vm.isEditMode ? '编辑动态' : (_vm.isGroupPost ? '发到本群' : '发帖子'),
             ),
             backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            scrolledUnderElevation: 0,
             elevation: 0,
             centerTitle: true,
             leading: Container(
@@ -419,7 +422,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
                 MoeTokens.spaceLg,
-                88,
+                MoeTokens.spaceSm,
                 MoeTokens.spaceLg,
                 MoeTokens.spaceLg,
               ),

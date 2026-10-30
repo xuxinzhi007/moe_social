@@ -538,6 +538,75 @@ message GetInferenceStatusReply {
   string message = 12;
 }
 
+message ShowInferenceModelRequest {
+  string model = 1;
+}
+
+message ShowInferenceModelReply {
+  string model = 1;
+  string system = 2;
+  string modelfile = 3;
+  string template = 4;
+  string parameters_text = 5;
+  map<string, double> parameters = 6;
+}
+
+message CreateInferenceModelRequest {
+  string name = 1;
+  string base_model = 2;
+  string system_prompt = 3;
+  string modelfile = 4;
+  map<string, double> parameters = 5;
+  bool replace_existing = 6;
+}
+
+message CreateInferenceModelReply {
+  bool ok = 1;
+  string model = 2;
+  string message = 3;
+}
+
+message DeleteInferenceModelRequest {
+  string model = 1;
+}
+
+message DeleteInferenceModelReply {
+  bool ok = 1;
+  string model = 2;
+  string message = 3;
+}
+
+message PullInferenceModelRequest {
+  string model = 1;
+}
+
+message PullInferenceModelReply {
+  bool ok = 1;
+  string model = 2;
+  string status = 3;
+  string message = 4;
+}
+
+message InferenceChatMessage {
+  string role = 1;
+  string content = 2;
+}
+
+message ChatInferenceRequest {
+  string model = 1;
+  repeated InferenceChatMessage messages = 2;
+  double temperature = 3;
+  double top_p = 4;
+  double repeat_penalty = 5;
+  int32 max_tokens = 6;
+}
+
+message ChatInferenceReply {
+  string model = 1;
+  string content = 2;
+  int64 duration_ms = 3;
+}
+
 message MoeToolSchemaItem {
   string name = 1;
   string description = 2;
@@ -664,6 +733,36 @@ service MoeAdmin {
   }
   rpc GetInferenceStatus(GetInferenceStatusRequest) returns (GetInferenceStatusReply) {
     option (google.api.http) = { get: "/api/admin/moe/inference/status" };
+  }
+  rpc ShowInferenceModel(ShowInferenceModelRequest) returns (ShowInferenceModelReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/inference/models/show"
+      body: "*"
+    };
+  }
+  rpc CreateInferenceModel(CreateInferenceModelRequest) returns (CreateInferenceModelReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/inference/models/create"
+      body: "*"
+    };
+  }
+  rpc DeleteInferenceModel(DeleteInferenceModelRequest) returns (DeleteInferenceModelReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/inference/models/delete"
+      body: "*"
+    };
+  }
+  rpc PullInferenceModel(PullInferenceModelRequest) returns (PullInferenceModelReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/inference/models/pull"
+      body: "*"
+    };
+  }
+  rpc ChatInference(ChatInferenceRequest) returns (ChatInferenceReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/inference/chat"
+      body: "*"
+    };
   }
   rpc GetToolsSchema(GetToolsSchemaRequest) returns (GetToolsSchemaReply) {
     option (google.api.http) = { get: "/api/admin/moe/tools/schema" };

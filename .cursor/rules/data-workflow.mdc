@@ -5,25 +5,16 @@ alwaysApply: true
 
 # data-workflow 接入
 
-本仓库的开发、分析、排查先读插件 `skills/data-workflow/SKILL.md`，再按选型表进入下一步。插件只装流程；取值回代码。
+本仓库的开发、分析、排查先读 `.cursor/skills/data-workflow/SKILL.md`，再按选型表进入下一步。技能只装流程；取值回代码。
 
-`PLUGIN_ROOT` = `C:/Users/ZhuanZ1/Desktop/data-workflow`。技能是本机 junction，不进 git：
+`PLUGIN_ROOT` = `C:/Users/ZhuanZ1/Desktop/data-workflow`。技能按官方 `scripts/install.sh --project` 复制进本仓库，不进 git：
 
-- `.cursor/skills/` 与 `.agents/skills/` 各链一份：`data-workflow`、`requirement-analysis`、`tech-design`、`implementation`、`change-review`、`quality-gate`、`oncall`、`excalidraw-diagram`
-- 不链插件里的 `git-commit`。提交用本仓库 `git-commit` 与工程规则的中文单行 title。用户要求 MR 时再读 `PLUGIN_ROOT/skills/git-commit/SKILL.md`，冲突以本仓库为准。
+- 副本：`.cursor/skills/data-workflow/`（配置实体）与 `.agents/skills/data-workflow/`（`config.yaml` 指回前者）
+- 阶段在副本里的 `stages/`，不再单独链 `requirement-analysis`、`tech-design` 等目录
+- `/` 命令：`.cursor/commands/dw-next.md`、`dw-done.md`、`dw-wait.md`、`dw-start.md`
+- 提交用本仓库 `git-commit` 与工程规则的中文单行 title。用户要求 MR 时再读副本 `stages/git-commit/SKILL.md`，冲突以本仓库为准。
 
-重链（仓库根）：
-
-```powershell
-$src = 'C:\Users\ZhuanZ1\Desktop\data-workflow\skills'
-$names = 'data-workflow','requirement-analysis','tech-design','implementation','change-review','quality-gate','oncall','excalidraw-diagram'
-foreach ($root in '.cursor\skills','.agents\skills') {
-  foreach ($n in $names) {
-    $dest = Join-Path $root $n
-    if (-not (Test-Path $dest)) { New-Item -ItemType Junction -Path $dest -Target (Join-Path $src $n) | Out-Null }
-  }
-}
-```
+更新正文（仓库根，不覆盖已有 `config.yaml`）：再跑一次 `PLUGIN_ROOT/scripts/install.sh --project`。不要把旧的分技能目录重新做成 junction。
 
 ## 知识层映射
 

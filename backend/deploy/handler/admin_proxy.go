@@ -131,7 +131,13 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	if auth := strings.TrimSpace(r.Header.Get("Authorization")); auth != "" {
+
+		req.Header.Set("Authorization", auth)
+
+	}
+
+	client := &http.Client{Timeout: 15 * time.Minute}
 
 	resp, err := client.Do(req)
 
@@ -149,6 +155,29 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 	}
 
 	defer resp.Body.Close()
+
+	if strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "text/event-stream") {
+		w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.WriteHeader(resp.StatusCode)
+		flusher, _ := w.(http.Flusher)
+		buf := make([]byte, 4096)
+		for {
+			n, rerr := resp.Body.Read(buf)
+			if n > 0 {
+				if _, werr := w.Write(buf[:n]); werr != nil {
+					return
+				}
+				if flusher != nil {
+					flusher.Flush()
+				}
+			}
+			if rerr != nil {
+				return
+			}
+		}
+	}
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 

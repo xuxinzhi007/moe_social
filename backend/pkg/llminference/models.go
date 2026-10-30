@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // PickResult 从推理服务返回的模型列表中解析实际使用的模型 ID。
@@ -237,3 +238,114 @@ func DeleteModel(ctx context.Context, cfg Config, name string) error {
 	}
 	return requestJSON(ctx, cfg, http.MethodDelete, "/api/delete", "", map[string]string{"model": name}, nil, true)
 }
+
+// AdminParameterNames returns the full parameter key set editable in moe-admin.
+func AdminParameterNames() map[string]struct{} {
+	out := SamplingParameterNames()
+	out["num_ctx"] = struct{}{}
+	out["seed"] = struct{}{}
+	return out
+}
+
+// ParseAdminParameters reads Ollama's parameter text into the admin-editable keys.
+func ParseAdminParameters(text string) map[string]float64 {
+	allowed := AdminParameterNames()
+	out := map[string]float64{}
+	for _, line := range strings.Split(text, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			continue
+		}
+		if _, ok := allowed[fields[0]]; !ok {
+			continue
+		}
+		value, err := strconv.ParseFloat(fields[1], 64)
+		if err != nil {
+			continue
+		}
+		out[fields[0]] = value
+	}
+	return out
+}
+
+// CreateAdminModel creates or updates an Ollama model from base+parameters or raw Modelfile.
+func CreateAdminModel(ctx context.Context, cfg Config, name, base, prompt, modelfile string, parameters map[string]float64) error {
+	if err := validateModelName(name); err != nil {
+		return err
+	}
+	base = strings.TrimSpace(base)
+	if base != "" {
+		if err := validateModelName(base); err != nil {
+			return err
+		}
+	}
+	modelfile = strings.TrimSpace(modelfile)
+	if base == "" && modelfile == "" {
+		return upstreamError("base model or modelfile is required", 0, false)
+	}
+
+	var result struct {
+		Status string `json:"status"`
+	}
+	if base != "" {
+		body := map[string]any{
+			"model":  name,
+			"name":   name,
+			"from":   base,
+			"system": prompt,
+			"stream": false,
+		}
+		if len(parameters) > 0 {
+			body["parameters"] = parameters
+		}
+		err := requestJSON(ctx, cfg, http.MethodPost, "/api/create", "", body, &result, true)
+		if err == nil && (result.Status == "success" || result.Status == "") {
+			return nil
+		}
+		if modelfile == "" {
+			return err
+		}
+	}
+
+	fallbackBody := map[string]any{
+		"model":     name,
+		"name":      name,
+		"modelfile": modelfile,
+		"files":     map[string]string{"Modelfile": modelfile},
+		"stream":    false,
+	}
+	if base != "" {
+		fallbackBody["from"] = base
+	}
+	if err := requestJSON(ctx, cfg, http.MethodPost, "/api/create", "", fallbackBody, &result, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+// PullModel pulls a model on the native Ollama endpoint.
+func PullModel(ctx context.Context, cfg Config, name string) (string, error) {
+	if err := validateModelName(name); err != nil {
+		return "", err
+	}
+	pullCfg := cfg
+	if pullCfg.Timeout < 15*time.Minute {
+		pullCfg.Timeout = 15 * time.Minute
+	}
+	var result struct {
+		Status string `json:"status"`
+	}
+	body := map[string]any{
+		"model":  name,
+		"name":   name,
+		"stream": false,
+	}
+	if err := requestJSON(ctx, pullCfg, http.MethodPost, "/api/pull", "", body, &result, true); err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(result.Status) == "" {
+		return "success", nil
+	}
+	return result.Status, nil
+}
+

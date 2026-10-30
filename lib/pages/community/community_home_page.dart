@@ -299,7 +299,7 @@ class _CommunityHomePageState extends State<CommunityHomePage>
         child: InkWell(
           onTap: () {
             HapticFeedback.selectionClick();
-            Navigator.pushNamed(context, '/ai-chat');
+            context.read<MainNavController>().requestTab(2);
           },
           borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
           child: Container(
@@ -334,7 +334,7 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 14,
+                                fontSize: MoeTokens.textBase,
                                 fontWeight: FontWeight.w800,
                                 color: MoeTokens.titleText,
                               ),
@@ -350,11 +350,11 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: MoeTokens.textSm,
                           height: 1.3,
                           color: attention
                               ? MoeTokens.primary
-                              : Colors.grey.shade700,
+                              : MoeTokens.inkMuted,
                           fontWeight:
                               attention ? FontWeight.w700 : FontWeight.w500,
                         ),
@@ -363,20 +363,10 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                   ),
                 ),
                 const SizedBox(width: 4),
-                IconButton(
-                  tooltip: 'AI 主页',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () =>
-                      context.read<MainNavController>().requestTab(2),
-                  icon: Icon(Icons.auto_awesome_rounded,
-                      size: 20, color: MoeTokens.primary),
-                ),
-                IconButton(
-                  tooltip: '聊天',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => Navigator.pushNamed(context, '/ai-chat'),
-                  icon: Icon(Icons.chat_bubble_rounded,
-                      size: 20, color: MoeTokens.primary),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: MoeTokens.hintText,
                 ),
               ],
             ),
