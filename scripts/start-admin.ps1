@@ -4,7 +4,13 @@
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $Backend = Join-Path $Root "backend"
-$MoeAdmin = Join-Path $Root "moe-admin"
+$MoeAdmin = if ($env:MOE_ADMIN_DIR) {
+    $env:MOE_ADMIN_DIR
+} elseif (Test-Path (Join-Path $Root "moe-admin\package.json")) {
+    Join-Path $Root "moe-admin"
+} else {
+    Join-Path (Split-Path -Parent $Root) "moe-admin"
+}
 
 Write-Host "== Moe Admin 启动 ==" -ForegroundColor Cyan
 

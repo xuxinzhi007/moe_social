@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const REPO_ROOT = path.resolve(__dirname, '../..')
-export const OUT_DIR = path.join(REPO_ROOT, 'moe-admin/public/dev/codegraph')
+export const MOE_ADMIN_ROOT = process.env.MOE_ADMIN_DIR
+  ? path.resolve(process.env.MOE_ADMIN_DIR)
+  : fs.existsSync(path.join(REPO_ROOT, 'moe-admin/package.json'))
+    ? path.join(REPO_ROOT, 'moe-admin')
+    : path.resolve(REPO_ROOT, '../moe-admin')
+export const OUT_DIR = path.join(MOE_ADMIN_ROOT, 'public/dev/codegraph')
 
 export function nowIso() {
   return new Date().toISOString()
@@ -15,11 +20,17 @@ export function ensureDir(dir) {
 }
 
 export function readText(relOrAbs) {
+  if (relOrAbs.startsWith('moe-admin/')) {
+    return fs.readFileSync(path.join(MOE_ADMIN_ROOT, relOrAbs.slice('moe-admin/'.length)), 'utf8')
+  }
   const p = path.isAbsolute(relOrAbs) ? relOrAbs : path.join(REPO_ROOT, relOrAbs)
   return fs.readFileSync(p, 'utf8')
 }
 
 export function exists(relOrAbs) {
+  if (relOrAbs.startsWith('moe-admin/')) {
+    return fs.existsSync(path.join(MOE_ADMIN_ROOT, relOrAbs.slice('moe-admin/'.length)))
+  }
   const p = path.isAbsolute(relOrAbs) ? relOrAbs : path.join(REPO_ROOT, relOrAbs)
   return fs.existsSync(p)
 }

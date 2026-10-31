@@ -4,7 +4,13 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BACKEND="$ROOT/backend"
-MOE_ADMIN="$ROOT/moe-admin"
+if [[ -n "${MOE_ADMIN_DIR:-}" ]]; then
+  MOE_ADMIN="$MOE_ADMIN_DIR"
+elif [[ -f "$ROOT/moe-admin/package.json" ]]; then
+  MOE_ADMIN="$ROOT/moe-admin"
+else
+  MOE_ADMIN="$(cd "$ROOT/.." && pwd)/moe-admin"
+fi
 RUN_DIR="$ROOT/.run/admin"
 mkdir -p "$RUN_DIR"
 
