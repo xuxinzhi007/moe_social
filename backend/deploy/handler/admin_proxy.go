@@ -269,15 +269,7 @@ func (h *Handler) probeAPIHealth(targetID string) map[string]any {
 
 	}
 
-	u.Path = "/api/ops/landing/feedback"
-
-	q := u.Query()
-
-	q.Set("page", "1")
-
-	q.Set("page_size", "1")
-
-	u.RawQuery = q.Encode()
+	u.Path = "/api/public/client-config"
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 
@@ -305,7 +297,7 @@ func (h *Handler) probeAPIHealth(targetID string) map[string]any {
 
 	out["status_code"] = resp.StatusCode
 
-	if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusInternalServerError {
 
 		out["online"] = true
 
