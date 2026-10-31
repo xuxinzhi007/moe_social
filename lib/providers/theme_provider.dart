@@ -119,20 +119,75 @@ class ThemeProvider with ChangeNotifier {
       ],
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 50),
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor:
+              isDark ? const Color(0xFF2C303A) : MoeTokens.softChipBg,
+          disabledForegroundColor: MoeTokens.hintText,
+          minimumSize: const Size(double.infinity, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)), // 更圆润
+            borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+          ),
+          textStyle: const TextStyle(
+            fontSize: MoeTokens.textMd,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
           elevation: 0,
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+          ),
+          textStyle: const TextStyle(
+            fontSize: MoeTokens.textBase,
+            fontWeight: FontWeight.w600,
+          ),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: isDark ? Colors.white : MoeTokens.titleText,
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          side: BorderSide(
+            color: isDark ? const Color(0x33FFFFFF) : MoeTokens.surfaceBorder,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+          ),
+          textStyle: const TextStyle(
+            fontSize: MoeTokens.textBase,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: isDark ? const Color(0xFF1E2028) : MoeTokens.cardBackground,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          side: BorderSide(
+            color: isDark ? const Color(0x1FFFFFFF) : MoeTokens.surfaceBorder,
+          ),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: isDark ? const Color(0x1FFFFFFF) : MoeTokens.lineSoft,
+        thickness: 1,
+        space: 1,
+      ),
       inputDecorationTheme: MoeFieldDecoration.theme(isDark: isDark),
       scaffoldBackgroundColor: scaffoldBg,
-      // cardTheme: CardTheme(
-      //   color: isDark ? Colors.grey[800] : Colors.white,
-      //   elevation: 2,
-      //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), // 卡片更圆润
-      //   shadowColor: Colors.black.withValues(alpha: 0.1),
-      // ),
       appBarTheme: AppBarTheme(
         backgroundColor: isDark ? Colors.grey[900] : MoeTokens.surface1,
         foregroundColor: isDark ? Colors.white : MoeTokens.titleText,
@@ -173,13 +228,13 @@ class ThemeProvider with ChangeNotifier {
     );
   }
 
-  // 预设主题颜色列表，符合二次元风格
+  // 预设主题颜色列表（低饱和精致色系）
   static List<Color> presetColors = [
-    MoeTokens.primary, // 薰衣草紫
-    MoeTokens.secondary, // 天空蓝
-    MoeTokens.accent, // 薄荷绿
-    Colors.pinkAccent,
-    Colors.orangeAccent,
-    const Color(0xFFFAD961), // 奶油黄
+    MoeTokens.primary, // 鸢尾靛蓝
+    MoeTokens.secondary, // 矢车菊蓝
+    MoeTokens.pastelTeal, // 青瓷绿
+    MoeTokens.pastelPink, // 柔雾玫瑰
+    MoeTokens.pastelOrange, // 暖琥珀
+    const Color(0xFF64748B), // 岩板灰蓝
   ];
 }

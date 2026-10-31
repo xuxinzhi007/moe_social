@@ -487,7 +487,7 @@ class _HomePageState extends State<HomePage> {
         primaryAction: MoeEmptyStateAction(
           label: '去社区',
           icon: Icons.forum_rounded,
-          onPressed: () => Navigator.pushNamed(context, '/community'),
+          onPressed: () => context.read<MainNavController>().requestTab(3),
         ),
         secondaryAction: MoeEmptyStateAction(
           label: '找好友',
@@ -695,6 +695,7 @@ class _HomePageState extends State<HomePage> {
               }
             }
           : null,
+      onDismiss: () => _feed.removePost(post.id),
     );
   }
 }

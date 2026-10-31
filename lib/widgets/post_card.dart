@@ -17,6 +17,7 @@ import '../widgets/motion/moe_pressable.dart';
 import '../widgets/motion/moe_sheet.dart';
 import '../widgets/moe_action_row.dart';
 import '../widgets/moe_toast.dart';
+import '../widgets/dialogs/confirm_dialog.dart';
 
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
@@ -46,6 +47,9 @@ class PostCard extends StatefulWidget {
   /// 作者删除回调（非作者时不传，菜单项自动隐藏）。传入后由外层处理 UI 刷新。
   final VoidCallback? onDelete;
 
+  /// 用户点击「不感兴趣」隐藏该帖时的回调。
+  final VoidCallback? onDismiss;
+
   /// Hero 标签命名空间前缀。
   /// 在同一 Navigator 栈中若有多个页面都渲染 PostCard（如首页 + 用户主页），
   /// 必须传入不同的前缀，否则 Hero 标签重复会导致头像消失、无法点击。
@@ -65,6 +69,7 @@ class PostCard extends StatefulWidget {
     this.onCardTap,
     this.onEdit,
     this.onDelete,
+    this.onDismiss,
     this.heroTagPrefix = '',
     this.mediaPresentation = PostCardMediaPresentation.feed,
   });
@@ -74,6 +79,8 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
+  static final RegExp _emojiRegex = RegExp(r'\[emoji:(.*?)\]');
+
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
@@ -246,7 +253,11 @@ class _PostCardState extends State<PostCard> {
                                     title: '不感兴趣',
                                     iconColor: MoeTokens.pastelOrange,
                                     showDefaultTrailing: false,
-                                    onTap: () => Navigator.pop(sheetCtx)),
+                                    onTap: () {
+                                      Navigator.pop(sheetCtx);
+                                      widget.onDismiss?.call();
+                                      MoeToast.info(context, '已减少此类动态推荐');
+                                    }),
                                 MoeActionRow(
                                     icon: Icons.report_rounded,
                                     title: '举报',
@@ -402,37 +413,18 @@ class _PostCardState extends State<PostCard> {
     MoeToast.success(context, '链接已复制到剪贴板');
   }
 
-  static void _confirmDelete(
-      BuildContext context, Post post, VoidCallback onConfirmed) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title:
-            const Text('删除动态', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('确定要删除这条动态吗？此操作无法撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              onConfirmed();
-            },
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+  static Future<void> _confirmDelete(
+      BuildContext context, Post post, VoidCallback onConfirmed) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '删除动态',
+      message: '确定要删除这条动态吗？此操作无法撤销。',
+      confirmText: '删除',
+      isDestructive: true,
     );
+    if (confirmed == true) {
+      onConfirmed();
+    }
   }
 
   static void _handleShare(Post post) {
@@ -900,8 +892,7 @@ $link''';
     );
 
     // 表情占位符正则表达式：[emoji:url]格式
-    final emojiRegex = RegExp(r'\[emoji:(.*?)\]');
-    final matches = emojiRegex.allMatches(content);
+    final matches = _emojiRegex.allMatches(content);
 
     if (matches.isEmpty) {
       // 如果没有表情占位符，直接返回普通文本

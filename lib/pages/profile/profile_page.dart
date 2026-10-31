@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../../auth_service.dart';
 import '../../providers/user_level_provider.dart';
 import '../../widgets/achievement_badge_display.dart';
-import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
@@ -21,10 +20,7 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
-import '../checkin/checkin_page.dart';
 import '../checkin/user_level_page.dart';
-import '../commerce/wallet_page.dart';
-import '../gallery/cloud_gallery_page.dart';
 import 'followers_page.dart';
 import 'following_page.dart';
 import 'profile_viewmodel.dart';
@@ -112,8 +108,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
     HapticFeedback.lightImpact();
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => CheckInPage(userId: userId)));
+    Navigator.pushNamed(context, '/checkin');
   }
 
   void _navigateToUserLevel() {
@@ -129,22 +124,12 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _openVipCenter() async {
     HapticFeedback.lightImpact();
     if (AuthService.currentUser == null) {
-      final login = await showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('先登录再查看'),
-          content: const Text('登录后可查看会员权益、套餐和开通记录。'),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('稍后再说')),
-            FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('去登录')),
-          ],
-        ),
+      final login = await showConfirmDialog(
+        context,
+        title: '先登录再查看',
+        message: '登录后可查看会员权益、套餐和开通记录。',
+        confirmText: '去登录',
+        cancelText: '稍后再说',
       );
       if (login == true && mounted) {
         await Navigator.pushNamed(context, '/login');
@@ -176,10 +161,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showAllBadges() {
     final uid = _vm.user?.id;
     if (uid == null || uid.isEmpty) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => AchievementsPage(userId: uid)),
-    );
+    Navigator.pushNamed(context, '/achievements');
   }
 
   // ─── Build ────────────────────────────────────────────────────────────────
@@ -268,11 +250,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   color: MoeTokens.secondary,
                                   onTap: () async {
                                     HapticFeedback.lightImpact();
-                                    await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (_) =>
-                                                const CloudGalleryPage()));
+                                    await Navigator.pushNamed(
+                                        context, '/cloud-gallery');
                                   }),
                               MoeMenuItem(
                                   icon: Icons.qr_code_rounded,
@@ -657,8 +636,7 @@ class _ProfilePageState extends State<ProfilePage> {
         subtitle: '¥${_vm.user?.balance.toStringAsFixed(2) ?? '0.00'}',
         onTap: () {
           HapticFeedback.lightImpact();
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const WalletPage())).then((_) {
+          Navigator.pushNamed(context, '/wallet').then((_) {
             if (mounted) _loadUserInfo();
           });
         },

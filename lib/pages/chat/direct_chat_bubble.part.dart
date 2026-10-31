@@ -222,43 +222,47 @@ extension _DirectChatBubbleWidgets on _DirectChatPageState {
 
     // 气泡圆角：第一条消息有“尾巴”效果，连续消息底部圆角统一
     final tailRadius = tightBottom ? MoeTokens.radiusMd : 4.0;
+    final isImage = _chat.isImageContent(message.content);
     // 气泡渐变采样：开启皮肤功能时取当前所选皮肤（build 顶部已解析，
     // 避免重复 Provider 查找），否则仍为默认薰衣草。
     final skinGradient = (chatSkin ?? ChatSkins.lavender).bubbleMeGradient;
-    final bubble = DecoratedBox(
-      decoration: BoxDecoration(
-        color: useMeGradient ? null : bubbleBg,
-        gradient: useMeGradient
-            ? LinearGradient(
-                colors: skinGradient.colors,
-                stops: skinGradient.stops,
-                begin: skinGradient.begin,
-                end: skinGradient.end,
-                tileMode: skinGradient.tileMode,
-                transform: _GradientShiftTransform(index),
-              )
-            : null,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(isMe ? 18 : 6),
-          topRight: Radius.circular(isMe ? 6 : 18),
-          bottomLeft: Radius.circular(isMe ? 18 : tailRadius),
-          bottomRight: Radius.circular(isMe ? tailRadius : 18),
-        ),
-        border: isMe
-            ? null
-            : Border.all(
-                color: chatSkin?.peerBorderFor(brightness) ??
-                    (brightness == Brightness.dark
-                        ? const Color(0x33FFFFFF)
-                        : const Color(0x337F7FD5)),
+    // 图片消息直接展示圆角图片，不再叠加外层聊天气泡框。
+    final Widget bubble = isImage
+        ? bubbleChild
+        : DecoratedBox(
+            decoration: BoxDecoration(
+              color: useMeGradient ? null : bubbleBg,
+              gradient: useMeGradient
+                  ? LinearGradient(
+                      colors: skinGradient.colors,
+                      stops: skinGradient.stops,
+                      begin: skinGradient.begin,
+                      end: skinGradient.end,
+                      tileMode: skinGradient.tileMode,
+                      transform: _GradientShiftTransform(index),
+                    )
+                  : null,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(isMe ? 18 : 6),
+                topRight: Radius.circular(isMe ? 6 : 18),
+                bottomLeft: Radius.circular(isMe ? 18 : tailRadius),
+                bottomRight: Radius.circular(isMe ? tailRadius : 18),
               ),
-        boxShadow: isMe ? MoeTokens.shadowSm() : null,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: bubbleChild,
-      ),
-    );
+              border: isMe
+                  ? null
+                  : Border.all(
+                      color: chatSkin?.peerBorderFor(brightness) ??
+                          (brightness == Brightness.dark
+                              ? const Color(0x33FFFFFF)
+                              : MoeTokens.surfaceBorder),
+                    ),
+              boxShadow: isMe ? MoeTokens.shadowSm() : null,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: bubbleChild,
+            ),
+          );
 
     return Padding(
       padding: EdgeInsets.only(bottom: tightBottom ? 4 : 10),

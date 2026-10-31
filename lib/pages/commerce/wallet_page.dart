@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_response.dart';
 import 'package:moe_social/services/commerce_service.dart';
-import 'package:moe_social/pages/commerce/recharge_page.dart';
-import 'package:moe_social/pages/commerce/order_center_page.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/moe_toast.dart';
@@ -127,10 +125,7 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   void _goToRecharge() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RechargePage()),
-    ).then((_) {
+    Navigator.pushNamed(context, '/recharge').then((_) {
       _refresh();
     });
   }
@@ -169,12 +164,7 @@ class _WalletPageState extends State<WalletPage> {
         actions: [
           TextButton.icon(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (context) => const OrderCenterPage(),
-                ),
-              );
+              Navigator.pushNamed(context, '/order-center');
             },
             icon: Icon(Icons.receipt_long_outlined,
                 size: 20, color: _moe.primary),
@@ -410,9 +400,8 @@ class _WalletPageState extends State<WalletPage> {
   Widget _buildTransactionItem(Map<String, dynamic> transaction) {
     final type = transaction['type'] as String;
     final isRecharge = type == 'recharge';
-    final color = isRecharge
-        ? MoeTokens.pastelTeal
-        : MoeTokens.danger; // 充值青色，消费红色
+    final color =
+        isRecharge ? MoeTokens.pastelTeal : MoeTokens.danger; // 充值青色，消费红色
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

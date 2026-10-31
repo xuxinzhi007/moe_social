@@ -23,6 +23,7 @@ import '../pages/commerce/vip_center_page.dart' deferred as vip_center;
 import '../pages/commerce/vip_history_page.dart' deferred as vip_history;
 import '../pages/commerce/vip_orders_page.dart' deferred as vip_orders;
 import '../pages/commerce/vip_purchase_page.dart' deferred as vip_purchase;
+import '../pages/commerce/order_center_page.dart' deferred as order_center;
 import '../pages/commerce/wallet_page.dart' deferred as wallet;
 import '../pages/community/community_home_page.dart' deferred as community_home;
 import '../pages/community/community_post_search_page.dart';
@@ -191,6 +192,10 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/vip-history': (context) => _deferred(
           vip_history.loadLibrary,
           () => vip_history.VipHistoryPage(),
+        ),
+    '/order-center': (context) => _deferred(
+          order_center.loadLibrary,
+          () => order_center.OrderCenterPage(),
         ),
     '/forgot-password': (context) => const ForgotPasswordPage(),
     '/verify-code': (context) => VerifyCodePage(

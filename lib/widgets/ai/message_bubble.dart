@@ -2,12 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../moe_toast.dart';
 import '../../theme/moe_tokens.dart';
-import 'ai_brand_tokens.dart';
-import 'ai_theme.dart';
-import 'ai_rich_message_body.dart';
+import '../../utils/ai_chat_message_utils.dart';
+import '../../utils/ai_message_format_parser.dart';
+import '../moe_toast.dart';
 import '../motion/moe_motion.dart';
+import 'ai_brand_tokens.dart';
+import 'ai_draw_card.dart';
+import 'ai_rich_message_body.dart';
+import 'ai_theme.dart';
 
 // 消息内容类型
 enum MessageContentType {
@@ -134,13 +137,14 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
   }
 
   // 渲染纯文本内容
-  Widget _renderTextContent() {
+  Widget _renderTextContent({List<AiMessageBlock>? preparsedBlocks}) {
     if (widget.richFormat) {
       return AiRichMessageBody(
         content: widget.content,
         isUser: widget.isUser,
         isStreaming: widget.isStreamingContent,
         onExpanded: widget.onContentExpanded,
+        preparsedBlocks: preparsedBlocks,
       );
     }
 
@@ -159,8 +163,8 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
           text,
           style: TextStyle(
             color: textColor,
-            fontSize: compact ? 13 : 15,
-            height: compact ? 1.25 : 1.5,
+            fontSize: compact ? 14 : 15,
+            height: compact ? 1.4 : 1.5,
           ),
           maxLines: maxLines,
           overflow: collapseUserLongText ? TextOverflow.ellipsis : null,
@@ -225,10 +229,10 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
               ),
             ),
             const SizedBox(width: MoeTokens.spaceSm),
-            Expanded(
+            const Expanded(
               child: Text(
                 '回复没有送达',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: MoeTokens.textMd,
                   fontWeight: MoeTokens.fontWeightSubtitle,
                   color: AiBrandTokens.titleColor,
@@ -291,12 +295,11 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
 
   // 渲染代码块
   Widget _renderCodeContent() {
-    final textColor = Colors.white;
+    const textColor = Colors.white;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 代码语言标签和复制按钮
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -333,7 +336,6 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
           ],
         ),
         const SizedBox(height: 8),
-        // 代码内容
         Container(
           constraints: const BoxConstraints(maxHeight: 400),
           child: SingleChildScrollView(
@@ -342,13 +344,149 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
               constraints: const BoxConstraints(minWidth: double.infinity),
               child: Text(
                 widget.content,
-                style: TextStyle(
+                style: const TextStyle(
                   color: textColor,
                   fontSize: 14,
                   fontFamily: 'Monaco',
                   height: 1.4,
                 ),
               ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBubbleRow({
+    required BuildContext context,
+    required Widget bubbleChild,
+    required double maxBubbleWidth,
+    required bool isError,
+    required bool showAvatar,
+  }) {
+    final isUser = widget.isUser;
+    final bubblePadding = isError
+        ? const EdgeInsets.fromLTRB(
+            MoeTokens.spaceMd,
+            MoeTokens.spaceMd,
+            MoeTokens.spaceSm,
+            MoeTokens.spaceSm,
+          )
+        : EdgeInsets.symmetric(
+            horizontal: widget.airyCompanion ? 14 : MoeTokens.spaceLg,
+            vertical: widget.airyCompanion ? 10 : MoeTokens.spaceMd,
+          );
+
+    return Row(
+      mainAxisAlignment:
+          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!isUser) ...[
+          (!showAvatar || widget.hideAvatar)
+              ? const SizedBox(width: 32)
+              : _buildAssistantAvatar(),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: GestureDetector(
+            onLongPress: widget.isLoading || widget.content.trim().isEmpty
+                ? null
+                : _copyMessage,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+              child: Column(
+                crossAxisAlignment:
+                    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: bubblePadding,
+                    decoration: BoxDecoration(
+                      gradient: isUser ? MoeTokens.primaryGradient : null,
+                      color: isUser
+                          ? null
+                          : isError
+                              ? AiTheme.danger.withValues(alpha: 0.06)
+                              : widget.contentType == MessageContentType.code
+                                  ? const Color(0xFF1E1E1E)
+                                  : widget.airyCompanion
+                                      ? AiBrandTokens.companionSurface
+                                      : MoeTokens.cardBackground,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(
+                          isError ? MoeTokens.radiusLg : MoeTokens.radiusXl,
+                        ),
+                        topRight: const Radius.circular(MoeTokens.radiusXl),
+                        bottomLeft: isUser
+                            ? const Radius.circular(MoeTokens.radiusXl)
+                            : Radius.circular(
+                                isError
+                                    ? MoeTokens.radiusLg
+                                    : MoeTokens.radiusSm,
+                              ),
+                        bottomRight: isUser
+                            ? const Radius.circular(MoeTokens.radiusSm)
+                            : const Radius.circular(MoeTokens.radiusXl),
+                      ),
+                      border: !isUser &&
+                              (isError ||
+                                  widget.contentType != MessageContentType.code)
+                          ? Border.all(
+                              color: isError
+                                  ? AiTheme.danger.withValues(alpha: 0.22)
+                                  : MoeTokens.surfaceBorder,
+                              width: 1,
+                            )
+                          : null,
+                      boxShadow: MoeTokens.shadowSm(),
+                    ),
+                    child: bubbleChild,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!isUser && widget.bubbleAction != null) ...[
+          const SizedBox(width: 6),
+          widget.bubbleAction!,
+        ],
+        if (isUser && !widget.hideAvatar) ...[
+          const SizedBox(width: 8),
+          widget.userAvatar ??
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AiBrandTokens.secondary,
+                child: Icon(Icons.person_rounded,
+                    size: 18, color: Colors.white.withValues(alpha: 0.95)),
+              ),
+        ],
+      ],
+    );
+  }
+
+  /// 独立渲染图片/媒体消息行：外层不套聊天气泡，直接展示圆角图片卡片。
+  Widget _buildStandaloneDrawRow({
+    required AiMessageBlock drawBlock,
+    required double maxMediaWidth,
+    required bool showAvatar,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        (!showAvatar || widget.hideAvatar)
+            ? const SizedBox(width: 32)
+            : _buildAssistantAvatar(),
+        const SizedBox(width: 8),
+        Flexible(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxMediaWidth),
+            child: AiDrawCard(
+              prompt: drawBlock.content,
+              isIncomplete: drawBlock.isIncomplete,
+              autoGenerateOnMount: widget.isStreamingContent,
             ),
           ),
         ),
@@ -364,146 +502,90 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
         (isUser
             ? (widget.airyCompanion ? 0.74 : 0.78)
             : (widget.airyCompanion ? 0.80 : 0.82));
-    final capsule = widget.airyCompanion &&
+
+    // 当助手富文本中包含 <draw> 绘画指令时，将「文字消息」与「图片消息」拆成独立的两条消息，
+    // 且图片消息外层不再包裹聊天气泡。
+    if (!isUser &&
         !isError &&
-        widget.contentType != MessageContentType.code;
-    final bubblePadding = capsule
-        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 7)
-        : isError
-            ? const EdgeInsets.fromLTRB(
-                MoeTokens.spaceMd,
-                MoeTokens.spaceMd,
-                MoeTokens.spaceSm,
-                MoeTokens.spaceSm,
-              )
-            : EdgeInsets.symmetric(
-                horizontal: widget.airyCompanion
-                    ? MoeTokens.spaceMd
-                    : MoeTokens.spaceLg,
-                vertical: widget.airyCompanion
-                    ? MoeTokens.spaceMd
-                    : MoeTokens.spaceMd,
-              );
+        !widget.isLoading &&
+        widget.contentType == MessageContentType.text &&
+        widget.richFormat &&
+        widget.content.trim().isNotEmpty) {
+      final formatted =
+          AiChatMessageUtils.formatRoleplayContent(widget.content);
+      final blocks = parseAiMessageContent(formatted);
+      final hasDraw = blocks.any((b) => b.kind == AiMessageBlockKind.draw);
+
+      if (hasDraw) {
+        final rows = <Widget>[];
+        var pendingTextBlocks = <AiMessageBlock>[];
+
+        void flushTextBlocks() {
+          if (pendingTextBlocks.isEmpty) return;
+          final chunk = List<AiMessageBlock>.from(pendingTextBlocks);
+          pendingTextBlocks.clear();
+          rows.add(
+            _buildBubbleRow(
+              context: context,
+              bubbleChild: _renderTextContent(preparsedBlocks: chunk),
+              maxBubbleWidth: maxBubbleWidth,
+              isError: false,
+              showAvatar: true,
+            ),
+          );
+        }
+
+        for (final block in blocks) {
+          if (block.kind == AiMessageBlockKind.draw) {
+            flushTextBlocks();
+            rows.add(
+              _buildStandaloneDrawRow(
+                drawBlock: block,
+                maxMediaWidth: maxBubbleWidth,
+                showAvatar: true,
+              ),
+            );
+          } else if (block.content.trim().isNotEmpty) {
+            pendingTextBlocks.add(block);
+          }
+        }
+        flushTextBlocks();
+
+        if (rows.isNotEmpty) {
+          return Container(
+            margin: EdgeInsets.only(top: widget.compactTop ? 2 : 8, bottom: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  rows[i],
+                ],
+              ],
+            ),
+          );
+        }
+      }
+    }
+
+    final Widget innerChild = isError
+        ? _renderErrorContent()
+        : (!widget.isUser && widget.isLoading && widget.content.trim().isEmpty)
+            ? _renderThinkingContent()
+            : widget.contentType == MessageContentType.text
+                ? _renderTextContent()
+                : widget.contentType == MessageContentType.thinking
+                    ? _renderThinkingContent()
+                    : _renderCodeContent();
 
     return Container(
       margin: EdgeInsets.only(top: widget.compactTop ? 2 : 8, bottom: 6),
-      child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isUser) ...[
-            widget.hideAvatar
-                ? const SizedBox(width: 40)
-                : _buildAssistantAvatar(),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: GestureDetector(
-              onLongPress: widget.isLoading || widget.content.trim().isEmpty
-                  ? null
-                  : _copyMessage,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxBubbleWidth),
-                child: Column(
-                  crossAxisAlignment: isUser
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: bubblePadding,
-                      decoration: BoxDecoration(
-                        gradient: isUser ? MoeTokens.primaryGradient : null,
-                        color: isUser
-                            ? null
-                            : isError
-                                ? AiTheme.danger.withValues(alpha: 0.06)
-                                : widget.contentType == MessageContentType.code
-                                    ? const Color(0xFF1E1E1E)
-                                    : widget.airyCompanion
-                                        ? AiBrandTokens.companionSurface
-                                        : MoeTokens.cardBackground,
-                        borderRadius: capsule
-                            ? BorderRadius.circular(MoeTokens.radiusFull)
-                            : BorderRadius.only(
-                                topLeft: Radius.circular(
-                                  isError
-                                      ? MoeTokens.radiusLg
-                                      : MoeTokens.radiusXl,
-                                ),
-                                topRight:
-                                    const Radius.circular(MoeTokens.radiusXl),
-                                bottomLeft: isUser
-                                    ? const Radius.circular(MoeTokens.radiusXl)
-                                    : Radius.circular(
-                                        isError
-                                            ? MoeTokens.radiusLg
-                                            : MoeTokens.radiusSm,
-                                      ),
-                                bottomRight: isUser
-                                    ? const Radius.circular(MoeTokens.radiusMd)
-                                    : const Radius.circular(MoeTokens.radiusXl),
-                              ),
-                        border: !isUser &&
-                                (isError ||
-                                    widget.contentType !=
-                                        MessageContentType.code)
-                            ? Border.all(
-                                color: isError
-                                    ? AiTheme.danger.withValues(alpha: 0.22)
-                                    : widget.airyCompanion
-                                        ? MoeTokens.primary
-                                            .withValues(alpha: 0.16)
-                                        : AiBrandTokens.primary
-                                            .withValues(alpha: 0.08),
-                                width: isError
-                                    ? 1
-                                    : widget.airyCompanion
-                                        ? 1.2
-                                        : 1,
-                              )
-                            : null,
-                        boxShadow: capsule
-                            ? MoeTokens.shadowSm()
-                            : isUser ||
-                                    widget.contentType ==
-                                        MessageContentType.code
-                                ? MoeTokens.shadowMd()
-                                : MoeTokens.shadowSm(),
-                      ),
-                      child: isError
-                          ? _renderErrorContent()
-                          : (!widget.isUser &&
-                                  widget.isLoading &&
-                                  widget.content.trim().isEmpty)
-                              ? _renderThinkingContent()
-                              : widget.contentType == MessageContentType.text
-                                  ? _renderTextContent()
-                                  : widget.contentType ==
-                                          MessageContentType.thinking
-                                      ? _renderThinkingContent()
-                                      : _renderCodeContent(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (!isUser && widget.bubbleAction != null) ...[
-            const SizedBox(width: 6),
-            widget.bubbleAction!,
-          ],
-          if (isUser && !widget.hideAvatar) ...[
-            const SizedBox(width: 8),
-            widget.userAvatar ??
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AiBrandTokens.secondary,
-                  child: Icon(Icons.person_rounded,
-                      size: 18, color: Colors.white.withValues(alpha: 0.95)),
-                ),
-          ],
-        ],
+      child: _buildBubbleRow(
+        context: context,
+        bubbleChild: innerChild,
+        maxBubbleWidth: maxBubbleWidth,
+        isError: isError,
+        showAvatar: true,
       ),
     );
   }

@@ -22,21 +22,18 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
   final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
   bool _isLoading = false;
-  int _countdown = 60;
+  final ValueNotifier<int> _countdownNotifier = ValueNotifier<int>(60);
   Timer? _timer;
 
   void _startCountdown() {
-    setState(() {
-      _countdown = 60;
-    });
+    _countdownNotifier.value = 60;
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_countdown > 0) {
-          _countdown--;
-        } else {
-          _timer?.cancel();
-        }
-      });
+      if (_countdownNotifier.value > 0) {
+        _countdownNotifier.value--;
+      } else {
+        _timer?.cancel();
+      }
     });
   }
 
@@ -113,6 +110,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
   void dispose() {
     _codeController.dispose();
     _timer?.cancel();
+    _countdownNotifier.dispose();
     super.dispose();
   }
 
@@ -254,21 +252,30 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                                         ),
                                         filled: true,
                                         fillColor: Colors.grey[50],
-                                        suffixIcon: _countdown > 0
-                                            ? Padding(
+                                        suffixIcon: ValueListenableBuilder<int>(
+                                          valueListenable: _countdownNotifier,
+                                          builder: (context, seconds, _) {
+                                            if (seconds > 0) {
+                                              return Padding(
                                                 padding:
                                                     const EdgeInsets.all(12),
-                                                child: Text('${_countdown}s',
-                                                    style: const TextStyle(
-                                                        color: Colors.grey)),
-                                              )
-                                            : TextButton(
-                                                onPressed: _resendCode,
-                                                child: const Text('重发',
-                                                    style: TextStyle(
-                                                        color:
-                                                            MoeTokens.primary)),
+                                                child: Text(
+                                                  '${seconds}s',
+                                                  style: const TextStyle(
+                                                      color: Colors.grey),
+                                                ),
+                                              );
+                                            }
+                                            return TextButton(
+                                              onPressed: _resendCode,
+                                              child: const Text(
+                                                '重发',
+                                                style: TextStyle(
+                                                    color: MoeTokens.primary),
                                               ),
+                                            );
+                                          },
+                                        ),
                                       ),
                                       keyboardType: TextInputType.number,
                                       validator: (value) =>

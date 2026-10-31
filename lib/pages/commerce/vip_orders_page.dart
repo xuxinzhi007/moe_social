@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
-import '../../services/commerce_service.dart';
 import '../../models/vip_order.dart';
+import '../../services/commerce_service.dart';
+import '../../theme/moe_tokens.dart';
+import '../../utils/moe_error_copy.dart';
+import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/moe_button.dart';
+import '../../widgets/moe_empty_state.dart';
+import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
 class VipOrdersPage extends StatefulWidget {
@@ -19,6 +25,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
   final int _pageSize = 10;
   int _total = 0;
   bool _hasMore = true;
+  Object? _error;
 
   @override
   void initState() {
@@ -28,13 +35,17 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
 
   Future<void> _loadOrders({bool refresh = false}) async {
     final userId = AuthService.currentUser;
-    if (userId == null) return;
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
 
     if (refresh) {
       setState(() {
         _currentPage = 1;
         _orders = [];
         _hasMore = true;
+        _error = null;
       });
     }
 
@@ -49,6 +60,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
         pageSize: _pageSize,
       );
 
+      if (!mounted) return;
       setState(() {
         if (refresh) {
           _orders = result['orders'] as List<VipOrder>;
@@ -58,12 +70,15 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
         _total = result['total'] as int;
         _hasMore = _orders.length < _total;
         _isLoading = false;
+        _error = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _error = e;
       });
-      if (mounted) {
+      if (_orders.isNotEmpty) {
         MoeToast.error(context, '加载订单失败: $e');
       }
     }
@@ -95,177 +110,182 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return MoeTokens.warning;
       case 'paid':
-        return Colors.green;
+        return MoeTokens.success;
       case 'cancelled':
-        return Colors.grey;
+        return MoeTokens.hintText;
       case 'expired':
-        return Colors.red;
+        return MoeTokens.danger;
       default:
-        return Colors.blue;
+        return MoeTokens.primary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('VIP订单'),
-      ),
+    return AdaptivePageScaffold(
+      title: 'VIP 订单',
+      padding: EdgeInsets.zero,
       body: RefreshIndicator(
         onRefresh: () => _loadOrders(refresh: true),
         child: _isLoading && _orders.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : _orders.isEmpty
+            ? const Center(child: MoeLoading())
+            : _error != null && _orders.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.receipt_long_outlined,
-                            size: 64, color: MoeTokens.hintText),
-                        const SizedBox(height: 16),
-                        Text(
-                          '暂无订单',
-                          style: TextStyle(
-                              color: MoeTokens.bodyText,
-                              fontSize: MoeTokens.textSm),
-                        ),
-                      ],
+                    child: MoeErrorState.fromError(
+                      _error,
+                      scene: MoeErrorScene.generic,
+                      onRetry: () => _loadOrders(refresh: true),
                     ),
                   )
-                : ListView.builder(
-                    itemCount: _orders.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _orders.length) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Center(
-                            child: _isLoading
-                                ? const CircularProgressIndicator()
-                                : TextButton(
-                                    onPressed: _loadMore,
-                                    child: const Text('加载更多'),
-                                  ),
+                : _orders.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 80),
+                          MoeEmptyState(
+                            icon: Icons.receipt_long_outlined,
+                            title: '暂无 VIP 订单',
+                            subtitle: '开通会员后的订单详情会展示在这里',
                           ),
-                        );
-                      }
+                        ],
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                        itemCount: _orders.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == _orders.length) {
+                            return Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Center(
+                                child: _isLoading
+                                    ? const MoeSmallLoading()
+                                    : MoeSecondaryButton(
+                                        label: '加载更多',
+                                        onPressed: _loadMore,
+                                      ),
+                              ),
+                            );
+                          }
 
-                      final order = _orders[index];
-                      return _buildOrderCard(order);
-                    },
-                  ),
+                          final order = _orders[index];
+                          return _buildOrderCard(order);
+                        },
+                      ),
       ),
     );
   }
 
   Widget _buildOrderCard(VipOrder order) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.planName,
-                        style: const TextStyle(
-                          fontSize: MoeTokens.textLg,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        (order.orderNo != null &&
-                                order.orderNo!.trim().isNotEmpty)
-                            ? '订单号: ${order.orderNo}'
-                            : '订单编号: ${order.id}',
-                        style: TextStyle(
-                          color: MoeTokens.bodyText,
-                          fontSize: MoeTokens.textSm,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(order.status).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                  ),
-                  child: Text(
-                    _getStatusText(order.status),
-                    style: TextStyle(
-                      color: _getStatusColor(order.status),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Divider(),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
+    final statusColor = _getStatusColor(order.status);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+        boxShadow: MoeTokens.shadowCard(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '订单金额',
-                      style: TextStyle(color: MoeTokens.bodyText, fontSize: 12),
+                      order.planName,
+                      style: const TextStyle(
+                        fontSize: MoeTokens.textMd,
+                        fontWeight: FontWeight.w700,
+                        color: MoeTokens.titleText,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '¥${order.amount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: MoeTokens.textXl,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber[700],
+                      (order.orderNo != null &&
+                              order.orderNo!.trim().isNotEmpty)
+                          ? '订单号: ${order.orderNo}'
+                          : '订单编号: ${order.id}',
+                      style: const TextStyle(
+                        color: MoeTokens.inkMuted,
+                        fontSize: MoeTokens.textXs,
                       ),
                     ),
                   ],
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '创建时间',
-                      style: TextStyle(color: MoeTokens.bodyText, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      order.createdAtDateTime != null
-                          ? '${order.createdAtDateTime!.year}-${order.createdAtDateTime!.month.toString().padLeft(2, '0')}-${order.createdAtDateTime!.day.toString().padLeft(2, '0')}'
-                          : order.createdAt,
-                      style: const TextStyle(fontSize: MoeTokens.textSm),
-                    ),
-                    if (order.paidAt != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '支付时间: ${order.paidAtDateTime != null ? '${order.paidAtDateTime!.year}-${order.paidAtDateTime!.month.toString().padLeft(2, '0')}-${order.paidAtDateTime!.day.toString().padLeft(2, '0')}' : order.paidAt}',
-                        style: TextStyle(
-                            color: MoeTokens.bodyText,
-                            fontSize: MoeTokens.textXs),
-                      ),
-                    ],
-                  ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                 ),
-              ],
-            ),
-          ],
-        ),
+                child: Text(
+                  _getStatusText(order.status),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: MoeTokens.textXs,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: MoeTokens.lineSoft),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '订单金额',
+                    style: TextStyle(
+                        color: MoeTokens.hintText, fontSize: MoeTokens.textXs),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '¥${order.amount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: MoeTokens.textXl,
+                      fontWeight: FontWeight.w800,
+                      color: MoeTokens.titleText,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    '创建时间',
+                    style: TextStyle(
+                        color: MoeTokens.hintText, fontSize: MoeTokens.textXs),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    order.createdAtDateTime != null
+                        ? '${order.createdAtDateTime!.year}-${order.createdAtDateTime!.month.toString().padLeft(2, '0')}-${order.createdAtDateTime!.day.toString().padLeft(2, '0')}'
+                        : order.createdAt,
+                    style: const TextStyle(
+                      fontSize: MoeTokens.textSm,
+                      color: MoeTokens.bodyText,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

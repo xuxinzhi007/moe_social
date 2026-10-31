@@ -284,11 +284,47 @@ class _AiDrawCardState extends State<AiDrawCard> {
       return _buildDraftingBanner();
     }
 
+    final hasImage = _imageUrl != null && _imageUrl!.isNotEmpty && !_generating;
+
+    // 已出图状态：直接展示纯圆角图片 + 下方轻量操作条，不再外包白色卡片气泡底板。
+    if (hasImage) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+            child: _buildRenderedImage(_imageUrl!),
+          ),
+          const SizedBox(height: 6),
+          _buildBottomBar(),
+          if (_promptExpanded && _cleanPrompt.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              decoration: BoxDecoration(
+                color: MoeTokens.softLavenderBg,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                border: Border.all(color: MoeTokens.surfaceBorder),
+              ),
+              child: SelectableText(
+                _cleanPrompt,
+                style: const TextStyle(
+                  fontSize: MoeTokens.textXs,
+                  fontFamily: 'monospace',
+                  color: MoeTokens.inkMuted,
+                  height: 1.45,
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     return Container(
-      margin: const EdgeInsets.only(top: 6),
       decoration: BoxDecoration(
         color: MoeTokens.surface1,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         border: Border.all(color: MoeTokens.surfaceBorder),
         boxShadow: MoeTokens.shadowSm(),
       ),
@@ -297,9 +333,7 @@ class _AiDrawCardState extends State<AiDrawCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_imageUrl != null && _imageUrl!.isNotEmpty && !_generating)
-            _buildRenderedImage(_imageUrl!)
-          else if (_generating)
+          if (_generating)
             _buildGeneratingCanvas()
           else if (_error != null)
             _buildErrorCanvas(_error!)

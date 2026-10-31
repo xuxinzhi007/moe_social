@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moe_social/widgets/ai/ai_draw_card.dart';
+import 'package:moe_social/widgets/ai/ai_rich_message_body.dart';
 import 'package:moe_social/widgets/ai/message_bubble.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('error bubble exposes recovery copy and action', (tester) async {
     var retried = false;
 
@@ -30,5 +37,36 @@ void main() {
 
     await tester.tap(find.text('重试'));
     expect(retried, isTrue);
+  });
+
+  testWidgets(
+      'assistant message with text and <draw> splits into separate text bubble and standalone media card',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AiMessageBubble(
+            content:
+                '小星没实体照片，但我可以描述一个场景给你。\n<draw>1girl, warm lamp light, reading book</draw>',
+            contentType: MessageContentType.text,
+            isUser: false,
+            richFormat: true,
+            airyCompanion: true,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('小星没实体照片，但我可以描述一个场景给你。'), findsOneWidget);
+    expect(find.byType(AiDrawCard), findsOneWidget);
+    // AiDrawCard is rendered as a standalone media row, not nested inside AiRichMessageBody's text bubble.
+    expect(
+      find.descendant(
+        of: find.byType(AiRichMessageBody),
+        matching: find.byType(AiDrawCard),
+      ),
+      findsNothing,
+    );
   });
 }

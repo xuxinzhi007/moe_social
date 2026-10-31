@@ -233,9 +233,10 @@ class CompanionArenaGameEntry extends StatelessWidget {
             vertical: MoeTokens.spaceMd,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: MoeTokens.surface1,
             borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-            boxShadow: MoeTokens.shadowMd(),
+            border: Border.all(color: MoeTokens.surfaceBorder),
+            boxShadow: MoeTokens.shadowCard(),
           ),
           child: const Row(
             children: [
@@ -380,30 +381,14 @@ class _HeroCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            MoeTokens.primary.withValues(alpha: 0.10),
-            MoeTokens.pastelPink.withValues(alpha: 0.10),
-            MoeTokens.pastelOrange.withValues(alpha: 0.12),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
         border: Border.all(
           color: isAttention
-              ? MoeTokens.pastelPink.withValues(alpha: 0.45)
-              : Colors.white.withValues(alpha: 0.65),
+              ? MoeTokens.pastelPink.withValues(alpha: 0.35)
+              : MoeTokens.surfaceBorder,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isAttention
-                ? MoeTokens.pastelPink.withValues(alpha: 0.20)
-                : MoeTokens.primary.withValues(alpha: 0.10),
-            blurRadius: isAttention ? 30 : 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: MoeTokens.shadowCard(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,10 +454,9 @@ class _HeroCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.72),
+                  color: MoeTokens.softChipBg,
                   borderRadius: BorderRadius.circular(99),
-                  border:
-                      Border.all(color: Colors.white.withValues(alpha: 0.8)),
+                  border: Border.all(color: MoeTokens.surfaceBorder),
                 ),
                 child: const CompanionModelStatusChip(),
               ),
@@ -500,14 +484,13 @@ class _HeroCard extends StatelessWidget {
               label: isAttention ? '回复 TA' : '开始聊天',
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
+                padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
                 decoration: BoxDecoration(
-                  color: MoeTokens.surface1,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                  color: MoeTokens.softLavenderBg,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                   border: Border.all(
-                    color: MoeTokens.primary.withValues(alpha: 0.16),
+                    color: MoeTokens.primary.withValues(alpha: 0.14),
                   ),
-                  boxShadow: MoeTokens.shadowSm(),
                 ),
                 child: Row(
                   children: [

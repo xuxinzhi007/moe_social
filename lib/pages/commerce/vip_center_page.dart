@@ -5,9 +5,6 @@ import '../../auth_service.dart';
 import '../../services/commerce_service.dart';
 import '../../models/vip_record.dart';
 import 'vip_benefit_catalog.dart';
-import 'vip_purchase_page.dart';
-import 'order_center_page.dart';
-import 'vip_history_page.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
@@ -110,10 +107,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
   }
 
   Future<void> _openPurchase() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const VipPurchasePage()),
-    );
+    final result = await Navigator.pushNamed(context, '/vip-purchase');
     if (result == true) {
       await _loadVipInfo();
       if (mounted) {
@@ -169,13 +163,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                                 subtitle: '礼物、会员订单和钱包流水',
                                 color: MoeTokens.pastelBlue,
                                 onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const OrderCenterPage(),
-                                    ),
-                                  );
+                                  Navigator.pushNamed(context, '/order-center');
                                 },
                               ),
                               MoeMenuItem(
@@ -184,13 +172,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                                 subtitle: '查看历史生效记录',
                                 color: MoeTokens.primary,
                                 onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const VipHistoryPage(),
-                                    ),
-                                  );
+                                  Navigator.pushNamed(context, '/vip-history');
                                 },
                               ),
                               MoeMenuItem(

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
+import '../../theme/moe_tokens.dart';
 import '../../utils/ai_chat_message_utils.dart';
 import '../../utils/ai_message_format_parser.dart';
 import '../moe_toast.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_draw_card.dart';
 
-/// 酒馆 / flai 风格：Markdown 段落 + 代码/JSON 围栏块。
+/// 酒馆 / 陪伴对话富文本渲染：支持仅渲染指定类型的块，以便外层将文本与图片拆分为独立消息。
 class AiRichMessageBody extends StatelessWidget {
   const AiRichMessageBody({
     super.key,
@@ -16,18 +17,22 @@ class AiRichMessageBody extends StatelessWidget {
     required this.isUser,
     this.isStreaming = false,
     this.onExpanded,
+    this.preparsedBlocks,
   });
 
   final String content;
   final bool isUser;
   final bool isStreaming;
   final VoidCallback? onExpanded;
+  final List<AiMessageBlock>? preparsedBlocks;
 
   @override
   Widget build(BuildContext context) {
-    final formatted = AiChatMessageUtils.formatRoleplayContent(content);
-    final blocks = parseAiMessageContent(formatted);
-    final textColor = isUser ? Colors.white : Colors.black87;
+    final blocks = preparsedBlocks ??
+        parseAiMessageContent(
+          AiChatMessageUtils.formatRoleplayContent(content),
+        );
+    final textColor = isUser ? Colors.white : MoeTokens.titleText;
 
     if (blocks.length == 1 && blocks.first.kind == AiMessageBlockKind.text) {
       return _MarkdownSegment(
@@ -88,13 +93,13 @@ class _MarkdownSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sheet = MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-      p: TextStyle(color: textColor, fontSize: 15, height: 1.55),
+      p: TextStyle(color: textColor, fontSize: 15, height: 1.5),
       strong: TextStyle(
         color: textColor,
         fontWeight: FontWeight.w700,
       ),
       em: TextStyle(
-        color: isUser ? textColor.withValues(alpha: 0.9) : Colors.grey.shade600,
+        color: isUser ? textColor.withValues(alpha: 0.9) : MoeTokens.inkMuted,
         fontStyle: FontStyle.italic,
         height: 1.5,
       ),
