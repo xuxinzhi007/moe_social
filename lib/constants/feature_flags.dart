@@ -11,15 +11,17 @@ class FeatureFlags {
 
   // ── 实验 / 开发者向 ───────────────────────────────────────────────────
 
-  static const bool showExperimentalFeatures = false;
+  /// 内测/侧载总开关。打开后 replyAssist / AutoGLM / liveGiftPk / GameLab 跟随露出。
+  /// 商店包发布前须改回 false，避免实验入口泄漏。
+  static const bool showExperimentalFeatures = true;
 
-  /// Android 异地联机网络实验。跟随实验总开关，避免生产环境暴露未完成实验页。
+  /// Android 异地联机网络实验。跟随实验总开关。
   static const bool showGameNetworkLab = showExperimentalFeatures;
 
-  /// 读屏回复参谋（路径 B：侧载/内测；默认关闭）。
+  /// 读屏回复参谋（路径 B：侧载/内测）。跟随实验总开关。
   static const bool replyAssistPrototype = showExperimentalFeatures;
 
-  /// AutoGLM 自动化（自用）；入口在「设置 → 高级选项」。
+  /// AutoGLM 自动化（自用）；入口在「设置 → 高级选项」。跟随实验总开关。
   static const bool showAutoGlm = showExperimentalFeatures;
 
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
@@ -32,7 +34,7 @@ class FeatureFlags {
   /// 见 `docs/dev/lottie-achievement-gift-design.md`。
   static const bool useLottieGiftEffects = true;
 
-  /// 双人直播礼物 PK V1。跟随实验总开关，避免生产入口泄漏。
+  /// 双人直播礼物 PK V1。跟随实验总开关。
   static const bool liveGiftPk = showExperimentalFeatures;
 
   // ── 聊天 UI 个性化升级 ─────────────────────────────────────

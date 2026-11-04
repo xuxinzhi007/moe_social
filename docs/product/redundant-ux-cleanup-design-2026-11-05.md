@@ -1,6 +1,7 @@
 # 冗余 UX 收口设计（2026-11-05）
 
 > 状态：**P1–P5 已在 PR #6 落地**。  
+> 内测：实验总开关打开后，设置 → AI 与助手 → 伙伴·回复参谋。  
 > 集群盘点来源：内部扫描 memo（10 处冗余）；执行策略来源：分阶段优化调研。  
 > 与路径 B 桌宠的关系：Phase 1 权限三态 chip 作为 [PR #6](https://github.com/xuxinzhi007/moe_social/pull/6) 尾巴与 P2–P5 一并落地。  
 > 相关： [reply-assist-screen-read-2026-11-05.md](./reply-assist-screen-read-2026-11-05.md) · [reply-assist-pet-overlay-ux-2026-11-05.md](./reply-assist-pet-overlay-ux-2026-11-05.md) · [../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md](../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md)
