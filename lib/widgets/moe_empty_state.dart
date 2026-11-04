@@ -36,6 +36,31 @@ class MoeEmptyState extends StatelessWidget {
     this.animate = true,
   });
 
+  /// 未登录引导空态：统一的「去登录」入口 + 功能说明。
+  ///
+  /// [featureDescription] 描述登录后可用的功能，如「签到领奖励」「查看好友」等。
+  /// [context] 用于获取主题和执行导航。
+  factory MoeEmptyState.requireLogin({
+    required BuildContext context,
+    required String featureDescription,
+    bool compact = false,
+  }) {
+    return MoeEmptyState(
+      title: '请先登录',
+      subtitle: featureDescription,
+      icon: Icons.lock_outline_rounded,
+      compact: compact,
+      showCard: true,
+      animate: true,
+      primaryAction: MoeEmptyStateAction(
+        label: '去登录',
+        onPressed: () {
+          Navigator.pushNamed(context, '/login');
+        },
+      ),
+    );
+  }
+
   final String title;
   final String? subtitle;
   final IconData icon;

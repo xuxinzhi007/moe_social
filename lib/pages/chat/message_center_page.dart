@@ -10,6 +10,7 @@ import '../../services/presence_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_sheet.dart';
@@ -89,6 +90,54 @@ class _MessageCenterPageState extends State<MessageCenterPage>
     _openRequestsTick.value++;
   }
 
+  void _showRequireLoginSheet(String title, String featureDescription) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          margin: const EdgeInsets.all(MoeTokens.spaceMd),
+          padding: const EdgeInsets.all(MoeTokens.spaceLg),
+          decoration: BoxDecoration(
+            color: MoeTokens.pageBackground,
+            borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: MoeTokens.spaceMd),
+                  decoration: BoxDecoration(
+                    color: MoeTokens.lineSoft,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  ),
+                ),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: MoeTokens.titleText,
+                  ),
+                ),
+                const SizedBox(height: MoeTokens.spaceMd),
+                MoeEmptyState.requireLogin(
+                  context: context,
+                  featureDescription: featureDescription,
+                  compact: true,
+                ),
+                const SizedBox(height: MoeTokens.spaceSm),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
@@ -134,7 +183,10 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                   onPressed: () {
                     HapticFeedback.selectionClick();
                     if (AuthService.currentUser == null) {
-                      MoeToast.error(context, '请先登录');
+                      _showRequireLoginSheet(
+                        '搜索好友',
+                        '登录后可以搜索并添加好友，开始聊天和互动',
+                      );
                       return;
                     }
                     Navigator.pushNamed(context, '/friend-search');
