@@ -12,7 +12,7 @@ import '../../widgets/motion/moe_reveal.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/settings/settings_search_bar.dart';
-import '../../providers/virtual_avatar_provider.dart';
+import '../../constants/feature_flags.dart';
 import 'modules/device_storage_module.dart';
 import 'modules/account_security_module.dart';
 import 'modules/about_module.dart';
@@ -211,25 +211,36 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '账号与隐私',
       },
       {
-        'title': 'AI 助手',
-        'description': '管理社区 AI 账号与悬浮助手入口',
+        'title': '社区 AI',
+        'description': '社区账号形态；旧 App 内悬浮入口已下线',
         'icon': Icons.smart_toy_rounded,
         'color': Colors.deepPurple,
         'module': 'AI 与助手',
-        'keywords': ['ai', '助手', '社区ai', 'bot', '标签', '悬浮'],
-        'action': 'scroll',
-        'target': 'AI 与助手',
-      },
-      {
-        'title': '社区 AI 设置',
-        'description': '统一管理 AI 账号、悬浮入口与社区互动形态',
-        'icon': Icons.tune_rounded,
-        'color': Colors.deepPurpleAccent,
-        'module': 'AI 与助手',
-        'keywords': ['社区ai', 'bot', '动态', '评论', '发帖', '设置'],
+        'keywords': ['ai', '社区ai', 'bot', '标签'],
         'action': 'route',
         'target': '/virtual-avatar-settings',
       },
+      {
+        'title': 'AI 伙伴',
+        'description': 'App 内陪聊、主动陪伴与免打扰',
+        'icon': Icons.auto_awesome_rounded,
+        'color': Colors.deepPurpleAccent,
+        'module': 'AI 与助手',
+        'keywords': ['伙伴', '陪伴', 'companion', '免打扰'],
+        'action': 'route',
+        'target': '/companion-settings',
+      },
+      if (FeatureFlags.replyAssistPrototype)
+        {
+          'title': '伙伴·回复参谋',
+          'description': '微信旁贴纸桌宠，读屏给草稿，只复制不代发',
+          'icon': Icons.chat_bubble_outline_rounded,
+          'color': MoeTokens.primary,
+          'module': 'AI 与助手',
+          'keywords': ['回复参谋', '桌宠', '读屏', '贴纸'],
+          'action': 'route',
+          'target': '/reply-assist',
+        },
       {
         'title': '启动时检查更新',
         'description': '打开应用时自动检查新版本',
@@ -261,14 +272,14 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '设备与数据',
       },
       {
-        'title': '模型记忆线',
-        'description': '查看模型记录的所有记忆',
+        'title': 'AI 模型配置',
+        'description': '推理与记忆预算（设置 → 高级选项）',
         'icon': Icons.psychology_rounded,
         'color': Colors.deepPurple,
         'module': '高级选项',
-        'keywords': ['记忆', 'ai', '模型', '上下文'],
-        'action': 'scroll',
-        'target': '高级选项',
+        'keywords': ['记忆', 'ai', '模型', '上下文', '模型记忆线', 'llm'],
+        'action': 'route',
+        'target': '/llm-model-config',
       },
       {
         'title': '飞书通知',
@@ -457,12 +468,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   List<Widget> _buildNormalSettings() {
-    final avatarProvider = Provider.of<VirtualAvatarProvider>(context);
-
     return [
       MoeReveal(
         delay: Duration.zero,
-        child: _buildExperienceDashboard(avatarProvider),
+        child: _buildExperienceDashboard(),
       ),
       const SizedBox(height: 24),
       MoeReveal(
@@ -523,35 +532,34 @@ class _SettingsPageState extends State<SettingsPage> {
               items: [
                 MoeMenuItem(
                   icon: Icons.smart_toy_rounded,
-                  title: 'AI 助手与社区 AI',
-                  subtitle: avatarProvider.enabled
-                      ? '已启用悬浮助手入口，可继续配置社区 AI 账号形态'
-                      : '统一管理社区 AI 账号与悬浮助手入口',
+                  title: '社区 AI',
+                  subtitle: '社区账号形态；旧 App 内悬浮入口已下线',
                   color: MoeTheme.of(context).primary,
-                  trailing: Switch.adaptive(
-                    value: avatarProvider.enabled,
-                    activeThumbColor: MoeTheme.of(context).primary,
-                    onChanged: (bool value) async {
-                      await avatarProvider.setEnabled(value);
-                      if (!mounted) return;
-                      MoeToast.info(
-                          context, value ? 'AI 助手入口已开启' : 'AI 助手入口已关闭');
-                    },
-                  ),
                   onTap: () {
                     Navigator.pushNamed(context, '/virtual-avatar-settings');
                   },
                 ),
                 MoeMenuItem(
                   icon: Icons.auto_awesome_rounded,
-                  title: 'AI 伙伴设置',
-                  subtitle: '管理主动陪伴、免打扰时间和伙伴消息',
+                  title: 'AI 伙伴',
+                  subtitle: 'App 内陪聊、主动陪伴与免打扰',
                   color: MoeTokens.secondary,
                   onTap: () => Navigator.pushNamed(
                     context,
                     '/companion-settings',
                   ),
                 ),
+                if (FeatureFlags.replyAssistPrototype)
+                  MoeMenuItem(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: '伙伴·回复参谋',
+                    subtitle: '微信旁贴纸桌宠，读屏给草稿，只复制不代发',
+                    color: MoeTokens.primary,
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      '/reply-assist',
+                    ),
+                  ),
               ],
             ),
           ],
@@ -612,10 +620,9 @@ class _SettingsPageState extends State<SettingsPage> {
     MoeToast.info(context, value ? '通知已开启' : '通知已关闭');
   }
 
-  Widget _buildExperienceDashboard(VirtualAvatarProvider avatarProvider) {
+  Widget _buildExperienceDashboard() {
     final summary = <String>[
       _notificationsEnabled ? '通知开启' : '通知关闭',
-      avatarProvider.enabled ? '助手开启' : '助手关闭',
       _autoUpdateOnLaunch ? '启动自动检查更新' : '启动不自动检查更新',
     ].join(' · ');
 

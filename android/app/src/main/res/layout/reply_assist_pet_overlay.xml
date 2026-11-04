@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/reply_assist_overlay_root"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:gravity="end"
+    android:orientation="vertical"
+    android:padding="6dp">
+
+    <LinearLayout
+        android:id="@+id/reply_assist_options"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="vertical"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/reply_assist_think_row"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/reply_assist_think_bubble"
+        android:elevation="3dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/reply_assist_think_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="168dp"
+            android:text="@string/reply_assist_listening"
+            android:textColor="@color/reply_assist_hint"
+            android:textSize="12sp" />
+
+        <com.example.moe_social.ReplyAssistDotsView
+            android:id="@+id/reply_assist_think_dots"
+            android:layout_width="22dp"
+            android:layout_height="10dp"
+            android:layout_marginStart="6dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/reply_assist_copied"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/reply_assist_think_bubble"
+        android:elevation="3dp"
+        android:paddingStart="10dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
+        android:text="@string/reply_assist_copied"
+        android:textColor="@color/reply_assist_ink"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <com.example.moe_social.ReplyAssistPetFaceView
+        android:id="@+id/reply_assist_face"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:contentDescription="@string/reply_assist_pet_cd" />
+</LinearLayout>

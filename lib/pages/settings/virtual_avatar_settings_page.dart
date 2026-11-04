@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/virtual_avatar_provider.dart';
+import '../../constants/feature_flags.dart';
 import '../../theme/moe_tokens.dart';
-import '../../widgets/moe_toast.dart';
 
 class VirtualAvatarSettingsPage extends StatelessWidget {
   const VirtualAvatarSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final avatar = context.watch<VirtualAvatarProvider>();
-
     return Scaffold(
       backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('AI 助手设置'),
+        title: const Text('社区 AI'),
         centerTitle: true,
       ),
       body: ListView(
@@ -27,8 +23,52 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded,
+                          color: MoeTokens.primary),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '旧 App 内悬浮入口已下线',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '社区「AI 助手」浮标是贴纸桌宠的前身，不再作为第二套长期悬浮。'
+                    '微信旁救场请用伙伴·回复参谋；App 内陪聊请用 AI 伙伴。',
+                    style: TextStyle(color: Colors.grey[700], height: 1.5),
+                  ),
+                  if (FeatureFlags.replyAssistPrototype) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/reply-assist'),
+                        child: const Text('打开伙伴·回复参谋'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
                       Icon(Icons.smart_toy_rounded, color: MoeTokens.primary),
                       SizedBox(width: 8),
                       Text(
@@ -42,14 +82,14 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'AI 不再作为独立页面存在，而是以真实社区账号参与发动态、评论、点赞和互动。帖子会直接出现在社区流中，并带有 AI 标签。',
+                    'AI 以真实社区账号参与发动态、评论、点赞和互动。帖子会出现在社区流中，并带有 AI 标签。',
                     style: TextStyle(color: Colors.grey[700], height: 1.5),
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
+                  const Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: const [
+                    children: [
                       _InfoChip(label: '真实账号'),
                       _InfoChip(label: '动态发帖'),
                       _InfoChip(label: '评论互动'),
@@ -60,141 +100,8 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          _card(
-            child: Column(
-              children: [
-                _switchActionTile(
-                  title: '启用悬浮助手入口',
-                  subtitle: '保留设置页和全局悬浮入口，作为社区 AI 的控制入口',
-                  value: avatar.enabled,
-                  onChanged: (v) async {
-                    await avatar.setEnabled(v);
-                    if (!context.mounted) return;
-                    MoeToast.info(context, v ? 'AI 助手入口已开启' : 'AI 助手入口已关闭');
-                  },
-                ),
-                _actionTile(
-                  icon: Icons.refresh_rounded,
-                  title: '恢复悬浮入口显示',
-                  subtitle: const Text('清除本次会话中的隐藏状态，恢复助手入口'),
-                  onTap: () async {
-                    await avatar.restoreVisibility();
-                    if (!context.mounted) return;
-                    MoeToast.success(context, '已恢复显示');
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          _card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 14, 16, 6),
-                  child: Text(
-                    '悬浮入口快捷功能',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                  ),
-                ),
-                _quickActionTile(
-                  context,
-                  avatar,
-                  id: AvatarQuickActions.notifications,
-                  title: '通知中心',
-                  subtitle: '快速查看互动和通知',
-                ),
-                _quickActionTile(
-                  context,
-                  avatar,
-                  id: AvatarQuickActions.createPost,
-                  title: '发布动态',
-                  subtitle: '一键跳转发帖页',
-                ),
-                _quickActionTile(
-                  context,
-                  avatar,
-                  id: AvatarQuickActions.greet,
-                  title: '打招呼',
-                  subtitle: '保留轻量助手反馈入口',
-                ),
-                _quickActionTile(
-                  context,
-                  avatar,
-                  id: AvatarQuickActions.checkin,
-                  title: '去签到',
-                  subtitle: '快速进入签到页',
-                ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 4, 16, 14),
-                  child: Text(
-                    '至少保留 1 个快捷功能',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          _card(
-            child: Column(
-              children: [
-                _actionTile(
-                  icon: Icons.face_retouching_natural_rounded,
-                  title: '助手形象',
-                  subtitle: Text(
-                    avatar.characterId == 'default_moe' ? '默认形象（当前）' : '自定义形象',
-                  ),
-                  onTap: () async {
-                    await avatar.setCharacterId('default_moe');
-                    if (!context.mounted) return;
-                    MoeToast.info(context, '更多形象即将上线');
-                  },
-                ),
-                _actionTile(
-                  icon: Icons.style_rounded,
-                  title: '助手皮肤',
-                  subtitle: Text(
-                    avatar.skinId == 'classic' ? '经典皮肤（当前）' : '自定义皮肤',
-                  ),
-                  onTap: () async {
-                    await avatar.setSkinId('classic');
-                    if (!context.mounted) return;
-                    MoeToast.info(context, '更多皮肤即将上线');
-                  },
-                ),
-              ],
-            ),
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _quickActionTile(
-    BuildContext context,
-    VirtualAvatarProvider avatar, {
-    required String id,
-    required String title,
-    required String subtitle,
-  }) {
-    return _switchActionTile(
-      title: title,
-      subtitle: subtitle,
-      value: avatar.quickActions.contains(id),
-      onChanged: (v) async {
-        final before = avatar.quickActions.contains(id);
-        await avatar.setQuickActionEnabled(id, v);
-        if (!context.mounted) return;
-        final after = avatar.quickActions.contains(id);
-        if (before && !v && after) {
-          MoeToast.warning(context, '至少保留一个快捷功能');
-          return;
-        }
-        MoeToast.info(context, v ? '已开启：$title' : '已关闭：$title');
-      },
     );
   }
 
@@ -212,84 +119,6 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
         ],
       ),
       child: child,
-    );
-  }
-
-  Widget _actionTile({
-    required IconData icon,
-    required String title,
-    required Widget subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              Icon(icon, color: MoeTokens.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    DefaultTextStyle(
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      child: subtitle,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _switchActionTile({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Switch.adaptive(
-            value: value,
-            activeThumbColor: MoeTokens.primary,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
     );
   }
 }

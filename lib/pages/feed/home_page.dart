@@ -264,7 +264,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   SliverAppBar _buildSliverAppBar(BuildContext context) {
-    // 精简：去掉未上线的搜索、与「我的/悬浮助手」重复的 AI 设置入口。
+    // 精简：去掉未上线的搜索、与「我的」重复的社区 AI 设置入口。
     final glassNav = FeatureFlags.glassNavigation;
     return SliverAppBar(
       pinned: true,

@@ -15,8 +15,6 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- 后台定位权限（可选） -->
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- App 内更新所需权限 -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
@@ -24,6 +22,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <!-- Android 13+ 私信通知栏 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- 回复参谋贴纸桌宠悬浮层（路径 B 内测；非 AutoGLM 自动化） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     
     <application
         android:label="@string/app_name"
@@ -87,6 +87,17 @@
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
+        </service>
+        <service
+            android:name=".ReplyAssistAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/reply_assist_accessibility_service_config" />
         </service>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

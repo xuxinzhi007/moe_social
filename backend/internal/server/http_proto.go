@@ -11,6 +11,7 @@ import (
 	commentv1 "backend/api/comment/v1"
 	communityv1 "backend/api/community/v1"
 	companionv1 "backend/api/companion/v1"
+	replyassistv1 "backend/api/replyassist/v1"
 	contentv1 "backend/api/content/v1"
 	gamev1 "backend/api/game/v1"
 	giftv1 "backend/api/gift/v1"
@@ -37,6 +38,7 @@ import (
 	commenthttp "backend/internal/server/protohttp/comment"
 	communityhttp "backend/internal/server/protohttp/community"
 	companionhttp "backend/internal/server/protohttp/companion"
+	replyassisthttp "backend/internal/server/protohttp/replyassist"
 	contenthttp "backend/internal/server/protohttp/content"
 	gamehttp "backend/internal/server/protohttp/game"
 	gifthttp "backend/internal/server/protohttp/gift"
@@ -62,6 +64,7 @@ import (
 	commentapp "backend/internal/service/comment"
 	communityapp "backend/internal/service/community"
 	companionapp "backend/internal/service/companion"
+	replyassistapp "backend/internal/service/replyassist"
 	contentapp "backend/internal/service/content"
 	gameapp "backend/internal/service/game"
 	giftapp "backend/internal/service/gift"
@@ -89,6 +92,7 @@ type ProtoHTTPDeps struct {
 	GameApp            *gameapp.AppService
 	LifeApp            *lifeapp.AppService
 	CompanionApp       *companionapp.AppService
+	ReplyAssistApp     *replyassistapp.AppService
 	ArenaApp           *arenaapp.AppService
 	UserApp            *userapp.AppService
 	CommentApp         *commentapp.AppService
@@ -143,6 +147,9 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		companionhttp.RegisterHeroChatRoute(srv, d.CompanionApp)
 		companionhttp.RegisterHeroSummaryRoute(srv, d.CompanionApp)
 		companionhttp.RegisterIntimacyBumpRoute(srv, d.CompanionApp)
+	}
+	if d.ReplyAssistApp != nil {
+		replyassistv1.RegisterReplyAssistHTTPServer(srv, replyassisthttp.New(d.ReplyAssistApp))
 	}
 	if d.ArenaApp != nil {
 		arenahttp.RegisterRoutes(srv, d.ArenaApp)

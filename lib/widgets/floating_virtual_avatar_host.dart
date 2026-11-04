@@ -18,6 +18,8 @@ import 'motion/moe_pressable.dart';
 import 'motion/moe_reveal.dart';
 import 'motion/moe_sheet.dart';
 
+/// 旧社区「AI 助手」浮标（已退役）。可见性由
+/// [VirtualAvatarProvider.isVisible] 恒为 false 闸住；后继是贴纸桌宠。
 class FloatingVirtualAvatarHost extends StatefulWidget {
   const FloatingVirtualAvatarHost({
     super.key,

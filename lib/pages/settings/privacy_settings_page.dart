@@ -1,8 +1,14 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import '../../services/reply_assist_overlay_bridge.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/moe_menu_card.dart';
 import '../../widgets/moe_toast.dart';
-import '../../theme/moe_tokens.dart';
 
 class PrivacySettingsPage extends StatefulWidget {
   const PrivacySettingsPage({super.key});
@@ -11,7 +17,8 @@ class PrivacySettingsPage extends StatefulWidget {
   State<PrivacySettingsPage> createState() => _PrivacySettingsPageState();
 }
 
-class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
+class _PrivacySettingsPageState extends State<PrivacySettingsPage>
+    with WidgetsBindingObserver {
   final List<_PrivacyPermissionItem> _items = [
     _PrivacyPermissionItem(
       title: '通知',
@@ -40,11 +47,30 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   ];
 
   bool _loading = false;
+  bool _a11yEnabled = false;
+  bool _overlayPermissionGranted = false;
+
+  bool get _androidSpecialPerms =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   void initState() {
     super.initState();
-    _refreshStatuses();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_refreshStatuses());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshStatuses());
+    }
   }
 
   Future<void> _refreshStatuses() async {
@@ -55,6 +81,11 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       for (final item in _items) {
         final status = await item.permission.status;
         item.status = status;
+      }
+      if (_androidSpecialPerms) {
+        _a11yEnabled = await ReplyAssistOverlayBridge.isAccessibilityEnabled();
+        _overlayPermissionGranted =
+            await ReplyAssistOverlayBridge.isOverlayPermissionGranted();
       }
       if (mounted) {
         setState(() {});
@@ -88,16 +119,26 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     }
   }
 
-  Future<void> _requestAllPermissions() async {
+  Future<void> _requestMissingRuntimePermissions() async {
+    final missing = _items
+        .where((item) => !item.status.isGranted && !item.status.isLimited)
+        .toList();
+    if (missing.isEmpty) {
+      if (mounted) {
+        MoeToast.info(context, '运行时权限均已授权；无障碍和悬浮窗请在下方特殊权限开启');
+      }
+      return;
+    }
+
     setState(() {
       _loading = true;
     });
 
     try {
-      final permissions = _items.map((e) => e.permission).toList();
+      final permissions = missing.map((e) => e.permission).toList();
       final results = await permissions.request();
 
-      for (final item in _items) {
+      for (final item in missing) {
         item.status = results[item.permission] ?? PermissionStatus.denied;
       }
 
@@ -112,7 +153,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       }
 
       if (mounted) {
-        MoeToast.success(context, '权限申请完成：$granted 个已授权，$denied 个未授权');
+        MoeToast.success(context, '已申请未授权权限：$granted 个通过，$denied 个仍未授权');
       }
     } finally {
       if (mounted) {
@@ -120,6 +161,22 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
           _loading = false;
         });
       }
+    }
+  }
+
+  Future<void> _openAccessibilitySettings() async {
+    try {
+      await ReplyAssistOverlayBridge.openAccessibilitySettings();
+    } catch (e) {
+      if (mounted) MoeToast.error(context, e.toString());
+    }
+  }
+
+  Future<void> _openOverlaySettings() async {
+    try {
+      await ReplyAssistOverlayBridge.openOverlaySettings();
+    } catch (e) {
+      if (mounted) MoeToast.error(context, e.toString());
     }
   }
 
@@ -138,6 +195,10 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       color = Colors.grey;
     }
 
+    return _chip(text, color);
+  }
+
+  Widget _chip(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -195,7 +256,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: _loading ? null : _requestAllPermissions,
+                onTap: _loading ? null : _requestMissingRuntimePermissions,
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding:
@@ -216,7 +277,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                         const Icon(Icons.security_rounded, color: Colors.white),
                       const SizedBox(width: 12),
                       const Text(
-                        '一键申请全部权限',
+                        '一键申请未授权运行时权限',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -243,7 +304,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '获取 WiFi 名称需要定位权限（Android 10+要求）',
+                    '仅申请通知 / 摄像头 / 麦克风 / 定位。无障碍和悬浮窗属特殊权限，需在系统页单独开启。',
                     style: TextStyle(fontSize: 12, color: Colors.amber[800]),
                   ),
                 ),
@@ -273,6 +334,41 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ),
             ),
           ),
+          if (_androidSpecialPerms)
+            MoeMenuCard(
+              items: [
+                MoeMenuItem(
+                  icon: Icons.accessibility_new_rounded,
+                  title: '无障碍',
+                  subtitle: '只读可见聊天，不会代发或自动点击',
+                  color: MoeTokens.primary,
+                  onTap: _openAccessibilitySettings,
+                  trailing: _chip(
+                    _a11yEnabled ? '已开启' : '未开启',
+                    _a11yEnabled ? Colors.green : Colors.orange,
+                  ),
+                ),
+                MoeMenuItem(
+                  icon: Icons.layers_outlined,
+                  title: '悬浮窗',
+                  subtitle: '贴纸桌宠层，不挡微信正常操作',
+                  color: MoeTokens.secondary,
+                  onTap: _openOverlaySettings,
+                  trailing: _chip(
+                    _overlayPermissionGranted ? '已授权' : '未授权',
+                    _overlayPermissionGranted ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.only(left: 12, bottom: 20),
+              child: Text(
+                '无障碍与悬浮窗仅 Android 可配置。',
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ),
           const SizedBox(height: 20),
         ],
       ),

@@ -193,6 +193,13 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       );
                     },
                   ),
+                  if (FeatureFlags.replyAssistPrototype) ...[
+                    const SizedBox(height: MoeTokens.spaceLg),
+                    _ReplyAssistEntry(
+                      onOpen: () =>
+                          Navigator.of(context).pushNamed('/reply-assist'),
+                    ),
+                  ],
                   if (FeatureFlags.arenaGamePrototype) ...[
                     const SizedBox(height: MoeTokens.spaceLg),
                     CompanionArenaGameEntry(onOpen: _openArenaGame),
@@ -208,6 +215,52 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReplyAssistEntry extends StatelessWidget {
+  const _ReplyAssistEntry({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return MoePressable(
+      onTap: onOpen,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: MoeTokens.spaceLg,
+          vertical: MoeTokens.spaceMd,
+        ),
+        decoration: BoxDecoration(
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.chat_bubble_outline, color: MoeTokens.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('伙伴·回复参谋',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  SizedBox(height: 4),
+                  Text(
+                    '外部聊天卡壳：判断 + 三条草稿，只复制不代发',
+                    style: TextStyle(fontSize: 13, color: MoeTokens.bodyText),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
       ),
     );
   }

@@ -11,6 +11,7 @@ import '../../providers/theme_provider.dart';
 import '../../autoglm/autoglm_service.dart';
 import '../../config/app_config.dart';
 import '../../constants/feature_flags.dart';
+import 'autoglm_unavailable_page.dart';
 
 class AutoGLMPage extends StatefulWidget {
   const AutoGLMPage({super.key});
@@ -20,6 +21,7 @@ class AutoGLMPage extends StatefulWidget {
 }
 
 class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
+  bool _nativeWired = false;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<String> _logs = [];
@@ -100,8 +102,10 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    AutoGLMService.setStopCallback(null); // 清除回调
-    WidgetsBinding.instance.removeObserver(this);
+    if (_nativeWired) {
+      AutoGLMService.setStopCallback(null); // 清除回调
+      WidgetsBinding.instance.removeObserver(this);
+    }
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -165,6 +169,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    if (!FeatureFlags.showAutoGlm) return;
+    _nativeWired = true;
     WidgetsBinding.instance.addObserver(this);
     unawaited(_loadRemoteConfig());
     _checkStatus();
@@ -674,6 +680,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    if (!FeatureFlags.showAutoGlm) {
+      return const AutoglmUnavailablePage();
+    }
     final themeProvider = Provider.of<ThemeProvider>(context);
     final primaryColor = themeProvider.primaryColor;
 

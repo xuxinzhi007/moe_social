@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package replyassist.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/replyassist/v1;replyassistv1";
+
+// ReplyAssist — 读屏回复参谋（判断 + 三条候选；只复制、不代发）。
+
+message ReplyAssistChatMessage {
+  // self | peer | unknown
+  string role = 1;
+  string text = 2;
+}
+
+message ReplyAssistSuggestRequest {
+  // paste | a11y | image
+  string source = 1;
+  repeated ReplyAssistChatMessage messages = 2;
+  string pasted_text = 3;
+  // MVP：客户端可传截图 URL 或留空；服务端仍以文本判读为主。
+  string image_url = 4;
+  string app_package = 5;
+}
+
+message ReplyAssistJudgeSummary {
+  string intent = 1;
+  string emotion = 2;
+  string urgency = 3;
+  string reply_stance = 4;
+  // reply | wait | hold
+  string should_reply = 5;
+  string uncertainty_note = 6;
+  string risk_hint = 7;
+}
+
+message ReplyAssistOption {
+  string label = 1;
+  string text = 2;
+}
+
+message ReplyAssistSuggestReply {
+  ReplyAssistJudgeSummary judge = 1;
+  repeated ReplyAssistOption options = 2;
+  string session_id = 3;
+  // a11y 读树为空时提示客户端走截图/粘贴。
+  bool needs_screenshot_fallback = 4;
+}
+
+service ReplyAssist {
+  rpc Suggest(ReplyAssistSuggestRequest) returns (ReplyAssistSuggestReply) {
+    option (google.api.http) = {
+      post: "/api/reply-assist/suggest"
+      body: "*"
+    };
+  }
+}
