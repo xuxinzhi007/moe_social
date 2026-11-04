@@ -12,7 +12,6 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_glass_surface.dart';
-import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../profile/friends_page.dart';
 import '../profile/widgets/add_friend_bottom_sheet.dart';

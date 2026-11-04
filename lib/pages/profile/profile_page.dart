@@ -10,6 +10,7 @@ import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_menu_card.dart';
 import '../../theme/moe_tokens.dart';
