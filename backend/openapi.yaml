@@ -4737,6 +4737,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.GetPublicClientConfigResp'
+    /api/reply-assist/suggest:
+        post:
+            tags:
+                - ReplyAssist
+            operationId: ReplyAssist_Suggest
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/replyassist.v1.ReplyAssistSuggestRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/replyassist.v1.ReplyAssistSuggestReply'
     /api/transactions/{id}:
         get:
             tags:
@@ -11765,6 +11783,70 @@ components:
                     type: string
                 handDrawThumbUrl:
                     type: string
+        replyassist.v1.ReplyAssistChatMessage:
+            type: object
+            properties:
+                role:
+                    type: string
+                    description: self | peer | unknown
+                text:
+                    type: string
+        replyassist.v1.ReplyAssistJudgeSummary:
+            type: object
+            properties:
+                intent:
+                    type: string
+                emotion:
+                    type: string
+                urgency:
+                    type: string
+                replyStance:
+                    type: string
+                shouldReply:
+                    type: string
+                    description: reply | wait | hold
+                uncertaintyNote:
+                    type: string
+                riskHint:
+                    type: string
+        replyassist.v1.ReplyAssistOption:
+            type: object
+            properties:
+                label:
+                    type: string
+                text:
+                    type: string
+        replyassist.v1.ReplyAssistSuggestReply:
+            type: object
+            properties:
+                judge:
+                    $ref: '#/components/schemas/replyassist.v1.ReplyAssistJudgeSummary'
+                options:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/replyassist.v1.ReplyAssistOption'
+                sessionId:
+                    type: string
+                needsScreenshotFallback:
+                    type: boolean
+                    description: a11y 读树为空时提示客户端走截图/粘贴。
+        replyassist.v1.ReplyAssistSuggestRequest:
+            type: object
+            properties:
+                source:
+                    type: string
+                    description: paste | a11y | image
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/replyassist.v1.ReplyAssistChatMessage'
+                pastedText:
+                    type: string
+                imageUrl:
+                    type: string
+                    description: MVP：客户端可传截图 URL 或留空；服务端仍以文本判读为主。
+                appPackage:
+                    type: string
         user.v1.AcceptFriendRequestReq:
             type: object
             properties:
@@ -12861,6 +12943,7 @@ tags:
     - name: PostService
     - name: PrivateMessageService
     - name: PushNotificationService
+    - name: ReplyAssist
     - name: UserService
     - name: VipPlans
     - name: VipReadAdmin

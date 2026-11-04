@@ -7,6 +7,7 @@
 | 文档 | 状态 | 说明 |
 |------|------|------|
 | [product-positioning.md](./product-positioning.md) | 主入口 | 产品定位、边界与主 Tab 定义 |
+| [reply-assist-screen-read-2026-11-05.md](./reply-assist-screen-read-2026-11-05.md) | **实验** | 读屏回复参谋（路径 B 侧载/内测）市场与产品方案 |
 | [value-audit-2026-10-15.md](./value-audit-2026-10-15.md) | **活跃** | 全产品价值审计：价值锚点判定、Companion 回路断点清单、优化排序 |
 | [../dev/aurora-living-world-plan.md](../dev/aurora-living-world-plan.md) | **活跃** | 星辉活世界方案（已定稿，未实施） |
 | [design-system.md](./design-system.md) | 规范 | CSS / Flutter Token 映射与组件规范；Flutter 执行规范另见 `docs/DESIGN_SYSTEM.md` |

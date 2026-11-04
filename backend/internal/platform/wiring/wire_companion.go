@@ -15,6 +15,7 @@ func wireCompanionServices(rep *wireReporter, ctx *svc.ServiceContext) {
 			rep.domainWarn("companion", "db", err.Error())
 		} else if companionApp != nil {
 			ctx.CompanionApp = companionApp
+			ctx.ReplyAssistApp = moewiring.NewAPIReplyAssistService(companionApp)
 		}
 	}
 }

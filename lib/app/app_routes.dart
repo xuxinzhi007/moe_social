@@ -57,6 +57,7 @@ import '../pages/profile/user_qr_code_page.dart';
 import '../pages/scan/scan_page.dart' deferred as scan;
 import '../pages/settings/message_retention_settings_page.dart';
 import '../pages/settings/companion_settings_page.dart';
+import '../pages/reply_assist/reply_assist_page.dart';
 import '../pages/settings/settings_page.dart';
 import '../pages/settings/virtual_avatar_settings_page.dart'
     deferred as virtual_avatar_settings;
@@ -116,6 +117,12 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/message-retention-settings': (context) =>
         const MessageRetentionSettingsPage(),
     '/companion-settings': (context) => const CompanionSettingsPage(),
+    '/reply-assist': (context) {
+      if (!FeatureFlags.replyAssistPrototype) {
+        return const Scaffold(body: Center(child: Text('回复参谋尚未开启')));
+      }
+      return const ReplyAssistPage();
+    },
     '/checkin': (context) {
       final userId = AuthService.currentUser;
       if (userId == null || userId.isEmpty) {

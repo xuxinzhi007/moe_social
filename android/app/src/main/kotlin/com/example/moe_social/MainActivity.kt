@@ -179,9 +179,74 @@ class MainActivity : FlutterActivity() {
             }
         })
 
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.moe_social/reply_assist",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isAccessibilityEnabled" -> {
+                    result.success(ReplyAssistAccessibilityService.isServiceEnabled(this))
+                }
+                "isOverlayVisible" -> {
+                    val svc = ReplyAssistAccessibilityService.getInstance()
+                    result.success(svc?.isOverlayVisible() == true)
+                }
+                "openAccessibilitySettings" -> {
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    result.success(true)
+                }
+                "toggleOverlay" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName"),
+                        )
+                        startActivity(intent)
+                        result.success(false)
+                        return@setMethodCallHandler
+                    }
+                    val svc = ReplyAssistAccessibilityService.getInstance()
+                    if (svc == null) {
+                        result.error("A11Y_OFF", "请先开启 Moe 回复参谋无障碍", null)
+                        return@setMethodCallHandler
+                    }
+                    result.success(svc.toggleOverlay())
+                }
+                "readWeChatSnapshot" -> {
+                    val svc = ReplyAssistAccessibilityService.getInstance()
+                    val json = svc?.readWeChatSnapshot() ?: ReplyAssistBridge.lastSnapshot
+                    result.success(jsonToMap(json))
+                }
+                else -> result.notImplemented()
+            }
+        }
 
 
+    }
 
+    private fun jsonToMap(json: org.json.JSONObject): Map<String, Any?> {
+        val map = mutableMapOf<String, Any?>()
+        val keys = json.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            map[key] = jsonValue(json.get(key))
+        }
+        return map
+    }
+
+    private fun jsonValue(value: Any?): Any? {
+        return when (value) {
+            is org.json.JSONObject -> jsonToMap(value)
+            is org.json.JSONArray -> {
+                val list = mutableListOf<Any?>()
+                for (i in 0 until value.length()) {
+                    list.add(jsonValue(value.get(i)))
+                }
+                list
+            }
+            org.json.JSONObject.NULL -> null
+            else -> value
+        }
     }
 
     private fun isFeishuInstalled(): Boolean {
