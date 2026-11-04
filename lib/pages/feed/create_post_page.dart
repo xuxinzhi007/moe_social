@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -282,7 +283,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
           }
           final rootCtx = AuthService.navigatorKey.currentContext;
           if (rootCtx != null) {
-            MoeToast.success(rootCtx, result.successMessage);
+            HapticFeedback.mediumImpact();
+            MoeToast.success(rootCtx, '动态已发布');
             if (softWarning != null && softWarning.isNotEmpty) {
               MoeToast.info(rootCtx, softWarning);
             }
