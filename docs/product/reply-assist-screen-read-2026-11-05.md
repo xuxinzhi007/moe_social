@@ -1,7 +1,7 @@
 # 读屏回复参谋 — 市场与产品方案（2026-11-05）
 
 > 路径 **B**：Android 侧载/内测实验通道；主包可继续走商店，读屏能力不绑 Play 上架。  
-> 交互与合规摘要见 Canvas：[读屏回复参谋方案](https://cursor.com/canvas/store-408e26c5-addd-4a5d-9381-2551ca2d6631/6b18ad3f-d4a8-4ca0-afe5-2eaa6ed85f49)。
+> 完整方案以本仓库文档为准：产品侧见本文，技术评估见 [docs/specs/reply-assist-tech-eval-2026-11-05.md](../specs/reply-assist-tech-eval-2026-11-05.md)。
 
 ## 问题
 
