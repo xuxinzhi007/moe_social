@@ -36,3 +36,14 @@ go tool cover -html=cover.out -o coverage.html
 
 # 同理，不要用裸 `go test ./...` 当门禁。用 `make test`（已写死 CGO_ENABLED=1）；
 # `backend/utils/cgo_canary_test.go` 是配套哨兵，CGO 关闭时它会直接失败并提示正确命令。
+
+## Cursor Cloud
+
+Cloud Agents boot Go 1.25.5, Flutter 3.41.9, Node 22, protoc 33.1, and local MySQL. `backend/config/config.yaml` 的 `database.host` 指向共享远程库，不要用它启动 API。启动脚本会写 `~/.moe-social/config.yaml`（只改数据库为 `127.0.0.1` 的本地库 `go_react_demo`），进程已经在跑时不要再连远程库。
+
+| 服务 | 地址 |
+|------|------|
+| Kratos HTTP | http://127.0.0.1:8888 （`go run ./cmd/moe-social -f ~/.moe-social/config.yaml`，工作目录 `backend/`） |
+| Moe Admin | http://127.0.0.1:5173/ops/ |
+
+`flutter pub get` 必须带 `PUB_HOSTED_URL=https://pub.flutter-io.cn`，否则会按 pub.dev 重写 `pubspec.lock`。管理台 `npm run build` 会类型检查 `moe-avatar/core`，该目录需要自己的 `npm install`（依赖 `jszip`）。Flutter 的 sqflite FFI 测试需要系统包 `libsqlite3-0`。Deploy Agent（:19010）不是默认启动项。

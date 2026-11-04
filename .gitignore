@@ -176,4 +176,5 @@ moe-admin/build-out.txt
 # Avatar generated artifacts
 moe-admin/public/pet/moe_avatar/
 moe-avatar/node_modules/
+moe-avatar/core/node_modules/
 moe-avatar/editor/node_modules/
