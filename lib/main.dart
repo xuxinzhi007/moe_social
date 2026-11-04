@@ -36,6 +36,7 @@ import 'utils/startup_manager.dart';
 import 'utils/webview_platform_init.dart';
 import 'widgets/splash_screen.dart';
 import 'theme/moe_tokens.dart';
+import 'services/reply_assist_overlay_bridge.dart';
 
 String _platformLabel() {
   if (kIsWeb) return 'web';
@@ -243,6 +244,7 @@ class SplashScreenWrapper extends StatelessWidget {
     }
 
     ChatPushService.initialize(AuthService.navigatorKey);
+    ReplyAssistOverlayBridge.ensureAttached();
 
     debugPrint('🚀 App starting...');
     debugPrint('📱 Platform: ${_platformLabel()}');

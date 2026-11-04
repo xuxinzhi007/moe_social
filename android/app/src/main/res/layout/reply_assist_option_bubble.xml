@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/reply_assist_option_bubble"
+    android:elevation="4dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="6dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/option_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxWidth="196dp"
+        android:maxLines="2"
+        android:textColor="@color/reply_assist_ink"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/option_copy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/reply_assist_copy_chip"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:text="@string/reply_assist_copy"
+        android:textColor="#FFFFFFFF"
+        android:textSize="11sp" />
+</LinearLayout>

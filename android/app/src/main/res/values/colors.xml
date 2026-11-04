@@ -2,4 +2,13 @@
 <resources>
     <!-- 与 MoeTokens.pageBackground 一致，衔接 Flutter 启动页 -->
     <color name="moe_splash_background">#F5F8FC</color>
+
+    <!-- 回复参谋贴纸桌宠（暖纸底 + 主色小面积） -->
+    <color name="reply_assist_paper">#FBF6EE</color>
+    <color name="reply_assist_sticker">#FFF8F0</color>
+    <color name="reply_assist_ink">#5A4A4A</color>
+    <color name="reply_assist_accent">#5E6AD2</color>
+    <color name="reply_assist_bubble">#FFFCF8</color>
+    <color name="reply_assist_bubble_stroke">#E8E0D4</color>
+    <color name="reply_assist_hint">#8A7E74</color>
 </resources>

@@ -24,7 +24,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <!-- Android 13+ 私信通知栏 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <!-- 回复参谋悬浮球（路径 B 内测） -->
+    <!-- 回复参谋贴纸桌宠悬浮层（路径 B 内测；非 AutoGLM 自动化） -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     
     <application

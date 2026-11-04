@@ -288,7 +288,7 @@ class _PrivacyBanner extends StatelessWidget {
           if (onReadFromBall != null) ...[
             const SizedBox(height: 8),
             TextButton(
-                onPressed: onReadFromBall, child: const Text('从悬浮球读取微信（实验）')),
+                onPressed: onReadFromBall, child: const Text('用最近一次读屏生成（面板）')),
           ],
         ],
       ),
@@ -326,7 +326,7 @@ class _AndroidControls extends StatelessWidget {
           Text('Android 读屏（微信白名单 · 侧载内测）'),
           const SizedBox(height: 8),
           Text('无障碍：${a11yEnabled ? "已开启" : "未开启"}'),
-          Text('悬浮球：${overlayVisible ? "显示中" : "隐藏"}'),
+          Text('贴纸桌宠：${overlayVisible ? "显示中" : "已收起"}'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -336,7 +336,7 @@ class _AndroidControls extends StatelessWidget {
                   onPressed: onOpenSettings, child: const Text('开启无障碍')),
               OutlinedButton(
                   onPressed: onToggleOverlay,
-                  child: Text(overlayVisible ? '隐藏球' : '显示球')),
+                  child: Text(overlayVisible ? '收起桌宠' : '显示桌宠')),
               TextButton(onPressed: onRefresh, child: const Text('刷新状态')),
             ],
           ),

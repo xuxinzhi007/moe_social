@@ -179,10 +179,12 @@ class MainActivity : FlutterActivity() {
             }
         })
 
-        MethodChannel(
+        val replyChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "com.moe_social/reply_assist",
-        ).setMethodCallHandler { call, result ->
+            ReplyAssistBridge.CHANNEL,
+        )
+        ReplyAssistBridge.channel = replyChannel
+        replyChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "isAccessibilityEnabled" -> {
                     result.success(ReplyAssistAccessibilityService.isServiceEnabled(this))
@@ -215,38 +217,18 @@ class MainActivity : FlutterActivity() {
                 "readWeChatSnapshot" -> {
                     val svc = ReplyAssistAccessibilityService.getInstance()
                     val json = svc?.readWeChatSnapshot() ?: ReplyAssistBridge.lastSnapshot
-                    result.success(jsonToMap(json))
+                    result.success(ReplyAssistBridge.jsonToMap(json))
                 }
                 else -> result.notImplemented()
             }
         }
-
-
     }
 
-    private fun jsonToMap(json: org.json.JSONObject): Map<String, Any?> {
-        val map = mutableMapOf<String, Any?>()
-        val keys = json.keys()
-        while (keys.hasNext()) {
-            val key = keys.next()
-            map[key] = jsonValue(json.get(key))
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        if (ReplyAssistBridge.channel != null) {
+            ReplyAssistBridge.channel = null
         }
-        return map
-    }
-
-    private fun jsonValue(value: Any?): Any? {
-        return when (value) {
-            is org.json.JSONObject -> jsonToMap(value)
-            is org.json.JSONArray -> {
-                val list = mutableListOf<Any?>()
-                for (i in 0 until value.length()) {
-                    list.add(jsonValue(value.get(i)))
-                }
-                list
-            }
-            org.json.JSONObject.NULL -> null
-            else -> value
-        }
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     private fun isFeishuInstalled(): Boolean {

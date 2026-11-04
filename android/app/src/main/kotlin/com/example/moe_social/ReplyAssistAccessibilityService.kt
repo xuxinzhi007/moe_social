@@ -1,28 +1,27 @@
 package com.example.moe_social
 
 import android.accessibilityservice.AccessibilityService
-import android.graphics.PixelFormat
-import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import android.view.Gravity
-import android.view.View
-import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
+import io.flutter.plugin.common.MethodChannel
 import org.json.JSONArray
 import org.json.JSONObject
 
 /**
  * 读屏回复参谋 — 只读 UI 树，不点击、不输入、不代发。
- * 包名白名单：微信。点按悬浮球触发一次读屏。
+ * 包名白名单：微信。点按贴纸桌宠触发一次读屏，当场出复制气泡。
  */
 class ReplyAssistAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "ReplyAssistA11y"
         private const val WECHAT_PACKAGE = "com.tencent.mm"
+        private const val SUGGEST_TIMEOUT_MS = 25_000L
 
         @Volatile
         private var instance: ReplyAssistAccessibilityService? = null
@@ -48,25 +47,24 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         }
     }
 
-    private var windowManager: WindowManager? = null
-    private var overlayView: View? = null
-    private var overlayVisible = false
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var petOverlay: ReplyAssistPetOverlay? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         Log.i(TAG, "ReplyAssist 无障碍已连接（只读模式）")
     }
 
     override fun onDestroy() {
-        hideOverlayBall()
+        petOverlay?.hide()
+        petOverlay = null
         instance = null
         super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // 不持续监听；读屏仅在用户点按悬浮球时主动调用。
+        // 不持续监听；读屏仅在用户点按桌宠时主动调用。
     }
 
     override fun onInterrupt() {
@@ -74,73 +72,123 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
     }
 
     fun toggleOverlay(): Boolean {
-        return if (overlayVisible) {
-            hideOverlayBall()
-            false
-        } else {
-            showOverlayBall()
-            true
+        val overlay = petOverlay ?: ReplyAssistPetOverlay(this, ::onFaceActivate).also {
+            petOverlay = it
+        }
+        return overlay.toggle()
+    }
+
+    fun isOverlayVisible(): Boolean = petOverlay?.isVisible() == true
+
+    private fun overlay(): ReplyAssistPetOverlay {
+        return petOverlay ?: ReplyAssistPetOverlay(this, ::onFaceActivate).also {
+            petOverlay = it
         }
     }
 
-    fun isOverlayVisible(): Boolean = overlayVisible
-
-    private fun showOverlayBall() {
-        if (overlayView != null) {
-            overlayVisible = true
+    private fun onFaceActivate() {
+        val layer = overlay()
+        if (layer.isBusy()) return
+        layer.showListening()
+        val snapshot = readWeChatSnapshot()
+        ReplyAssistBridge.lastSnapshot = snapshot
+        if (!layer.isVisible()) return
+        val reason = snapshot.optString("reason")
+        val count = snapshot.optJSONArray("messages")?.length() ?: 0
+        if (snapshot.optBoolean("needs_screenshot_fallback") || count == 0) {
+            val msg = when (reason) {
+                "not_wechat" -> getString(R.string.reply_assist_fallback_not_wechat)
+                else -> getString(R.string.reply_assist_fallback_empty)
+            }
+            layer.showFallback(msg)
             return
         }
-        val wm = windowManager ?: return
-        val ball = View(this).apply {
-            setBackgroundColor(0xCC7F7FD5.toInt())
-            contentDescription = "Moe 回复参谋"
-            setOnClickListener { onOverlayTap() }
+
+        layer.showThinking()
+        val token = layer.beginRequest()
+        val channel = ReplyAssistBridge.channel
+        if (channel == null) {
+            degradeOpenApp(layer)
+            return
         }
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_PHONE
+
+        val payload = ReplyAssistBridge.jsonToMap(snapshot)
+        try {
+            channel.invokeMethod(
+                "onOverlaySuggest",
+                payload,
+                object : MethodChannel.Result {
+                    override fun success(result: Any?) {
+                        mainHandler.post {
+                            if (!layer.isCurrentRequest(token)) return@post
+                            applySuggestResult(layer, result)
+                        }
+                    }
+
+                    override fun error(
+                        errorCode: String,
+                        errorMessage: String?,
+                        errorDetails: Any?,
+                    ) {
+                        mainHandler.post {
+                            if (!layer.isCurrentRequest(token)) return@post
+                            layer.showFallback(
+                                errorMessage?.takeIf { it.isNotBlank() }
+                                    ?: getString(R.string.reply_assist_open_app),
+                            )
+                        }
+                    }
+
+                    override fun notImplemented() {
+                        mainHandler.post {
+                            if (!layer.isCurrentRequest(token)) return@post
+                            degradeOpenApp(layer)
+                        }
+                    }
+                },
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "onOverlaySuggest failed", e)
+            degradeOpenApp(layer)
+            return
         }
-        val params = WindowManager.LayoutParams(
-            dp(52),
-            dp(52),
-            type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP or Gravity.END
-            x = dp(12)
-            y = dp(120)
-        }
-        wm.addView(ball, params)
-        overlayView = ball
-        overlayVisible = true
+
+        mainHandler.postDelayed({
+            if (layer.isCurrentRequest(token) && layer.isThinking()) {
+                layer.showFallback(getString(R.string.reply_assist_timeout))
+            }
+        }, SUGGEST_TIMEOUT_MS)
     }
 
-    private fun hideOverlayBall() {
-        val wm = windowManager
-        val view = overlayView
-        if (wm != null && view != null) {
-            wm.removeView(view)
-        }
-        overlayView = null
-        overlayVisible = false
+    private fun degradeOpenApp(layer: ReplyAssistPetOverlay) {
+        layer.showFallback(getString(R.string.reply_assist_open_app))
+        Toast.makeText(this, R.string.reply_assist_open_app, Toast.LENGTH_SHORT).show()
     }
 
-    private fun onOverlayTap() {
-        val snapshot = readWeChatSnapshot()
-        val count = snapshot.optJSONArray("messages")?.length() ?: 0
-        val msg = if (snapshot.optBoolean("needs_screenshot_fallback")) {
-            "读屏为空，请用截图/粘贴"
-        } else if (count == 0) {
-            "未读到消息"
-        } else {
-            "已读取 $count 条，请回 App 查看"
+    private fun applySuggestResult(layer: ReplyAssistPetOverlay, result: Any?) {
+        val map = result as? Map<*, *>
+        if (map == null) {
+            layer.showFallback(getString(R.string.reply_assist_fallback_empty))
+            return
         }
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        ReplyAssistBridge.lastSnapshot = snapshot
+        if (map["ok"] == false) {
+            val msg = map["message"]?.toString().orEmpty()
+            layer.showFallback(
+                msg.ifBlank { getString(R.string.reply_assist_fallback_empty) },
+            )
+            return
+        }
+        val optionsRaw = map["options"] as? List<*>
+        val options = optionsRaw?.mapNotNull { item ->
+            val o = item as? Map<*, *> ?: return@mapNotNull null
+            val text = o["text"]?.toString().orEmpty()
+            if (text.isEmpty()) null else Pair(o["label"]?.toString().orEmpty(), text)
+        }.orEmpty()
+        if (options.isEmpty()) {
+            layer.showFallback(getString(R.string.reply_assist_fallback_empty))
+            return
+        }
+        layer.showOptions(options.take(3))
     }
 
     /** 主动读取当前前台微信窗口可见文本（best-effort）。 */
@@ -191,13 +239,4 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
             .put("reason", reason)
             .put("messages", JSONArray())
     }
-
-    private fun dp(value: Int): Int {
-        return (value * resources.displayMetrics.density).toInt()
-    }
-}
-
-object ReplyAssistBridge {
-    @Volatile
-    var lastSnapshot: JSONObject = JSONObject()
 }
