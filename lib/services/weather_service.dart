@@ -166,7 +166,7 @@ class WeatherService {
 
       final location = await _geocodeCity(normalizedCity);
       if (location == null) return null;
-      return _getWeatherAtCoordinates(
+      return await _getWeatherAtCoordinates(
         location.latitude,
         location.longitude,
         normalizedCity,
@@ -252,7 +252,7 @@ class WeatherService {
           return WeatherData.fromOpenMeteo(jsonDecode(cachedData), shownCity);
         }
       }
-      return _getWeatherAtCoordinates(
+      return await _getWeatherAtCoordinates(
           lat, lon, shownCity, prefs, cacheKey, now);
     } catch (_) {
       return null;

@@ -391,7 +391,7 @@ class _LoginPageState extends State<LoginPage> {
           try {
             final code = await WechatSdkService.instance
                 .requestAuthCode(state: begin.state);
-            return AuthService.loginWithWechatSdkCode(
+            return await AuthService.loginWithWechatSdkCode(
               code: code,
               state: begin.state,
               codeVerifier: pending.codeVerifier,
