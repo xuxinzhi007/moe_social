@@ -6,7 +6,7 @@
 
 - **Flutter** `lib/pages/<domain>/` + `widgets/` `services/` `providers/`
 - **后端** `backend/api/<module>/v1/*.proto` · Kratos `service → biz → data`
-- **管理台** `moe-admin/`
+- **管理台** React/Vite 源码已独立成仓，**不在本仓**；本仓只保留管理台的后端契约（`backend/api/admin/v1/*.proto` + `internal/service/admin/`）。属主不在本仓时不要新建 `moe-admin/` 目录，也不要 `cd moe-admin`。
 
 ## Commands
 
@@ -14,13 +14,15 @@
 |------|------|
 | Flutter | `flutter pub get` · `flutter analyze` · `flutter test` |
 | 后端 | `cd backend && make gen` · `make check` · `make test` · `make test-race` · `make moe-social` · `make temp-mail-password EMAIL=foo@web-library.net` |
-| 管理台 | `cd moe-admin && npm run build` |
+| 管理台 | 在独立仓执行 `npm run build`；本仓只跑 `cd backend && make gen-moe-admin`（admin proto 生成 + 后端编译） |
 
 Kratos：`docs/dev/new-api-kratos.md`（当前架构）· `docs/dev/kratos-migration-history.md`（迁移历史归档）· OpenAPI：`docs/dev/openapi-apifox.md`
 
 ## Skills（`.cursor/skills/`）
 
 **入口：** `moe-skill`（通用质量规则，对任意改动生效，按整条链路看，不按功能点分叉）
+
+管理台前端规范（`.cursor/rules/moe-admin-ai-spec.mdc`）只描述独立仓的 React 约定，在本仓**不会触发**；改 admin 后端契约时看 `backend/api/admin/v1/README.md`。
 
 **开发工作流：** `data-workflow`（`.cursor/rules/data-workflow.mdc`）。插件在本机 `C:/Users/ZhuanZ1/Desktop/data-workflow`，技能以 junction 接入，不复制进本仓库。
 

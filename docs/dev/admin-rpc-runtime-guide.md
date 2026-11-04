@@ -3,7 +3,7 @@
 > **文档用途**：标注管理台一键开发启动、运行时指标接口与进程内存展示的现状、命令与排障。
 > **最后核对：2026-09-08**（Kratos 单进程迁移后）
 > **相关 SSOT**：[ports.md](./ports.md) · [moe-admin.md](./moe-admin.md) · [moe-social-runtime.md](./moe-social-runtime.md)
-> **管理台入口**：[moe-admin/README.md](../../moe-admin/README.md)
+> **管理台入口**：前端已独立成仓（不在本仓）；总览见 [moe-admin.md](./moe-admin.md)
 
 ---
 

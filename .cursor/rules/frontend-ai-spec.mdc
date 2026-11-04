@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Flutter 规范
 
-修改 `lib/` 时自动加载。统一规则见 `moe-social-unified.mdc`。**管理台**在 `moe-admin/`，见 `moe-admin-ai-spec.mdc`。
+修改 `lib/` 时自动加载。统一规则见 `moe-social-unified.mdc`。**管理台前端已独立成仓**；本仓只有 admin 后端契约，见 `moe-admin-ai-spec.mdc`。
 
 ## 目录
 

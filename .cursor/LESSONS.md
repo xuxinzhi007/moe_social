@@ -7,12 +7,12 @@
 
 - 改 `backend/api/**` proto 后必须 `cd backend && make gen`，再 `make check`；禁止手改 `*.pb.go`、`*_http.pb.go`。
 - `make gen` 后检查空壳 logic；有则删空壳、保留业务实现文件。
-- 管理台类型对齐：改 admin 相关 API 后跑 `cd backend && make gen-moe-admin`（实为 `bash scripts/gen/moe-admin.sh`，注意脚本在 `gen/` 子目录下，不是 `scripts/gen-moe-admin.sh`），再改 `moe-admin/src/api/`。
+- 管理台类型对齐：改 admin 相关 API 后跑 `cd backend && make gen-moe-admin`（实为 `bash scripts/gen/moe-admin.sh`）；前端类型在**独立仓**重新生成后再改。
 
 ## 三栈边界
 
-- Flutter 只改 `lib/**`；后端只改 `backend/**`；管理台只改 `moe-admin/**`。
-- Flutter 规范（`frontend-ai-spec.mdc`）不用于 `moe-admin/`。
+- Flutter 只改 `lib/**`；后端只改 `backend/**`；管理台前端在独立仓，本仓只有 `backend/api/admin/` 契约。
+- Flutter 规范（`frontend-ai-spec.mdc`）不用于管理台前端（独立仓 React）。
 
 ## 专题 SSOT
 

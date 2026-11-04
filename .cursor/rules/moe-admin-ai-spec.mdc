@@ -1,27 +1,25 @@
 ---
-description: Admin console (moe-admin) React/TS UI spec
-globs: moe-admin/**/*
+description: Admin 后端契约规范（管理台前端已独立成仓）
+globs: backend/api/admin/**/*, backend/internal/service/admin/**/*, backend/internal/server/**
 alwaysApply: false
 ---
 
-# 管理台规范（moe-admin）
+# Admin 契约规范
 
-React + Vite + TS。**不是** Flutter；勿套用 `lib/widgets` 约定。统一规则见 `moe-social-unified.mdc`。
+管理台前端（React/Vite）**已迁至独立仓**，不在本仓。本仓只负责 admin 后端契约，勿在本仓新建 `moe-admin/` 或套用下述前端约定。
 
-## SSOT
+## 本仓职责
 
-1. `moe-admin/DESIGN.md`
-2. `moe-admin/docs/ui-skeleton-v3.md`
-3. `moe-admin/docs/css-architecture-v3.md`
-4. `moe-admin/src/styles/index.css`
+- 契约 SSOT：`backend/api/admin/v1/admin_messages.proto`（`service AdminApp`）；改接口先改 proto 再 `cd backend && make gen`
+- 实现：`internal/service/admin/` 适配 → `internal/biz` 编排 → `internal/data` 持久化
+- 路由与灰度见 `backend/api/admin/v1/README.md`
 
 ## 纪律
 
-- 骨架：`moe-admin/src/ui/`（`ListPageLayout` / `TabbedPageLayout` / `MonitorPageLayout` / `PageHead`）
-- 组件：`PageTabs`、`DataEnvBar`、`AdminIcon`、`AdminTag`
-- API：`moe-admin/src/lib`；新接口先改 proto 并 `make gen`
-- 禁止手写 hero 横幅；禁止往 `moe-admin-theme.css` 追加；颜色用 `tokens/colors.css`
+- 不手改 `*.pb.go` / `*_grpc.pb.go` / `*_http.pb.go` / `openapi.yaml`
+- `/api/admin/` 前缀为运营 API，使用独立 Admin Token，勿与客户端 JWT 混用
+- 跨仓改动：契约变更后需通知管理台独立仓重新生成类型并 `npm run build`
 
-## 提交前
+## 前端约定（仅供参考，属独立仓）
 
-`cd moe-admin && npm run build`
+React + Vite + TS，**不是** Flutter。若需改动前端，在独立仓执行，本仓不构建。
