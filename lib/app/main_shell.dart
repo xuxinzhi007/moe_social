@@ -14,8 +14,6 @@ import '../providers/main_nav_controller.dart';
 import '../providers/notification_provider.dart';
 import '../services/chat_push_service.dart';
 import '../services/startup_update_service.dart';
-import '../theme/moe_tokens.dart';
-import '../widgets/ai/companion_attention_sheet.dart';
 import '../widgets/moe_bottom_bar.dart';
 
 class MainPage extends StatefulWidget {
@@ -29,9 +27,6 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
   late final MainNavController _mainNav;
   late final CompanionPresenceProvider _presence;
-  bool _companionNudgeShown = false;
-  bool _companionNudgeOpen = false;
-  Timer? _companionNudgeTimer;
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
     () => DeferredRoute(
@@ -64,13 +59,11 @@ class _MainPageState extends State<MainPage> {
     _mainNav = context.read<MainNavController>();
     _mainNav.addListener(_onMainNavRequested);
     _presence = CompanionPresenceProvider.instance;
-    _presence.addListener(_onCompanionPresenceChanged);
     _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
     _presence.start();
     _presence.setViewingCompanion(_selectedIndex == 2);
     // 主界面就绪后再静默检查更新（软更新可稍后；强制更新会拦截）。
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scheduleCompanionAttentionSheet();
       unawaited(ChatPushService.ensureSystemNotificationPermission());
       Future<void>.delayed(const Duration(milliseconds: 800), () {
         if (!mounted) return;
@@ -87,60 +80,9 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void dispose() {
-    _companionNudgeTimer?.cancel();
-    _presence.removeListener(_onCompanionPresenceChanged);
     _mainNav.removeListener(_onMainNavRequested);
     ChatPushService.clearGlobalContext();
     super.dispose();
-  }
-
-  void _onCompanionPresenceChanged() {
-    if (!_presence.hasAttention) {
-      _companionNudgeShown = false;
-      return;
-    }
-    _scheduleCompanionAttentionSheet();
-  }
-
-  void _scheduleCompanionAttentionSheet() {
-    if (!mounted ||
-        _selectedIndex != 0 ||
-        ModalRoute.of(context)?.isCurrent != true ||
-        !_presence.hasAttention ||
-        _presence.attentionMessage.trim().isEmpty ||
-        _companionNudgeShown ||
-        _companionNudgeOpen) {
-      return;
-    }
-    _companionNudgeTimer?.cancel();
-    _companionNudgeTimer = Timer(MoeTokens.motionSlow, () {
-      unawaited(_showCompanionAttentionSheet());
-    });
-  }
-
-  Future<void> _showCompanionAttentionSheet() async {
-    if (!mounted ||
-        _selectedIndex != 0 ||
-        ModalRoute.of(context)?.isCurrent != true ||
-        !_presence.hasAttention ||
-        _presence.attentionMessage.trim().isEmpty ||
-        _companionNudgeShown ||
-        _companionNudgeOpen) {
-      return;
-    }
-    _companionNudgeShown = true;
-    _companionNudgeOpen = true;
-    final greeting = _presence.attentionMessage.trim();
-    final goSee = await CompanionAttentionSheet.show(
-      context,
-      greeting: greeting,
-      sourceLabel: _presence.attentionSourceLabel,
-    );
-    _companionNudgeOpen = false;
-    if (!mounted) return;
-    if (goSee == true) {
-      _selectTab(2);
-    }
   }
 
   void _onMainNavRequested() {
@@ -152,20 +94,15 @@ class _MainPageState extends State<MainPage> {
       _selectedIndex = idx;
     });
     _presence.setViewingCompanion(idx == 2);
-    if (idx == 0) _scheduleCompanionAttentionSheet();
   }
 
   void _selectTab(int index) {
     if (index == _selectedIndex) return;
-    if (index == 2) {
-      CompanionAttentionSheet.dismiss();
-    }
     setState(() {
       _loadedPages[index] ??= _pageBuilders[index]();
       _selectedIndex = index;
     });
     _presence.setViewingCompanion(index == 2);
-    if (index == 0) _scheduleCompanionAttentionSheet();
   }
 
   @override

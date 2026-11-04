@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/moe_tokens.dart';
 import 'motion/moe_motion.dart';
@@ -88,6 +89,8 @@ class _MoeLikeActionButtonState extends State<MoeLikeActionButton>
   Future<void> _activate() async {
     final onPressed = widget.onPressed;
     if (onPressed == null) return;
+
+    HapticFeedback.lightImpact();
 
     if (!moeReduceMotion(context)) {
       _animateLike = !widget.isLiked;

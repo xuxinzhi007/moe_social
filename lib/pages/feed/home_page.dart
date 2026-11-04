@@ -172,8 +172,11 @@ class _HomePageState extends State<HomePage> {
             _buildSliverAppBar(context),
             const SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 2),
-                child: PersonalizedCard(),
+                padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: PersonalizedCard(),
+                ),
               ),
             ),
             SliverPersistentHeader(

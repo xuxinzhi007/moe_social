@@ -13,9 +13,7 @@ import '../theme/moe_tokens.dart';
 import 'avatar_image.dart';
 import 'moe_loading.dart';
 
-/// 首页顶部轻条：问候 + 身份 + 天气。
-///
-/// 刻意做成一行（对标朋友圈/IG 克制顶栏），不做半屏仪表盘。
+/// 首页顶部轻条：问候 + 头像入口 + 天气，降级为一行轻量展示，不占首屏焦点。
 class PersonalizedCard extends StatefulWidget {
   const PersonalizedCard({super.key});
 
@@ -141,61 +139,40 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
       builder: (context, deviceInfo, levelProvider, _) {
         final username = (_user?.username ?? '').trim();
         final displayName = username.isEmpty ? '萌友' : username;
-        final isVip = _user?.isVip ?? false;
-        final level = levelProvider.currentLevel;
 
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
             onTap: () => context.read<MainNavController>().requestTab(4),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: MoeTokens.surface1,
-                borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                border: Border.all(color: MoeTokens.surfaceBorder),
+                color: MoeTokens.surface1.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                border: Border.all(
+                  color: MoeTokens.surfaceBorder.withValues(alpha: 0.5),
+                ),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   NetworkAvatarImage(
                     key: ValueKey(_user?.avatar),
                     imageUrl: _user?.avatar,
-                    radius: 18,
+                    radius: 14,
                     backgroundColor: MoeTokens.surface0,
                     placeholderIcon: Icons.person_rounded,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${_greeting()}，$displayName',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: MoeTokens.textBase,
-                            fontWeight: FontWeight.w800,
-                            color: MoeTokens.titleText,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          [
-                            if (isVip) 'VIP',
-                            'Lv.$level',
-                          ].join(' · '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: MoeTokens.textXs,
-                            fontWeight: FontWeight.w600,
-                            color: MoeTokens.inkMuted,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_greeting()}，$displayName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: MoeTokens.textSm,
+                      fontWeight: FontWeight.w600,
+                      color: MoeTokens.titleText,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -244,44 +221,30 @@ class _WeatherChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+      borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
-          color: MoeTokens.surface0,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+          color: MoeTokens.surface0.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
         ),
         child: loading
             ? const SizedBox(
-                width: 48,
-                height: 20,
-                child: Center(child: MoeSmallLoading(size: 14)),
+                width: 40,
+                height: 16,
+                child: Center(child: MoeSmallLoading(size: 12)),
               )
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(emoji, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
+                  Text(emoji, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(width: 3),
                   Text(
                     temp,
                     style: const TextStyle(
-                      fontSize: MoeTokens.textSm,
-                      fontWeight: FontWeight.w800,
+                      fontSize: MoeTokens.textXs,
+                      fontWeight: FontWeight.w700,
                       color: MoeTokens.titleText,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 48),
-                    child: Text(
-                      city,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: MoeTokens.inkMuted,
-                      ),
                     ),
                   ),
                 ],
