@@ -185,14 +185,9 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                   ),
                 ),
               ),
-              if (_companionSnapshot != null)
-                SliverToBoxAdapter(
-                  child: MoeReveal(
-                    duration: MoeTokens.motionFadeDuration,
-                    delay: const Duration(milliseconds: 120),
-                    child: _buildCompanionPanel(),
-                  ),
-                ),
+              // ── 社交主壳收口（2026-11-04）：陪伴卡已移出社区首屏 ──
+              // 增强层回自己的 Tab；社区首问还给「找同好」。
+              // 详见 docs/product/convergence-social-shell-2026-11-04.md
             ];
           },
           body: TabBarView(
