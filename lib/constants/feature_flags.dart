@@ -4,9 +4,10 @@ class FeatureFlags {
 
   // ── 产品定性（2026-06）：社交为主 ─────────────────────────────────────
 
-  /// 星辉远征主游戏（横屏卡牌 PvE）。为 true 时 Companion「小家」进入 Arena；
-  /// 旧 Pet 竖屏主路径视为弃用入口（代码可留作回滚）。
-  static const bool arenaGamePrototype = true;
+  /// 星辉远征主游戏（横屏卡牌 PvE）。
+  /// 2026-11-04：社交主壳收口，Arena 降权为实验（默认不可见）；
+  /// 与定位「不以游戏做卖点」对齐。详见 docs/product/convergence-social-shell-2026-11-04.md
+  static const bool arenaGamePrototype = false;
 
   // ── 实验 / 开发者向 ───────────────────────────────────────────────────
 

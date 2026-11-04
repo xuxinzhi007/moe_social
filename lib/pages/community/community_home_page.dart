@@ -1,15 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
-import '../../providers/companion_presence_provider.dart';
-import '../../providers/main_nav_controller.dart';
-import '../../services/companion_service.dart';
-import '../../widgets/ai/companion_avatar.dart';
-import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -32,10 +24,6 @@ class _CommunityHomePageState extends State<CommunityHomePage>
   late TabController _tabController;
   final GlobalKey<InterestGroupsPageState> _groupsKey =
       GlobalKey<InterestGroupsPageState>();
-  final CompanionPresenceProvider _presence =
-      CompanionPresenceProvider.instance;
-  CompanionSnapshotData? _companionSnapshot;
-  CompanionCommunityIdentityData? _communityIdentity;
 
   @override
   void initState() {
@@ -45,42 +33,12 @@ class _CommunityHomePageState extends State<CommunityHomePage>
       if (_tabController.indexIsChanging) return;
       setState(() {});
     });
-    _presence.addListener(_onPresenceChanged);
-    unawaited(_loadCompanionPresence());
   }
 
   @override
   void dispose() {
-    _presence.removeListener(_onPresenceChanged);
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _onPresenceChanged() {
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _loadCompanionPresence() async {
-    try {
-      final snapshot = await CompanionService().getSnapshot();
-      CompanionCommunityIdentityData? identity;
-      if (snapshot.profile.agentId.trim().isNotEmpty) {
-        try {
-          identity = await CompanionService().getCommunityIdentity();
-        } catch (_) {}
-      }
-      if (!mounted) return;
-      setState(() {
-        _companionSnapshot = snapshot;
-        _communityIdentity = identity;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _companionSnapshot = null;
-        _communityIdentity = null;
-      });
-    }
   }
 
   String get _subtitle {
@@ -185,14 +143,9 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                   ),
                 ),
               ),
-              if (_companionSnapshot != null)
-                SliverToBoxAdapter(
-                  child: MoeReveal(
-                    duration: MoeTokens.motionFadeDuration,
-                    delay: const Duration(milliseconds: 120),
-                    child: _buildCompanionPanel(),
-                  ),
-                ),
+              // ── 社交主壳收口（2026-11-04）：陪伴卡已移出社区首屏 ──
+              // 增强层回自己的 Tab；社区首问还给「找同好」。
+              // 详见 docs/product/convergence-social-shell-2026-11-04.md
             ];
           },
           body: TabBarView(
@@ -279,112 +232,6 @@ class _CommunityHomePageState extends State<CommunityHomePage>
     );
   }
 
-  Widget _buildCompanionPanel() {
-    final snapshot = _companionSnapshot!;
-    final profile = snapshot.profile;
-    final state = snapshot.state;
-    final identity = _communityIdentity;
-    final agentKey = identity != null && identity.authorBotAgentKey.isNotEmpty
-        ? identity.authorBotAgentKey
-        : identity?.agentId;
-    final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
-    final status = _companionStatusLine(state.greeting);
-    final attention = _presence.attentionMessage.trim().isNotEmpty;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Material(
-        color: MoeTokens.surface1,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            context.read<MainNavController>().requestTab(2);
-          },
-          borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
-              border: Border.all(
-                color: attention
-                    ? MoeTokens.primary.withValues(alpha: 0.45)
-                    : MoeTokens.primary.withValues(alpha: 0.12),
-              ),
-            ),
-            child: Row(
-              children: [
-                CompanionAvatar(
-                  emoji: profile.emoji,
-                  avatarUrl: profile.avatarUrl,
-                  size: 40,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
-                  backgroundColor: MoeTokens.surface0,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: MoeTokens.textBase,
-                                fontWeight: FontWeight.w800,
-                                color: MoeTokens.titleText,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          AiBotBadge(compact: true, agentKey: agentKey),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        status,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: MoeTokens.textSm,
-                          height: 1.3,
-                          color: attention
-                              ? MoeTokens.primary
-                              : MoeTokens.inkMuted,
-                          fontWeight:
-                              attention ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: MoeTokens.hintText,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _companionStatusLine(String snapshotGreeting) {
-    final attention = _presence.attentionMessage.trim();
-    if (attention.isNotEmpty) return attention;
-    final live = _presence.greeting.trim();
-    if (live.isNotEmpty) return live;
-    final snapshot = snapshotGreeting.trim();
-    if (snapshot.isNotEmpty) return snapshot;
-    return '点这里和我聊天';
-  }
 }
 
 class _PinnedSegmentBarDelegate extends SliverPersistentHeaderDelegate {
