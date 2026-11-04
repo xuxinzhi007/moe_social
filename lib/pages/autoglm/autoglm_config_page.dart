@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
+import '../../constants/feature_flags.dart';
 import '../../theme/moe_tokens.dart';
 import '../../services/enhanced_logger.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
+import 'autoglm_unavailable_page.dart';
 
 class AutoGLMConfigPage extends StatefulWidget {
   @override
@@ -32,9 +34,15 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   bool _enablePerformanceMonitoring = false;
   bool _hasChanges = false;
 
-  final List<String> _logLevels = ['debug', 'info', 'warn', 'error', 'critical'];
+  final List<String> _logLevels = [
+    'debug',
+    'info',
+    'warn',
+    'error',
+    'critical'
+  ];
   final List<String> _presetModels = [
-    'ZhipuAI/AutoGLM-Phone-9B',  // 默认推荐模型
+    'ZhipuAI/AutoGLM-Phone-9B', // 默认推荐模型
     'ZhipuAI/AutoGLM-Web-6B',
     'qwen-vl-max',
     'glm-4v',
@@ -43,6 +51,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   @override
   void initState() {
     super.initState();
+    if (!FeatureFlags.showAutoGlm) return;
     _loadConfig();
     _setupChangeListeners();
   }
@@ -52,7 +61,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     _apiKeyController.addListener(() => setState(() => _hasChanges = true));
     _modelNameController.addListener(() => setState(() => _hasChanges = true));
     _maxStepsController.addListener(() => setState(() => _hasChanges = true));
-    _stepTimeoutController.addListener(() => setState(() => _hasChanges = true));
+    _stepTimeoutController
+        .addListener(() => setState(() => _hasChanges = true));
   }
 
   Future<void> _loadConfig() async {
@@ -63,10 +73,12 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       _apiKeyController.text = await AppConfig.getApiKey();
       _modelNameController.text = await AppConfig.getModelName();
       _maxStepsController.text = (await AppConfig.getMaxSteps()).toString();
-      _stepTimeoutController.text = (await AppConfig.getStepTimeout()).inSeconds.toString();
+      _stepTimeoutController.text =
+          (await AppConfig.getStepTimeout()).inSeconds.toString();
       _enableLogging = await AppConfig.getEnableLogging();
       _logLevel = await AppConfig.getLogLevel();
-      _enablePerformanceMonitoring = await AppConfig.getEnablePerformanceMonitoring();
+      _enablePerformanceMonitoring =
+          await AppConfig.getEnablePerformanceMonitoring();
 
       setState(() => _hasChanges = false);
 
@@ -81,6 +93,9 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!FeatureFlags.showAutoGlm) {
+      return const AutoglmUnavailablePage();
+    }
     return PopScope(
       canPop: !_hasChanges,
       onPopInvokedWithResult: (didPop, _) async {
@@ -140,7 +155,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(
+            ? const Center(
+                child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(MoeTokens.primary),
               ))
             : Form(
@@ -338,7 +354,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: Icon(_obscureApiKey ? Icons.visibility : Icons.visibility_off),
+              icon: Icon(
+                  _obscureApiKey ? Icons.visibility : Icons.visibility_off),
               onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
             ),
             IconButton(
@@ -385,10 +402,12 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           tooltip: '自定义模型',
         ),
       ),
-      items: _presetModels.map((model) => DropdownMenuItem(
-        value: model,
-        child: Text(model, overflow: TextOverflow.ellipsis),
-      )).toList(),
+      items: _presetModels
+          .map((model) => DropdownMenuItem(
+                value: model,
+                child: Text(model, overflow: TextOverflow.ellipsis),
+              ))
+          .toList(),
       onChanged: (value) {
         if (value != null) {
           _modelNameController.text = value;
@@ -475,16 +494,18 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      items: _logLevels.map((level) => DropdownMenuItem(
-        value: level,
-        child: Row(
-          children: [
-            _getLogLevelIcon(level),
-            const SizedBox(width: 8),
-            Text(level.toUpperCase()),
-          ],
-        ),
-      )).toList(),
+      items: _logLevels
+          .map((level) => DropdownMenuItem(
+                value: level,
+                child: Row(
+                  children: [
+                    _getLogLevelIcon(level),
+                    const SizedBox(width: 8),
+                    Text(level.toUpperCase()),
+                  ],
+                ),
+              ))
+          .toList(),
       onChanged: (value) {
         if (value != null) {
           setState(() {
@@ -550,7 +571,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
               child: ElevatedButton.icon(
                 onPressed: _testConnection,
                 icon: const Icon(Icons.network_check, color: Colors.white),
-                label: const Text('测试连接', style: TextStyle(color: Colors.white)),
+                label:
+                    const Text('测试连接', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -566,9 +588,11 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
               child: ElevatedButton.icon(
                 onPressed: _hasChanges ? _saveConfig : null,
                 icon: const Icon(Icons.save, color: Colors.white),
-                label: const Text('保存配置', style: TextStyle(color: Colors.white)),
+                label:
+                    const Text('保存配置', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasChanges ? MoeTokens.primary : Colors.grey,
+                  backgroundColor:
+                      _hasChanges ? MoeTokens.primary : Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -605,7 +629,6 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     );
   }
 
-
   Future<void> _saveConfig() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -616,14 +639,17 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       await AppConfig.setApiKey(_apiKeyController.text.trim());
       await AppConfig.setModelName(_modelNameController.text.trim());
       await AppConfig.setMaxSteps(int.parse(_maxStepsController.text));
-      await AppConfig.setStepTimeout(Duration(seconds: int.parse(_stepTimeoutController.text)));
+      await AppConfig.setStepTimeout(
+          Duration(seconds: int.parse(_stepTimeoutController.text)));
       await AppConfig.setEnableLogging(_enableLogging);
       await AppConfig.setLogLevel(_logLevel);
-      await AppConfig.setEnablePerformanceMonitoring(_enablePerformanceMonitoring);
+      await AppConfig.setEnablePerformanceMonitoring(
+          _enablePerformanceMonitoring);
 
       setState(() => _hasChanges = false);
 
-      _logger.info('配置保存成功',
+      _logger.info(
+        '配置保存成功',
         metadata: {
           'apiUrl': _apiUrlController.text,
           'modelName': _modelNameController.text,
@@ -665,8 +691,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
 
     try {
       _logger.info('开始测试API连接...',
-        metadata: {'apiUrl': apiUrl, 'modelName': modelName},
-        category: LogCategory.network);
+          metadata: {'apiUrl': apiUrl, 'modelName': modelName},
+          category: LogCategory.network);
 
       // 构建测试请求
       final dio = Dio();
@@ -678,7 +704,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         'messages': [
           {
             'role': 'user',
-            'content': 'Hello, this is a connection test. Please respond with "Connection OK".'
+            'content':
+                'Hello, this is a connection test. Please respond with "Connection OK".'
           }
         ],
         'max_tokens': 20,
@@ -701,18 +728,17 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         final content = responseData['choices']?[0]?['message']?['content'];
 
         _logger.info('API连接测试成功',
-          metadata: {'response': content},
-          category: LogCategory.network);
+            metadata: {'response': content}, category: LogCategory.network);
         _showSnackBar('API连接测试成功！✅\n模型响应：$content');
       } else {
         throw Exception('API返回错误状态码: ${response.statusCode}');
       }
-
     } catch (e) {
       String errorMessage = e.toString();
 
       // 解析常见的错误类型
-      if (errorMessage.contains('DioException') || errorMessage.contains('DioError')) {
+      if (errorMessage.contains('DioException') ||
+          errorMessage.contains('DioError')) {
         if (errorMessage.contains('CONNECT_TIMEOUT')) {
           errorMessage = '连接超时，请检查网络或API地址是否正确';
         } else if (errorMessage.contains('RECEIVE_TIMEOUT')) {
@@ -755,7 +781,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
               Text('• 模型名称：推荐使用 ZhipuAI/AutoGLM-Phone-9B'),
               SizedBox(height: 12),
               Text('💡 开箱即用：默认配置已就绪，点击"测试连接"即可开始使用',
-                   style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500)),
+                  style: TextStyle(
+                      color: Colors.blue, fontWeight: FontWeight.w500)),
               SizedBox(height: 16),
               Text('⚙️ 任务配置', style: TextStyle(fontWeight: FontWeight.bold)),
               Text('• 最大步数：单个任务的最大执行步骤'),
@@ -852,7 +879,8 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     showDialog(
       context: context,
       builder: (context) {
-        final controller = TextEditingController(text: _modelNameController.text);
+        final controller =
+            TextEditingController(text: _modelNameController.text);
         return AlertDialog(
           title: const Text('自定义模型'),
           content: TextField(

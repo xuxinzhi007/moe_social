@@ -57,6 +57,9 @@ import '../pages/profile/user_qr_code_page.dart';
 import '../pages/scan/scan_page.dart' deferred as scan;
 import '../pages/settings/message_retention_settings_page.dart';
 import '../pages/settings/companion_settings_page.dart';
+import '../pages/ai/llm_model_config_page.dart';
+import '../pages/autoglm/autoglm_config_page.dart';
+import '../pages/autoglm/autoglm_page.dart';
 import '../pages/reply_assist/reply_assist_page.dart';
 import '../pages/settings/settings_page.dart';
 import '../pages/settings/virtual_avatar_settings_page.dart'
@@ -112,8 +115,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/virtual-avatar-settings': (context) => _deferred(
           virtual_avatar_settings.loadLibrary,
           () => virtual_avatar_settings.VirtualAvatarSettingsPage(),
-          message: '正在加载 AI 助手设置…',
+          message: '正在加载社区 AI 设置…',
         ),
+    '/llm-model-config': (context) => const LlmModelConfigPage(),
+    '/autoglm': (context) => const AutoGLMPage(),
+    '/autoglm-config': (context) => AutoGLMConfigPage(),
     '/message-retention-settings': (context) =>
         const MessageRetentionSettingsPage(),
     '/companion-settings': (context) => const CompanionSettingsPage(),

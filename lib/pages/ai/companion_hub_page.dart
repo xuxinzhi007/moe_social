@@ -248,7 +248,8 @@ class _ReplyAssistEntry extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('回复参谋', style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text('伙伴·回复参谋',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
                   SizedBox(height: 4),
                   Text(
                     '外部聊天卡壳：判断 + 三条草稿，只复制不代发',

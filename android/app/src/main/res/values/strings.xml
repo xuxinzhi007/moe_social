@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Moe Social</string>
-    <string name="accessibility_service_description">Moe Social 自动化助手，用于帮助您自动执行操作。</string>
     <string name="reply_assist_accessibility_description">Moe 回复参谋：仅在您点按贴纸小脸时读取微信聊天页可见文字，用于生成回复草稿。不会代发消息、不会自动点击或输入。</string>
-    <string name="input_assist_service_description">Moe AI 输入辅助：检测输入框并弹出悬浮球。</string>
     <string name="reply_assist_copy">复制</string>
     <string name="reply_assist_listening">正在看聊天…</string>
     <string name="reply_assist_thinking">想怎么回比较安心…</string>

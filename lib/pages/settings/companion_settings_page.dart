@@ -107,6 +107,8 @@ class _CompanionSettingsPageState extends State<CompanionSettingsPage> {
                     children: [
                       _buildSettingsCard(settings),
                       const SizedBox(height: 16),
+                      _buildModelLink(),
+                      const SizedBox(height: 16),
                       _buildPrivacyNote(),
                       const SizedBox(height: 24),
                       FilledButton(
@@ -168,6 +170,24 @@ class _CompanionSettingsPageState extends State<CompanionSettingsPage> {
             onTap: () => _pickTime(isStart: false),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModelLink() {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: MoeTokens.cardBackground,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        side: const BorderSide(color: MoeTokens.surfaceBorder),
+      ),
+      child: ListTile(
+        title: const Text('AI 模型'),
+        subtitle: const Text('主路径：设置 → 高级选项 → AI 模型配置'),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => Navigator.pushNamed(context, '/llm-model-config'),
       ),
     );
   }

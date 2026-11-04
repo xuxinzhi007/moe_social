@@ -52,21 +52,23 @@ class _SettingsAdvancedSectionState extends State<SettingsAdvancedSection> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             '高级选项',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'AI 模型、飞书通知、AutoGLM 等实验功能',
-                            style: TextStyle(
+                            FeatureFlags.showAutoGlm
+                                ? 'AI 模型、飞书通知、AutoGLM 等实验功能'
+                                : 'AI 模型、飞书通知',
+                            style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 12,
                             ),

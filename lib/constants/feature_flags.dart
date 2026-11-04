@@ -32,8 +32,8 @@ class FeatureFlags {
   /// 见 `docs/dev/lottie-achievement-gift-design.md`。
   static const bool useLottieGiftEffects = true;
 
-  /// 双人直播礼物 PK V1。开发期已开启；关闭后路由不可进入。
-  static const bool liveGiftPk = true;
+  /// 双人直播礼物 PK V1。跟随实验总开关，避免生产入口泄漏。
+  static const bool liveGiftPk = showExperimentalFeatures;
 
   // ── 聊天 UI 个性化升级 ─────────────────────────────────────
 

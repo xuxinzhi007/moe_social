@@ -193,18 +193,20 @@ class MainActivity : FlutterActivity() {
                     val svc = ReplyAssistAccessibilityService.getInstance()
                     result.success(svc?.isOverlayVisible() == true)
                 }
+                "isOverlayPermissionGranted" -> {
+                    result.success(canDrawOverlays())
+                }
                 "openAccessibilitySettings" -> {
                     startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     result.success(true)
                 }
+                "openOverlaySettings" -> {
+                    openOverlayPermissionSettings()
+                    result.success(true)
+                }
                 "toggleOverlay" -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:$packageName"),
-                        )
-                        startActivity(intent)
-                        result.success(false)
+                    if (!canDrawOverlays()) {
+                        result.error("OVERLAY_OFF", "需要悬浮窗权限", null)
                         return@setMethodCallHandler
                     }
                     val svc = ReplyAssistAccessibilityService.getInstance()
@@ -229,6 +231,23 @@ class MainActivity : FlutterActivity() {
             ReplyAssistBridge.channel = null
         }
         super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    private fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
+    private fun openOverlayPermissionSettings() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:$packageName"),
+        )
+        startActivity(intent)
     }
 
     private fun isFeishuInstalled(): Boolean {

@@ -1,8 +1,8 @@
 # 冗余 UX 收口设计（2026-11-05）
 
-> 状态：**已拍板、仅文档**。本轮不写业务代码。  
+> 状态：**P1–P5 已在 PR #6 落地**。  
 > 集群盘点来源：内部扫描 memo（10 处冗余）；执行策略来源：分阶段优化调研。  
-> 与路径 B 桌宠的关系：Phase 1 权限三态 chip **以后**作为 [PR #6](https://github.com/xuxinzhi007/moe_social/pull/6) 小尾巴落地，**不**并进本提交。  
+> 与路径 B 桌宠的关系：Phase 1 权限三态 chip 作为 [PR #6](https://github.com/xuxinzhi007/moe_social/pull/6) 尾巴与 P2–P5 一并落地。  
 > 相关： [reply-assist-screen-read-2026-11-05.md](./reply-assist-screen-read-2026-11-05.md) · [reply-assist-pet-overlay-ux-2026-11-05.md](./reply-assist-pet-overlay-ux-2026-11-05.md) · [../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md](../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md)
 
 ## 1. 目标
@@ -32,7 +32,7 @@
 - 不启用 AutoGLM 手势 / 代发 / 不把 `AutoGLMService` 注册进 Manifest。
 - 不做空树截图 OCR、前台保活 FGS、电池优化引导。
 - 不改路径 B 产品边界（只复制、不代点）。
-- 本轮不实现权限 chip 或其它代码。
+- 权限 chip 已在 PR #6 实施；其余非目标仍成立（不启用 AutoGLM / OCR / FGS，不合并 chat+Suggest）。
 
 ## 4. 为何是手术式波次
 
@@ -129,4 +129,16 @@ OCR / 截图识图、FGS / 划掉 App 保活、启用 AutoGLM、合并 chat+Sugg
 
 ## 10. 实施顺序（一句话）
 
-**P0 本文 → P1 三态权限（#6 尾巴，另提交）→ P2 藏 AutoGLM/死 a11y → P3 命名分条并退役社区浮标叙事 → P4 隐私特殊权限 → P5 模型入口、壳/搜索、`liveGiftPk` 跟实验开关。**
+**P0 本文 → P1–P5 已在 PR #6 实施（见 §11）。**
+
+## 11. 实现记录（PR #6）
+
+| Phase | 已交付 |
+|-------|--------|
+| P1 | 回复参谋三枚 chip：无障碍 / 悬浮窗 / 桌宠；缺权只跳对应系统页；`AppLifecycle` resume 自动刷新；首次显示桌宠有说明；Native 暴露 `isOverlayPermissionGranted` / `openOverlaySettings`，`toggleOverlay` 缺权不再静默跳转 |
+| P2 | 实验关：高级区副标题不提 AutoGLM；深链 `/autoglm` 显示「服务未注册·不可用」；未注册 `AutoGLMService`；删除孤儿 `accessibility_service_config.xml` 与「弹出悬浮球/自动化」死 strings |
+| P3 | 设置分条：社区 AI / AI 伙伴 / 伙伴·回复参谋（后者跟 `replyAssistPrototype`）；`VirtualAvatarProvider.isVisible` 恒 false，旧社区浮标不再绘制；不再提供启用开关 |
+| P4 | 隐私「特殊权限」列出无障碍+悬浮窗状态与系统页；一键只申请缺失的运行时权限；移除未用 `ACCESS_BACKGROUND_LOCATION` |
+| P5 | 模型主路径：设置→高级→AI 模型配置；伙伴设置/provider 链回该页；搜索「模型记忆线」改指真路由；`liveGiftPk = showExperimentalFeatures` |
+
+未做（仍属非目标）：OCR/截图识图、FGS 保活、AutoGLM 手势/代发、合并 Companion chat 与 Suggest。`replyAssistPrototype` 默认关。

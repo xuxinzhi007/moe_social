@@ -69,6 +69,34 @@ class ReplyAssistOverlayBridge {
     channel.setMethodCallHandler(_onMethodCall);
   }
 
+  static Future<bool> _invokeBool(String method) async {
+    try {
+      return await channel.invokeMethod<bool>(method) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> isAccessibilityEnabled() =>
+      _invokeBool('isAccessibilityEnabled');
+
+  static Future<bool> isOverlayPermissionGranted() =>
+      _invokeBool('isOverlayPermissionGranted');
+
+  static Future<bool> isOverlayVisible() => _invokeBool('isOverlayVisible');
+
+  static Future<void> openAccessibilitySettings() async {
+    await channel.invokeMethod<void>('openAccessibilitySettings');
+  }
+
+  static Future<void> openOverlaySettings() async {
+    await channel.invokeMethod<void>('openOverlaySettings');
+  }
+
+  static Future<bool> toggleOverlay() async {
+    return await channel.invokeMethod<bool>('toggleOverlay') ?? false;
+  }
+
   static Future<dynamic> _onMethodCall(MethodCall call) async {
     if (call.method != 'onOverlaySuggest') {
       throw MissingPluginException(call.method);

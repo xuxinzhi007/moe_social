@@ -1576,7 +1576,7 @@ class _ProviderMenu extends StatelessWidget {
         if (isBuiltin)
           _item(
             icon: Icons.settings_outlined,
-            label: '查看后端配置',
+            label: 'AI 模型配置',
             color: MoeTokens.titleText,
             onPressed: onInspect,
           ),

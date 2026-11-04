@@ -38,7 +38,10 @@ class VirtualAvatarProvider extends ChangeNotifier {
   String get skinId => _skinId;
 
   bool get hiddenToday => _hiddenUntilDay == _todayKey();
-  bool get isVisible => _enabled && !_hiddenInSession && !hiddenToday;
+
+  /// 旧社区「AI 助手」浮标已退役；后继是回复参谋贴纸桌宠。
+  /// 即使历史偏好仍为开启，也不再绘制 App 内第二套悬浮。
+  bool get isVisible => false;
 
   Future<void> init() async {
     if (_initialized) return;
