@@ -10,6 +10,7 @@ import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_menu_card.dart';
 import '../../theme/moe_tokens.dart';
@@ -104,7 +105,10 @@ class _ProfilePageState extends State<ProfilePage> {
   void _navigateToCheckIn() {
     final userId = AuthService.currentUser;
     if (userId == null) {
-      MoeToast.error(context, '请先登录');
+      _showRequireLoginSheet(
+        title: '每日签到',
+        featureDescription: '登录后每日签到可领取经验奖励，连续签到还能获得更多成长加成',
+      );
       return;
     }
     HapticFeedback.lightImpact();
@@ -114,11 +118,66 @@ class _ProfilePageState extends State<ProfilePage> {
   void _navigateToUserLevel() {
     final userId = AuthService.currentUser;
     if (userId == null) {
-      MoeToast.error(context, '请先登录');
+      _showRequireLoginSheet(
+        title: '等级系统',
+        featureDescription: '登录后查看你的等级进度、经验值和升级奖励',
+      );
       return;
     }
     Navigator.push(context,
         MaterialPageRoute(builder: (_) => UserLevelPage(userId: userId)));
+  }
+
+  void _showRequireLoginSheet({
+    required String title,
+    required String featureDescription,
+  }) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          margin: const EdgeInsets.all(MoeTokens.spaceMd),
+          padding: const EdgeInsets.all(MoeTokens.spaceLg),
+          decoration: BoxDecoration(
+            color: MoeTokens.pageBackground,
+            borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: MoeTokens.spaceMd),
+                  decoration: BoxDecoration(
+                    color: MoeTokens.lineSoft,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  ),
+                ),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: MoeTokens.titleText,
+                  ),
+                ),
+                const SizedBox(height: MoeTokens.spaceMd),
+                MoeEmptyState.requireLogin(
+                  context: context,
+                  featureDescription: featureDescription,
+                  compact: true,
+                ),
+                const SizedBox(height: MoeTokens.spaceSm),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _openVipCenter() async {

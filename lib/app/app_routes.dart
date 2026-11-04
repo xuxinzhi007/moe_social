@@ -8,6 +8,8 @@ import '../models/post.dart';
 import '../models/user.dart';
 import '../models/topic_tag.dart';
 import '../services/companion_service.dart';
+import '../theme/moe_tokens.dart';
+import '../widgets/moe_empty_state.dart';
 import '../pages/achievements/achievements_page.dart' deferred as achievements;
 import '../pages/auth/forgot_password_page.dart';
 import '../pages/auth/login_page.dart';
@@ -117,8 +119,20 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/checkin': (context) {
       final userId = AuthService.currentUser;
       if (userId == null || userId.isEmpty) {
-        return const Scaffold(
-          body: Center(child: Text('请先登录后再签到')),
+        return Scaffold(
+          backgroundColor: MoeTokens.pageBackground,
+          appBar: AppBar(
+            title: const Text('每日签到'),
+            backgroundColor: MoeTokens.pageBackground,
+            elevation: 0,
+          ),
+          body: Center(
+            child: MoeEmptyState.requireLogin(
+              context: context,
+              featureDescription: '登录后每日签到可领取经验奖励，连续签到还能获得更多成长加成',
+              compact: false,
+            ),
+          ),
         );
       }
       return CheckInPage(userId: userId);
