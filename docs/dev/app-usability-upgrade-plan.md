@@ -179,7 +179,7 @@ Moe Social 的正式定位是萌系心情社交，核心是发动态、浏览互
 
 P0 主路径收束完成后，当前客户端进入第一轮视觉升级：先处理首页、主壳、AI 伙伴提醒和 Provider 管理页的层级、间距、状态反馈与窄屏适配。此阶段不新增业务模块，不修改 API / Proto / 数据库，也不把全仓页面一次性重写。
 
-具体范围、顺序、验收标准和已知债务见 [`ui-upgrade-iteration-2026-08-29.md`](./ui-upgrade-iteration-2026-08-29.md)。
+具体执行规范见 [`../DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md)（视觉参数 SSOT 为 `lib/theme/moe_tokens.dart`）。
 
 ## 影响范围
 

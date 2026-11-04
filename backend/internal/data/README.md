@@ -1,7 +1,7 @@
 # internal/data — 持久化层（P4）
 
 > **状态**：P4 Sprint 100 · **20/21 域**（voice 无 DB 除外）  
-> **SSOT**：[docs/dev/kratos-migration-status.md](../../docs/dev/kratos-migration-status.md) · P4 数据层见 [kratos-directory-ssot.md](../../docs/dev/kratos-directory-ssot.md)
+> **SSOT**：[docs/dev/new-api-kratos.md](../../../docs/dev/new-api-kratos.md) · 目录布局：[backend/LAYOUT.md](../../LAYOUT.md)
 
 ## 已迁入
 

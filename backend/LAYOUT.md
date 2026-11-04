@@ -1,7 +1,7 @@
 # Backend 布局（Kratos 生产）
 
 > **更新：2026-09-11**（补 `pkg/` 层与 `internal/platform/` 漏列的 6 个子目录；配置读取统一到 `pkg/conf`）  
-> SSOT：[docs/dev/kratos-migration.md](../docs/dev/kratos-migration.md) · 状态：[docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md)
+> SSOT：[docs/dev/new-api-kratos.md](../docs/dev/new-api-kratos.md) · 迁移历史：[docs/dev/kratos-migration-history.md](../docs/dev/kratos-migration-history.md)
 
 ## 运行
 
@@ -73,6 +73,10 @@ third_party/google/api/
 > **新增一个配置项要改哪里**：`pkg/conf/config.go` 加字段（`mapstructure` tag）→ `pkg/conf/derive.go` 加一个导出函数
 > （环境变量覆盖与历史键回退都写在这里）→ 业务侧调该函数。**不要**在业务层 `viper.New()`，也不要拼 `"<段>.<子键>"` 字符串。
 > 注意 `apiconfig` 用的是 `json`/`yaml` 驼峰 tag，viper 的 `Unmarshal` 只认 `mapstructure`，两者不可互换。
+>
+> **配置治理现状**：105/105 键已收敛到 `pkg/conf`（有效收敛率 100%），`viper.New()` 仅剩 `deploy/config/config.go`
+> 两处（读另一个文件）。环境分层方案（`env.*.yaml` + `MOE_ENV`）已被需求方取消，不要再提。
+> 详情与「登记不修」的安全项见 `docs/dev/security-and-stability-backlog.md` 的「配置治理结论」节。
 
 ---
 

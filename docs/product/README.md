@@ -8,11 +8,10 @@
 |------|------|------|
 | [product-positioning.md](./product-positioning.md) | 主入口 | 产品定位、边界与主 Tab 定义 |
 | [value-audit-2026-10-15.md](./value-audit-2026-10-15.md) | **活跃** | 全产品价值审计：价值锚点判定、Companion 回路断点清单、优化排序 |
-| [../dev/ui-upgrade-iteration-2026-08-29.md](../dev/ui-upgrade-iteration-2026-08-29.md) | **活跃** | 当前 Flutter UI 视觉升级迭代；先做视觉与体验收束，不扩展业务边界 |
+| [../dev/aurora-living-world-plan.md](../dev/aurora-living-world-plan.md) | **活跃** | 星辉活世界方案（已定稿，未实施） |
 | [design-system.md](./design-system.md) | 规范 | CSS / Flutter Token 映射与组件规范；Flutter 执行规范另见 `docs/DESIGN_SYSTEM.md` |
-| [UI设计规范.md](./UI设计规范.md) | 参考（历史基线） | 早期视觉词汇与页面经验；当前执行以 `docs/DESIGN_SYSTEM.md` 与 UI 视觉升级迭代为准 |
+| [UI设计规范.md](./UI设计规范.md) | 参考（历史基线） | 早期视觉词汇与页面经验；当前执行以 `docs/DESIGN_SYSTEM.md` 为准 |
 | [IA首屏与空状态设计.md](./IA首屏与空状态设计.md) | 规范 | IA / 空状态 |
-| [数字生命生态沙盒演进方案-2026-07-07.md](./数字生命生态沙盒演进方案-2026-07-07.md) | 失效 | Life 域生态沙盒（旧 Life UI 已删除，世界面收口到 Arena 营地，2026-10） |
 
 ## 运营与后台
 

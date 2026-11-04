@@ -46,7 +46,7 @@ dart run flutter_launcher_icons
 
 - 联系邮箱：`xuxinzhi19@gmail.com`（见 `index.html`）
 - 上线后：将「即将上线」改为应用商店链接
-- 产品与实现差距评估：[docs/product/moe-app-product-assessment.md](../../docs/product/moe-app-product-assessment.md)
+- 产品定位与边界：[docs/product/product-positioning.md](../../docs/product/product-positioning.md)
 
 ## 官网意见反馈
 

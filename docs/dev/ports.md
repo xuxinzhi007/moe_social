@@ -40,7 +40,7 @@ Deploy Agent 配置：`backend/deploy/config.yaml` → `listen` / `rpc_debug_ups
 > 8888 同理走 `conf.HTTPPort()`。全仓已无第二处 `viper.New()` 读这些键（第九批后硬编码 searchDirs 的文件数 = 0），
 > 因此 `-f` 指定的配置文件对以上每一项都权威。
 
-> 端口/地址多副本与硬编码越界问题见 [配置治理审查 §4.2](./config-hygiene-review-2026-09-08.md)。
+> 端口/地址多副本与硬编码越界问题已随配置治理收敛（105/105 键归 `pkg/conf`），结论见 [security-and-stability-backlog.md](./security-and-stability-backlog.md)。
 
 **推荐日常流程**
 

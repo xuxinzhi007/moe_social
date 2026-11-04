@@ -83,4 +83,4 @@
 - 代码走查：`lib/pages/onboarding/`、`lib/pages/ai/companion_*`、`backend/internal/biz/companion/engine.go`、`lib/constants/feature_flags.dart` 等（证据见 §2 表）
 - 文档蒸馏：`product-positioning.md`、`prd/frame-设计缺口与未来需求.md`、`prd/bench-AI陪伴社交竞品拆解.md`、`prd/flow-mobile-设计模式审查.md`
 - 全域盘点：各域 `lib/pages/` + `backend/internal/biz/` 行数与 git 活跃度
-- 已删除功能（抽卡/互动故事/Life 旧 UI/Pet 后端）不在审计范围：`docs/dev/cleanup-2026-10-15.md`
+- 已删除功能（抽卡/互动故事/Life 旧 UI/Pet 后端）不在审计范围（2026-10 已整批删除）

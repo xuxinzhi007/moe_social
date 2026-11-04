@@ -37,7 +37,7 @@
 | 8 | 酒馆命运 | **退役向（A）**：不进正式导航；需要的能力迁 Companion；大厅不当多角色载体 |
 | 9 | 二期多角色形态 | **暂不定（C）**：一期单伙伴；协议/数据勿写死到「永远只能一个」 |
 | 10 | 二期壳层（多居民世界） | **方案 2**：关系首页仍第一眼；2D 地图只在「TA 的世界」；点地图居民照料/详情（非酒馆选卡） |
-| 11 | 小世界渲染实验 | **Flame**（`useFlameLifeWorld`）；可关 Flag 回退 CustomPaint；见 `docs/dev/flame-life-world-experiment.md` |
+| 11 | 小世界渲染实验 | **Flame**（`useFlameLifeWorld`）；可关 Flag 回退 CustomPaint；见 `.cursor/skills/flame-life-world/SKILL.md` |
 | 12 | 身份分层 | **双层**：关系层 = 名字/头像/人设（用户自定义）；世界层 = `life_entity_id` 居民舞台。绑定不覆盖关系层形象 |
 | 13 | 自定义角色一期 | **轻量**：头像图 + 名字 + 人设；不做 Live2D/角色卡大厅；多 bond 仍延后 |
 | 14 | 绑定与死亡 | **绑定居民免死**（tick/dedupe 跳过）；失踪不解绑，暴露 `world_bind_status=bound_missing` + Hub 提示 |

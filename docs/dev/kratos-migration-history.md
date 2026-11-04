@@ -1,7 +1,7 @@
 # Kratos 迁移历史（归档）
 
 > **归档说明**：Kratos 迁移已全部完成。compat / httplegacy / `api/defs` / `internal/apilegacy` / `rpc/pb/moe` 桥 / `/migration` 进度端点均已删除，**全部路由均为 proto 路由**。
-> **当前架构与新接口开发只看**：[new-api-kratos.md](./new-api-kratos.md)；过渡层删除记录见 [cleanup-2026-10-15.md](./cleanup-2026-10-15.md)；仓库目录见 [backend/LAYOUT.md](../../backend/LAYOUT.md)。
+> **当前架构与新接口开发只看**：[new-api-kratos.md](./new-api-kratos.md)；仓库目录见 [backend/LAYOUT.md](../../backend/LAYOUT.md)。
 > 本文合并自以下七篇历史文档（原文件已删除）：`kratos-migration.md`、`kratos-migration-status.md`、`kratos-architecture-audit.md`、`kratos-directory-ssot.md`、`kratos-legacy-api-migration.md`、`kratos-server-layout-migration.md`、`kratos-p6-defs-to-proto.md`。
 > ⚠️ 文中所有路由条数（227 / 45 / 263 等）、进度百分比、目录与文件快照均为**迁移期历史口径**；与现状冲突处以代码现状 / new-api-kratos.md 为准。
 
@@ -37,7 +37,7 @@
 | 2026-07-09 | 进度追踪与 `/migration` 端点移除，状态板停止更新 |
 | 2026-09-08 | `make gen-api` / `make gen-rpc` / `make gen-http-routes` 等 goctl 系 target 从 Makefile 删除 |
 | 2026-09 起 | compat / httplegacy 过渡层整体删除，全部路由均为 proto 路由（见 new-api-kratos.md） |
-| 2026-10-15 | 过渡层清理记录归档（cleanup-2026-10-15.md） |
+| 2026-10-15 | 过渡层（compat / httplegacy）清理完成 |
 
 ---
 
@@ -212,6 +212,6 @@ rpcResp, err := app.Login(ctx, userv1.LoginReqFromMoe(&moe.LoginReq{
 ## 7. 相关文档
 
 - [new-api-kratos.md](./new-api-kratos.md) — **当前路由架构 SSOT**（新接口开发只看这篇）
-- [cleanup-2026-10-15.md](./cleanup-2026-10-15.md) — compat / httplegacy 过渡层删除记录
+---
 - [openapi-apifox.md](./openapi-apifox.md) — OpenAPI / Apifox 导入
 - [backend/LAYOUT.md](../../backend/LAYOUT.md) — 仓库目录
