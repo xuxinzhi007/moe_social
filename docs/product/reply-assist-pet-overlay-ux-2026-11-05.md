@@ -2,7 +2,8 @@
 
 > 已拍板 UX。球侧当场闭环为主；无大卡 / 大半屏。  
 > 技术落地见 [../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md](../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md)。  
-> 产品总案见 [reply-assist-screen-read-2026-11-05.md](./reply-assist-screen-read-2026-11-05.md)。
+> 产品总案见 [reply-assist-screen-read-2026-11-05.md](./reply-assist-screen-read-2026-11-05.md)。  
+> 与旧社区「AI 助手」浮标、权限漏斗的收口见 [redundant-ux-cleanup-design-2026-11-05.md](./redundant-ux-cleanup-design-2026-11-05.md)。
 
 ## 1. 目标
 
@@ -76,6 +77,7 @@
 | 粘贴长文 / 相册截图 / 判断摘要 | App 面板 | 长编辑与降级输入 |
 | 空树 / 非微信 / 引擎未起 | 悬浮层短气泡 + 必要时 Toast | 引导「去 App 贴图」或「先打开 Moe」 |
 | 识图 OCR | App 截图路径（本轮 stub） | 悬浮层只展示 fallback 态 |
+| 旧「AI 助手」社区浮标 | **前身，将退役** | 不是第二套长期悬浮；后继是本贴纸桌宠。见收口设计 |
 
 **降级才进 App**：树可读且 Flutter 在线时，结果只出现在气泡。用户没有被强迫切回 Moe 看大卡。
 

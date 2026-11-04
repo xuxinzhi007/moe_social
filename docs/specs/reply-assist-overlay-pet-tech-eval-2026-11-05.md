@@ -1,7 +1,8 @@
 # 回复参谋贴纸桌宠悬浮层 — 补丁式技术评估（2026-11-05）
 
 > 本文是路径 B 评估的**补丁**，不重写 [reply-assist-tech-eval-2026-11-05.md](./reply-assist-tech-eval-2026-11-05.md)。  
-> UX 拍板：[../product/reply-assist-pet-overlay-ux-2026-11-05.md](../product/reply-assist-pet-overlay-ux-2026-11-05.md)。
+> UX 拍板：[../product/reply-assist-pet-overlay-ux-2026-11-05.md](../product/reply-assist-pet-overlay-ux-2026-11-05.md)。  
+> 权限漏斗 / 旧社区浮标退役：[../product/redundant-ux-cleanup-design-2026-11-05.md](../product/redundant-ux-cleanup-design-2026-11-05.md)（P1 为后续 #6 尾巴，本文不改代码）。
 
 ## 1. 决策（本补丁）
 

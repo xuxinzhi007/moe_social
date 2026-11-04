@@ -14,7 +14,8 @@
 
 贴纸桌宠悬浮层（紫球骨架的升级）补丁评估见
 [reply-assist-overlay-pet-tech-eval-2026-11-05.md](./reply-assist-overlay-pet-tech-eval-2026-11-05.md)；
-UX 纪要见 [../product/reply-assist-pet-overlay-ux-2026-11-05.md](../product/reply-assist-pet-overlay-ux-2026-11-05.md)。
+UX 纪要见 [../product/reply-assist-pet-overlay-ux-2026-11-05.md](../product/reply-assist-pet-overlay-ux-2026-11-05.md)。  
+权限漏斗与旧社区浮标收口（文档已拍板，chip 未实施）见 [../product/redundant-ux-cleanup-design-2026-11-05.md](../product/redundant-ux-cleanup-design-2026-11-05.md)。
 
 ## 目标架构
 
@@ -68,5 +69,6 @@ UX 纪要见 [../product/reply-assist-pet-overlay-ux-2026-11-05.md](../product/r
 | 粘贴 / 图片上传 | ✓ | 截图 OCR/视觉模型 |
 | 微信读树 | 骨架 + 文本节点扫描 | 说话人/顺序、空树 OCR 兜底 |
 | 贴纸桌宠悬浮层 | Native 脸+气泡当场闭环 | 识图补洞、表情资源升级 |
+| 权限三态 chip | 文档已冻结 | PR #6 小尾巴（未实施） |
 | 多 App 白名单 | 仅微信 | 设置页可配置 |
 | 代发/自动化 | **无** | 永久不做 |

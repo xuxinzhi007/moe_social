@@ -43,4 +43,5 @@
 - 技术评估：[../specs/reply-assist-tech-eval-2026-11-05.md](../specs/reply-assist-tech-eval-2026-11-05.md)
 - 桌宠 UX：[reply-assist-pet-overlay-ux-2026-11-05.md](./reply-assist-pet-overlay-ux-2026-11-05.md)
 - 桌宠技术补丁：[../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md](../specs/reply-assist-overlay-pet-tech-eval-2026-11-05.md)
+- 冗余 UX 收口（权限漏斗 / 旧社区浮标退役）：[redundant-ux-cleanup-design-2026-11-05.md](./redundant-ux-cleanup-design-2026-11-05.md)
 - 产品索引：[README.md](./README.md)
