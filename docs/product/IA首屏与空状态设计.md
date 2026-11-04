@@ -43,7 +43,7 @@ flowchart LR
 ## 3. 信息架构：底栏一级 Tab（SSOT — 以代码实现为准）
 
 > **Single Source of Truth**：底栏 Tab 以 `lib/app/main_shell.dart` 中的 `MainPage` 实现为准，共 5 个 Tab。
-> 当前视觉升级记录见 [`docs/dev/ui-upgrade-iteration-2026-08-29.md`](../dev/ui-upgrade-iteration-2026-08-29.md)。
+> 当前视觉规范见 [`docs/DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md)。
 
 | 索引 | 对用户名称 | 对应页面 | 职责（用户能完成的事） | 与相邻 Tab 的边界 |
 |------|------------|----------|-------------------------|-------------------|

@@ -9,7 +9,7 @@ alwaysApply: true
 
 `PLUGIN_ROOT` = `C:/Users/ZhuanZ1/Desktop/data-workflow`。技能按官方 `scripts/install.sh --project` 复制进本仓库，不进 git：
 
-- 副本：`.cursor/skills/data-workflow/`（配置实体）与 `.agents/skills/data-workflow/`（`config.yaml` 指回前者）
+- 副本：`.cursor/skills/data-workflow/`（唯一位置，`config.yaml` 也在其中）
 - 阶段在副本里的 `stages/`，不再单独链 `requirement-analysis`、`tech-design` 等目录
 - `/` 命令：`.cursor/commands/dw-next.md`、`dw-done.md`、`dw-wait.md`、`dw-start.md`
 - 提交用本仓库 `git-commit` 与工程规则的中文单行 title。用户要求 MR 时再读副本 `stages/git-commit/SKILL.md`，冲突以本仓库为准。
@@ -32,4 +32,4 @@ data-service 的 Obsidian `$VAULT` 与其 `docs/support` 降级区不用于本�
 
 这些文档没有 `verified_commit`，按 STALE 线索。`knowledge_drift.sh` 用 `DS_REPO=<仓库>/backend`（`internal/biz` 在这里）。`repo_snapshot.sh` 不设 `DS_REPO`，快照整个 moe_social。
 
-三栈边界不变：Flutter `lib/**`，后端 `backend/**`，管理台 `moe-admin/**`。
+三栈边界不变：Flutter `lib/**`，后端 `backend/**`，管理台前端在独立仓（本仓仅 `backend/api/admin/` 契约）。

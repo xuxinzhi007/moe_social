@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Moe Social 统一规则（单一事实来源）
 
-本文件是本仓库 Cursor 规则入口。工程规则细则见 `moe-social-engineering.mdc`。域细则由 glob 自动加载：`frontend-ai-spec`（`lib/`）、`backend-ai-spec`（`backend/`）、`moe-admin-ai-spec`（`moe-admin/`）。
+本文件是本仓库 Cursor 规则入口。工程规则细则见 `moe-social-engineering.mdc`。域细则由 glob 自动加载：`frontend-ai-spec`（`lib/`）、`backend-ai-spec`（`backend/`）、`moe-admin-ai-spec`（`backend/api/admin/`，管理台后端契约；前端已独立成仓）。
 
 ## 1. 动手前
 
@@ -15,7 +15,7 @@ alwaysApply: true
 
 ## 2. 三栈边界
 
-- Flutter → `lib/**`；后端 → `backend/**`；管理台 → `moe-admin/**`（React，非 Flutter）。
+- Flutter → `lib/**`；后端 → `backend/**`；管理台前端 → 独立仓（本仓仅 `backend/api/admin/` 契约）。
 - 契约联动：先冻结 `backend/api/<domain>/v1/*.proto`，再改 UI。
 
 ## 3. 分层与 API
@@ -28,7 +28,7 @@ alwaysApply: true
 
 - Flutter：`dart format`、`flutter analyze`
 - 后端：`cd backend && make check`
-- 管理台：`cd moe-admin && npm run build`
+- 管理台：前端在独立仓构建；本仓只跑 `cd backend && make gen-moe-admin`
 - 「完成」= 改动 + 检查已跑 + 结果写在回复里；无明确要求不 `commit` / `push`。
 
 ## 5. 大任务（可选）

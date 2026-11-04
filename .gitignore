@@ -165,7 +165,7 @@ moe_social_mcp_server/
 moe_social_backend/
 .qoder/
 
-# Moe Admin 构建产物（独立仓，暂时放在工作区里联调）
+# Moe Admin 构建产物（源码已迁至独立仓；若为联调 clone 回工作区，产物不提交）
 moe-admin/node_modules/
 moe-admin/dist/
 # npm run build 的输出日志；上面的 *.log 规则盖不到 .txt 后缀
@@ -180,14 +180,6 @@ moe-admin/build-out.txt
 .cursor/skills/quality-gate/
 .cursor/skills/oncall/
 .cursor/skills/excalidraw-diagram/
-.agents/skills/data-workflow/
-.agents/skills/requirement-analysis/
-.agents/skills/tech-design/
-.agents/skills/implementation/
-.agents/skills/change-review/
-.agents/skills/quality-gate/
-.agents/skills/oncall/
-.agents/skills/excalidraw-diagram/
 
 # Avatar generated artifacts
 moe-admin/public/pet/moe_avatar/

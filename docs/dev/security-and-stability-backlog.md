@@ -14,6 +14,33 @@
 
 ---
 
+## 配置治理结论（原 `config-hygiene-review-2026-09-08.md` 已并入本文）
+
+> 该审查对 5 个环境、105 个配置键做了一轮完整收敛，**16 批整改已全部落地**，原 3404 行逐批变更日志已删除。
+> 长期有效的只剩三条结论 + 一批登记不修的安全项（见下方 P0）。
+
+| 结论 | 现状 |
+|------|------|
+| 配置读取唯一入口 | `backend/pkg/conf`，105/105 键的有效收敛率 **100%**；`viper.New()` 仅剩 `deploy/config/config.go` 两处（读的是另一个 `deploy/config.yaml`，不在收敛范围内） |
+| `-f` 是全局权威 | 启动时经 `-f` 指定的配置文件对每一项都生效；`searchDirs` 回退链已清零 |
+| 环境分层（`env.{local,vps,n100}.yaml` + `MOE_ENV`）| ⛔ **需求方已取消（2026-09-16），不要再提**。理由：多机器开发需来回切换，环境分层会把「改文件」变成「改环境变量再重启」。连带「`config.yaml` 去跟踪」一并挂起 |
+
+**已知残留（接受现状，勿顺手改）**：
+
+- `config.yaml` 内有开发期临时凭据（第三方密钥 / 测试库口令），正式版整体更换。开发期可接受。
+- 其余键仍可能静默取零值，统一 `Validate()` 尚未做（见文末待办）。
+
+### 登记不修的安全项（来源同上，需求方已明确处置）
+
+| 编号 | 缺陷 | 风险 | 处置 |
+|------|------|------|------|
+| #47 | `POST /api/user/reset-password` 免鉴权且不校验验证码 | **账号接管**：知道邮箱即可改任意账号密码 | **登记不修**（2026-09-17「这个暂时不做处理」） |
+| #50 | OAuth `state` 被当回跳地址，只校验 scheme 不校验 host | 302 到任意外部站点**并把真实授权码带过去** → 账号接管；同时整条 OAuth 流程零 CSRF 防护 | **登记不修**：修法需先定 host 白名单策略，与多机器开发冲突 |
+| #44 | `media/image.go` 的 URL 规范化兜底值与 `conf.TrimURL` 不同 | 分叉时不报错 | 刻意不并，单独登记 |
+| #16 | `build.gradle.kts` 仍有 `moe123456` 明文回退 | 签名口令泄露 | 见上方 P0「Android 签名密码」 |
+
+---
+
 ## P1 — 建议 1～2 周内
 
 > ⚠️ **位置已按 2026-09-08 实际代码复核**。原表引用的 `rpc/…/ai_resources_logic.go`、`api/…/llm/*logic.go`、`api/internal/websocket/router.go` 均已随 go-zero 逻辑层删除。
@@ -77,7 +104,7 @@ go list -deps ./cmd/moe-social | grep go-zero    # 应无输出
 > ✅ **（2026-09-11 复核并推翻原结论）`auth.access_secret` 缺失会导致启动 fatal，原「不会失败」的警告已过期。**
 > 传播链实测：`api/etc/moe.yaml:8` 的 `AccessSecret` 默认空串 → `ConfigureJWT` 对空值返回 error（`utils/auth_jwt_config.go:24-26`）→ `wire_svc.go:24-26` → `wiring/server.go:26-28` → `run_http_only.go:29-32` 包成 `wire: %w` → `cmd/moe-social/main.go` `log.Fatal(err)`。进程起不来，不存在「服务看着健康、只有鉴权接口逐个报错」的窗口。
 > 原文建议的「改为启动期强校验」**因此无需再做**。`jwtSigningKey()`（`utils/auth_jwt_config.go:39-46`，注意全文只有 47 行，原引的 `:65-72` 不存在）仍是请求期的二次防线，属纵深防御，保留。
-> 仍待办的是 [配置治理审查](./config-hygiene-review-2026-09-08.md) 里更大范围的统一 `Validate()`（其余键目前仍可能静默取零值）。
+> 仍待办的是更大范围的统一 `Validate()`（其余键目前仍可能静默取零值）——配置治理结论见本文「配置治理结论」节。
 
 ---
 

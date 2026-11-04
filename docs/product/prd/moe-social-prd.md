@@ -1,7 +1,7 @@
 # PRD — Moe Social / 当前功能全集（代码事实反推版）
 
 - **生成时间**：2026-10-14
-- **数据源**：代码事实（`lib/`、`backend/`，2026-10-14 工作树）+ 既有 SSOT（product-positioning / ai-companion-formal-decisions / aurora-arena-ssot / aurora-living-world-plan / ui-upgrade-iteration-2026-08-29）
+- **数据源**：代码事实（`lib/`、`backend/`，2026-10-14 工作树）+ 既有 SSOT（product-positioning / ai-companion-formal-decisions / aurora-arena-ssot / aurora-living-world-plan）
 - **生成方式**：Standalone 反推模式（无上游 brief/stories/flow 链路产出，以代码为事实源）
 - **完整度**：moderate —— Goals & Metrics 缺真实业务数据支撑，标 thin
 
@@ -102,7 +102,7 @@ JTBD：当孤独或想分享时，阿星想和一个记得共同经历的 TA 说
 | 商业化 | P2 | ✅ 结构完整，不做主视觉重心 | `lib/pages/commerce/` `backend/internal/biz/{vip,gift}/` |
 | 数字生命 Life | 已收口 | 🗑️ 旧前端 UI 2026-10 删除；引擎由 Arena 营地页复用（`lib/game/life/`），不再独立演进 | `backend/internal/biz/life/` |
 | AutoGLM | 实验 | 🔒 `showAutoGlm=false`，开发者自用 | `lib/pages/autoglm/` |
-| 小游戏/旧抽卡/Pet 旧养成 | 已删除 | 🗑️ 2026-10 整批删除，无回滚入口；见 `docs/dev/cleanup-2026-10-15.md` | — |
+| 小游戏/旧抽卡/Pet 旧养成 | 已删除 | 🗑️ 2026-10 整批删除，无回滚入口 | — |
 
 ### FeatureFlags 当前事实（`lib/constants/feature_flags.dart`）
 

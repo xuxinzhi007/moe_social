@@ -479,5 +479,5 @@ find lib       -name '*.dart' | wc -l   # → 432
 
 - 视觉规范 SSOT：`.cursor/skills/moe-ui-design/SKILL.md`
 - 现有设计系统：`docs/product/design-system.md` · `docs/product/UI设计规范.md`
-- 上一轮视觉迭代：`docs/dev/ui-upgrade-iteration-2026-08-29.md`
+- 上一轮视觉迭代记录已删除；当前规范见 `docs/DESIGN_SYSTEM.md`
 - 动效系统：`docs/dev/flutter-motion-system.md`

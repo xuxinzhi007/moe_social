@@ -18,4 +18,4 @@ make gen-api      # 仅改 api/defs 存量时
 
 域 gRPC/HTTP：编辑 `api/<domain>/v1/*.proto` → `make gen` → `internal/server/http_proto.go` 注册。
 
-详见 [kratos-migration-status.md](../../docs/dev/kratos-migration-status.md)。
+详见 [kratos-migration-history.md](../../../../../docs/dev/kratos-migration-history.md)。

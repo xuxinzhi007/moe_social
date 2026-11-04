@@ -1,11 +1,15 @@
-# Moe Admin 与 gin-vue-admin 选型说明
+# Moe Admin 总览
 
-## 你的两个方向
+> ⚠️ **管理台前端（React/Vite）已独立成仓，不在本仓。**
+> 本文保留为**选型决策与管理台概览**；`moe-admin/src/**` 等路径请在独立仓查找。
+> 本仓只保留 admin 后端契约：`backend/api/admin/v1/*.proto` + `internal/service/admin/`。
 
-| 方案 | 含义 | 是否推荐 |
-|------|------|----------|
+## 选型决策（历史）
+
+| 方案 | 含义 | 结论 |
+|------|------|------|
 | **A. 直接接 gin-vue-admin** | 用开源 gin-vue-admin 的前后端整套 | ❌ 不适合当前仓库 |
-| **B. 自建专用 Admin（当前路线）** | 类似 gin-vue-admin 的产品形态，技术栈沿用 **go-zero + React ops-console** | ✅ 推荐 |
+| **B. 自建专用 Admin（实际采用）** | 类似 gin-vue-admin 的产品形态，技术栈为 **Kratos + React** | ✅ 采用（go-zero 已从 `go.mod` 全部移除） |
 
 ## 为什么不建议「直接接 gin-vue-admin」
 
@@ -47,11 +51,9 @@ gin-vue-admin 是一整套 **Gin + GORM + Vue3 + Element Plus** 工程，自带�
 
 这就是 **「gin-vue-admin 类产品形态，但后端仍是 go-zero」**，而不是引入 gin-vue-admin 的 Gin 服务。
 
-**完整后台设计方案（用户/菜单/公告/登录等）** 见：
+**完整后台设计方案（用户/菜单/公告/登录等）** 已随前端移出本仓。
 
-👉 **[moe-admin-platform-design.md](./moe-admin-platform-design.md)**
-
-按 P0 → P1 分期实现；当前仓库已完成工作台、用户管理、环境切换与跨平台启动脚本（官网反馈查询端点已于 2026-10 删除，仅保留落地页提交）。
+当前仓库已完成工作台、用户管理、环境切换的后端契约（官网反馈查询端点已于 2026-10 删除，仅保留落地页提交）。
 
 ## 工作区与导航
 
@@ -66,7 +68,7 @@ gin-vue-admin 是一整套 **Gin + GORM + Vue3 + Element Plus** 工程，自带�
 - **菜单 / 归属 / 旧链重定向的唯一 SSOT 是 `moe-admin/src/config/workspaceNav.ts`**，禁止第二份手写菜单；占位说明在 `moe-admin/src/config/placeholders.ts`。
 - 旧 path 由前端重定向兜底（`LEGACY_REDIRECTS`，标注 `remove after 2026-12`）。
 - 角色可见性：`super_admin` 见全部三区；`admin` 仅运营+AI（`lib/adminAccess.ts` + `RequireWorkspace`）。
-- 后端菜单表驱动方案已废弃：`admin_menu` 模型与 `/api/admin/menus` 接口 2026-10 已删除（见 [cleanup-2026-10-15.md](./cleanup-2026-10-15.md)），侧栏为前端静态配置。
+- 后端菜单表驱动方案已废弃：`admin_menu` 模型与 `/api/admin/menus` 接口 2026-10 已删除，侧栏为前端静态配置。
 
 ## 模块索引（与 App 业务域对照）
 
@@ -90,9 +92,8 @@ gin-vue-admin 是一整套 **Gin + GORM + Vue3 + Element Plus** 工程，自带�
 
 | 文档 | 内容 | 状态 |
 |------|------|------|
-| [moe-admin-platform-design.md](./moe-admin-platform-design.md) | 完整后台设计方案（鉴权、数据模型、API 规范） | 历史设计稿，产品定位部分仍有效（见文首横幅） |
 | [moe-avatar-admin.md](./moe-avatar-admin.md) | 角色装扮 / 序列帧生产力工具（sprite-studio） | ✅ 已落地（`/ops/biz/pet/avatar`） |
-| [moe-admin-memory-center-design.md](./moe-admin-memory-center-design.md) | 记忆中心（全站 / 按 Agent 双 Tab） | ⚠️ 未实施，后端前提已失效（见文首横幅） |
+| [../backend/api/admin/v1/README.md](../../backend/api/admin/v1/README.md) | 本仓保留的 admin 后端契约（HTTP 路由 + 灰度开关） | 当前有效 |
 
 ## 数据库迁移 vs 运营数据初始化
 

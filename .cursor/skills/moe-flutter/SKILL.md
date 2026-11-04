@@ -327,6 +327,6 @@ Top fixes:
 ## 不做
 
 - 后端 proto / Kratos（Go skills）
-- 管理台 `moe-admin/`（另一套规范）
+- 管理台前端（React，独立成仓，另一套规范；本仓仅 `backend/api/admin/` 契约）
 - 未要求的整仓重构或换状态管理框架
 - 未点名接入完整 Crashlytics/Sentry（默认用内存 `CrashReportBuffer`；要 SDK 再加）

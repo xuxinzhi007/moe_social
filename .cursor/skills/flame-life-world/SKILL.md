@@ -14,8 +14,7 @@ description: >-
 **改 Flame / TA 的世界舞台时：先读本文，再叠**  
 [digital-life](../digital-life/SKILL.md) · [moe-flutter](../moe-flutter/SKILL.md) · [implementation-guardrails](../implementation-guardrails/SKILL.md)。
 
-方案记录：`docs/dev/ta-world-yard-v1.md`  
-状态笔记：`docs/dev/flame-life-world-experiment.md`（以本文为准）。
+方案记录与状态笔记已归档删除；**以本文为准**。
 
 官方参考：
 - Gestures：https://docs.flame-engine.org/latest/flame/inputs/gesture_input.html  
@@ -160,7 +159,6 @@ viewport **勿**加 TapCallbacks。
 | `lib/game/life/life_flame_game.dart` | Game、院子 Ground、Marker、气泡 |
 | `lib/pages/life/life_world_page.dart` | HUD、`_pushFlameSync`、`setBoundEntityId` |
 | `lib/constants/feature_flags.dart` | `useFlameLifeWorld` |
-| `docs/dev/ta-world-yard-v1.md` | 本竖切方案 |
 
 ---
 

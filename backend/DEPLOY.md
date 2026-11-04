@@ -34,4 +34,4 @@ make db-migrate
 # 或启动时：go run ./cmd/moe-social -migrate
 ```
 
-历史 api+rpc 双容器已退役；当前为单进程 `moe-social`，见 [kratos-migration-status.md](../docs/dev/kratos-migration-status.md)。
+历史 api+rpc 双容器已退役；当前为单进程 `moe-social`，见 [kratos-migration-history.md](../docs/dev/kratos-migration-history.md)。
