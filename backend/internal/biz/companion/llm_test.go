@@ -105,6 +105,46 @@ func TestUnfinishedTopicsStayOnCurrentTurn(t *testing.T) {
 	}
 }
 
+func TestSystemPromptInjectsPersonaAndOverride(t *testing.T) {
+	prompt := buildSystemPromptWithContext(
+		&Profile{
+			Name:                 "啾啾",
+			Persona:              "一只爱撒娇的小猫",
+			PersonalityTraits:    []string{"温柔", "粘人"},
+			SystemPromptOverride: "回答时先叫一声主人",
+		},
+		nil,
+		nil,
+		nil,
+		nil,
+		"这是托管模型里误塞进去的角色卡",
+	)
+	if !strings.Contains(prompt, "[人设]") || !strings.Contains(prompt, "一只爱撒娇的小猫") {
+		t.Fatalf("persona missing: %s", prompt)
+	}
+	if !strings.Contains(prompt, "性格：温柔、粘人") {
+		t.Fatalf("traits missing: %s", prompt)
+	}
+	if !strings.Contains(prompt, "[补充设定]") || !strings.Contains(prompt, "回答时先叫一声主人") {
+		t.Fatalf("override missing: %s", prompt)
+	}
+	if strings.Contains(prompt, "这是托管模型里误塞进去的角色卡") {
+		t.Fatalf("stuffed model system should not be prepended: %s", prompt)
+	}
+	personaAt := strings.Index(prompt, "[人设]")
+	overrideAt := strings.Index(prompt, "[补充设定]")
+	if personaAt < 0 || overrideAt < personaAt {
+		t.Fatalf("override should come after persona: %s", prompt)
+	}
+}
+
+func TestCompanionCardPrefixTrimsFromEnd(t *testing.T) {
+	text, trimmed := companionCardPrefix(&Profile{Persona: "一二三四五六七八九十"}, 4)
+	if !trimmed || text != "一二三四" {
+		t.Fatalf("got %q trimmed=%v", text, trimmed)
+	}
+}
+
 func TestSystemPromptStaysPersonalChat(t *testing.T) {
 	prompt := buildSystemPrompt(&Profile{Name: "啾啾", RelationshipLevel: 3}, nil, nil)
 	for _, banned := range []string{"社区工具", "搜公开动态", "发动态", "[你自己会的事]"} {

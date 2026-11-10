@@ -215,24 +215,15 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   CompanionContextUsage _shownContextUsage() {
     final server = _contextUsage;
-    final local = CompanionContextUsage.estimate(
+    if (server != null) return server;
+    return CompanionContextUsage.estimate(
       persona:
-          '${_profile.name}\n${_profile.persona}\n${_profile.personalityTraits.join('、')}',
+          '${_profile.name}\n${_profile.persona}\n${_profile.personalityTraits.join('、')}\n${_profile.systemPromptOverride}',
       recentContents: [
         for (final item in _items)
           if (item.content.trim().isNotEmpty) item.content,
       ],
-      contextLimit: (server?.contextLimit ?? 0) > 0
-          ? server!.contextLimit
-          : CompanionContextUsage.defaultContextLimit,
-      outputReserve: (server?.outputReserve ?? 0) > 0
-          ? server!.outputReserve
-          : CompanionContextUsage.defaultOutputReserve,
     );
-    if (server == null || server.historyMessages != local.historyMessages) {
-      return local;
-    }
-    return server;
   }
 
   void _showContextUsage() {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"backend/pkg/llminference"
 )
@@ -20,11 +21,12 @@ const (
 // buildSystemPrompt 结构化构建 system prompt（分层注入）。
 //
 // 结构：
-// [1] 角色人格（profile.persona + personality_traits）
-// [2] 关系阶段
-// [3] 记忆上下文（最近 memories，按 importance 排序）
-// [4] 行为规则
-// [5] 用户自定义 system_prompt_override（如有）
+// [1] 名字、关系阶段、说话规则
+// [2] 卡前缀：persona、性格；超预算从末尾裁（示例对话应写在人设后）
+// [3] 记忆上下文（置顶/已确认在前，待确认在后）
+// [4] 最近的关系进展
+// [5] 用户自定义 system_prompt_override（如有，放最后）
+// 托管模型的 SYSTEM 不再当作角色人设注入；广场选用身份卡应绑定当前伙伴。
 // 场景不送进模型。时间在聊天记录之后单独成一条 system。
 func buildSystemPrompt(profile *Profile, state *State, memories []Memory, forcedScene ...string) string {
 	return buildSystemPromptWithRelationshipEvents(
@@ -55,18 +57,20 @@ func buildSystemPromptWithContext(
 ) string {
 	var b strings.Builder
 
-	// 模型 Modelfile 里的 SYSTEM。基座只读，派生模型由用户自己改。
-	if text := strings.TrimSpace(modelSystem); text != "" {
-		b.WriteString(text)
-		b.WriteString("\n\n")
+	if profile == nil {
+		profile = &Profile{Name: "伙伴"}
 	}
+
+	// modelSystem 仍保留在参数里，兼容旧调用；托管模型 SYSTEM 不再当作角色人设。
+	_ = modelSystem
+
 	b.WriteString("你是一个AI伙伴，名字是「")
 	b.WriteString(profile.Name)
 	b.WriteString("」。")
 	b.WriteString("\n\n[关系]\n")
 	b.WriteString(relationshipGuidance(profile))
 
-	// [4] 行为规则。短句，避免模型在思考里把清单逐条念出来。
+	// 行为规则。短句，避免模型在思考里把清单逐条念出来。
 	b.WriteString("\n\n[说话方式]")
 	b.WriteString("\n用短句说话，像微信聊天，一两句就够。")
 	b.WriteString("\n可以聊，也可以回答知道的事。不要执行命令，不要改文件。")
@@ -76,6 +80,13 @@ func buildSystemPromptWithContext(
 	b.WriteString("」是你自己的名字，不是对方的。不知道的事直接说不知道。")
 	b.WriteString("\n问现在几点，用聊天记录后面那条时间说明回答。")
 	b.WriteString("\n[画图能力] 你已接入画图引擎。当对方让你画图、发照片或自拍时，严禁回答「没有实体照片」或「无法生成图片」，先自然答应一两句，然后在末尾严格用尖括号附上一段英文绘画提示词，格式必须是：<draw>1girl, warm lamp light, sitting by window holding a book, quiet night sky, detailed, realistic</draw>（注意必须用尖括号 <draw> 和 </draw> 包裹，不要用圆括号 (draw)）。普通聊天不要加 <draw>。")
+
+	const cardPrefixBudget = 1200
+	if cardPrefix, _ := companionCardPrefix(profile, cardPrefixBudget); cardPrefix != "" {
+		b.WriteString("\n\n[人设]\n")
+		b.WriteString(cardPrefix)
+	}
+
 	confirmedMemories := make([]Memory, 0, len(memories))
 	candidateMemories := make([]Memory, 0, len(memories))
 	for _, memory := range memories {
@@ -125,7 +136,40 @@ func buildSystemPromptWithContext(
 			}
 		}
 	}
+	if override := strings.TrimSpace(profile.SystemPromptOverride); override != "" {
+		b.WriteString("\n\n[补充设定]\n")
+		b.WriteString(override)
+	}
 	return b.String()
+}
+
+func companionCardPrefix(profile *Profile, budget int) (string, bool) {
+	if profile == nil {
+		return "", false
+	}
+	parts := make([]string, 0, 2)
+	if text := strings.TrimSpace(profile.Persona); text != "" {
+		parts = append(parts, text)
+	}
+	if len(profile.PersonalityTraits) > 0 {
+		traits := make([]string, 0, len(profile.PersonalityTraits))
+		for _, trait := range profile.PersonalityTraits {
+			if s := strings.TrimSpace(trait); s != "" {
+				traits = append(traits, s)
+			}
+		}
+		if len(traits) > 0 {
+			parts = append(parts, "性格："+strings.Join(traits, "、"))
+		}
+	}
+	text := strings.Join(parts, "\n\n")
+	if text == "" {
+		return "", false
+	}
+	if budget <= 0 || utf8.RuneCountInString(text) <= budget {
+		return text, false
+	}
+	return string([]rune(text)[:budget]), true
 }
 
 func relationshipGuidance(profile *Profile) string {

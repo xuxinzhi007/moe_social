@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io' show File, SocketException;
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, kIsWeb, VoidCallback;
 import '../models/community_group.dart';
@@ -1991,6 +1993,42 @@ class ApiService {
     return '上传失败，状态码：${response.statusCode}';
   }
 
+  /// 跨平台 basename：兼容 Windows `\` 与 POSIX `/`，避免整段路径写入 OrigName。
+  static String uploadBasename(String filePath) {
+    final normalized = filePath.replaceAll(r'\', '/');
+    final base = p.posix.basename(normalized).trim();
+    return base.isEmpty ? 'upload.bin' : base;
+  }
+
+  /// multipart Content-Type；语音/音频必须带对，图片也一并补齐。
+  static MediaType? multipartContentTypeForFilename(String filename) {
+    switch (p.posix.extension(filename.replaceAll(r'\', '/')).toLowerCase()) {
+      case '.m4a':
+        return MediaType('audio', 'mp4');
+      case '.mp3':
+        return MediaType('audio', 'mpeg');
+      case '.aac':
+        return MediaType('audio', 'aac');
+      case '.wav':
+        return MediaType('audio', 'wav');
+      case '.ogg':
+        return MediaType('audio', 'ogg');
+      case '.png':
+        return MediaType('image', 'png');
+      case '.gif':
+        return MediaType('image', 'gif');
+      case '.webp':
+        return MediaType('image', 'webp');
+      case '.svg':
+        return MediaType('image', 'svg+xml');
+      case '.jpg':
+      case '.jpeg':
+        return MediaType('image', 'jpeg');
+      default:
+        return null;
+    }
+  }
+
   /// 上传图片并返回后端的 ImageInfo（包含 filename/url/size/created_at）
   static Future<Map<String, dynamic>> uploadImageInfo(
     File image, {
@@ -2015,10 +2053,12 @@ class ApiService {
       }
 
       final length = await image.length();
+      final filename = uploadBasename(image.path);
       final multipartFile = await http.MultipartFile.fromPath(
         'file',
         image.path,
-        filename: image.path.split('/').last,
+        filename: filename,
+        contentType: multipartContentTypeForFilename(filename),
       );
       request.fields['category'] = category;
       request.files.add(multipartFile);

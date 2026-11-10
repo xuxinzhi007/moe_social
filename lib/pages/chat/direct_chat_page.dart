@@ -947,17 +947,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 },
               ),
             ),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: MoeActionRow(
-                icon: Icons.block_rounded,
-                iconColor: MoeTokens.danger,
-                iconBackgroundColor: MoeTokens.danger.withValues(alpha: 0.12),
-                title: '屏蔽此人',
-                onTap: () => Navigator.pop(ctx),
-              ),
-            ),
             const SizedBox(height: 8),
           ],
         ),

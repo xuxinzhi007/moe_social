@@ -401,9 +401,8 @@ class DirectChatViewModel extends ChangeNotifier {
   /// 发送语音文件：上传后以 `[VOICE]$url|$duration` 文本消息发出。
   /// 成功返回 null；失败返回用户可读错误文案。
   ///
-  /// TODO(voice): 复用 `/api/upload` 上传音频可行（后端不校验 mime），
-  /// 但 ServeImage 会按图片后缀推断 Content-Type（.m4a 落回 image/jpeg），
-  /// 需后端补充媒体类型识别后再开启正式 flag。
+  /// 语音走现有 `/api/upload`（MediaCategory.chat）；客户端用跨平台 basename
+  /// 与 audio Content-Type，后端按扩展名映射为 audio/mp4 等。
   Future<String?> sendVoiceFile(File file, {required int durationSec}) async {
     if (_isSending) return '正在发送中，请稍后再试';
     final currentUserId = _currentUserId;

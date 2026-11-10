@@ -97,3 +97,53 @@ func TestUploadImageExtensionWhitelist(t *testing.T) {
 		t.Error("UploadImage(malware.exe) 应返回错误，实际成功")
 	}
 }
+
+func TestUploadImageWindowsOrigName(t *testing.T) {
+	cfg := setupTestDir(t, "u1")
+	const winPath = `C:\Users\foo\AppData\Local\Temp\voice_123.m4a`
+
+	info, err := UploadImage(context.Background(), cfg, UploadInput{
+		UserFolder: "u1",
+		OrigName:   winPath,
+		Reader:     strings.NewReader("aac-bytes"),
+	})
+	if err != nil {
+		t.Fatalf("UploadImage(windows OrigName): %v", err)
+	}
+	if !strings.HasSuffix(info.Filename, "voice_123.m4a") {
+		t.Fatalf("Filename = %q, want suffix voice_123.m4a", info.Filename)
+	}
+	if strings.Contains(info.Filename, `\`) || strings.Contains(info.Filename, "Users") {
+		t.Fatalf("Filename 仍含 Windows 路径片段: %q", info.Filename)
+	}
+
+	opened, err := OpenImage(context.Background(), cfg, info.Filename)
+	if err != nil {
+		t.Fatalf("OpenImage after windows OrigName: %v", err)
+	}
+	if opened.Body != nil {
+		_ = opened.Body.Close()
+	}
+	if opened.ContentType != "audio/mp4" {
+		t.Fatalf("ContentType = %q, want audio/mp4", opened.ContentType)
+	}
+}
+
+func TestSafeOrigBaseName(t *testing.T) {
+	cases := []struct {
+		in   string
+		want string
+	}{
+		{`C:\Temp\voice.m4a`, "voice.m4a"},
+		{`C:/Temp/voice.m4a`, "voice.m4a"},
+		{"/tmp/voice.m4a", "voice.m4a"},
+		{"voice.m4a", "voice.m4a"},
+		{"", ""},
+		{`\`, ""},
+	}
+	for _, tc := range cases {
+		if got := safeOrigBaseName(tc.in); got != tc.want {
+			t.Errorf("safeOrigBaseName(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}

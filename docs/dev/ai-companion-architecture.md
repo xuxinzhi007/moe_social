@@ -1,7 +1,8 @@
 # AI Companion 当前架构（合并版）
 
 > **状态**：当前架构 SSOT（2026-10 合并）
-> **决策 SSOT**：`docs/dev/ai-companion-formal-decisions.md`（改边界先改它，再改本文，最后改代码）
+> **决策 SSOT**：`docs/dev/ai-companion-formal-decisions.md`（改边界先改它，再改本文，最后改代码）  
+> **2026-11-10 进行中**：广场并入陪伴的交接见 `ai-companion-plaza-merge-handoff.md`（代码未改）
 > **代码事实**：以 `lib/` + `backend/` 为准；API 契约 SSOT = `backend/api/companion/v1/companion.proto`
 > **Flame 舞台**：`.cursor/skills/flame-life-world/SKILL.md`
 

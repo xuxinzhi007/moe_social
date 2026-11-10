@@ -1,11 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
-import '../../services/ai_cloud_config_service.dart';
 import '../../services/companion_character_card_import.dart';
 import '../../services/companion_service.dart';
-import '../../services/llm_api_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
@@ -29,16 +25,11 @@ class CompanionProfileEditPage extends StatefulWidget {
 class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
   late final TextEditingController _nameController;
   late final TextEditingController _emojiController;
-  late final TextEditingController _modelPromptController;
+  late final TextEditingController _personaController;
+  late final TextEditingController _overrideController;
   late String _avatarUrl;
   bool _uploadingAvatar = false;
-  bool _promptLoading = true;
-  bool _promptEditable = false;
   bool _saving = false;
-  String _modelName = '';
-  String _promptNote = '正在读取当前模型的系统提示词';
-  String _loadedPrompt = '';
-  LlmManagedModel? _managed;
 
   @override
   void initState() {
@@ -46,68 +37,19 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
     final current = widget.initial;
     _nameController = TextEditingController(text: current.name);
     _emojiController = TextEditingController(text: current.emoji);
-    _modelPromptController = TextEditingController();
+    _personaController = TextEditingController(text: current.persona);
+    _overrideController =
+        TextEditingController(text: current.systemPromptOverride);
     _avatarUrl = current.avatarUrl;
-    unawaited(_loadModelPrompt());
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emojiController.dispose();
-    _modelPromptController.dispose();
+    _personaController.dispose();
+    _overrideController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadModelPrompt() async {
-    try {
-      final snapshot = await AiCloudConfigService().fetch();
-      final model =
-          snapshot?.preferences['builtin_chat_model']?.toString().trim() ?? '';
-      final catalog = await LlmApiService.fetchCatalog();
-      LlmCatalogModel? current;
-      for (final item in catalog) {
-        if (item.name == model) {
-          current = item;
-          break;
-        }
-      }
-      final derived = current?.derived == true;
-      LlmManagedModel? managed;
-      if (derived) {
-        final owned = await LlmApiService.listManagedModels();
-        for (final item in owned) {
-          if (item.modelName == model && item.state == 'ready') {
-            managed = item;
-            break;
-          }
-        }
-      }
-      final card = model.isEmpty
-          ? const LlmModelCard(systemPrompt: '', parameters: {})
-          : await LlmApiService.fetchModelCard(model);
-      if (!mounted) return;
-      setState(() {
-        _modelName = model;
-        _managed = managed;
-        _promptEditable = managed != null;
-        _loadedPrompt = card.systemPrompt;
-        _modelPromptController.text = card.systemPrompt;
-        _promptLoading = false;
-        _promptNote = model.isEmpty
-            ? '还没有选模型。到聊天页顶栏切换。'
-            : _promptEditable
-                ? '这是你的派生模型，可以改。换模型在聊天页。'
-                : '这是当前模型自带的系统提示词，这里不能改。换模型在聊天页。';
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _promptLoading = false;
-        _promptEditable = false;
-        _promptNote = '提示词没有读到：$error';
-      });
-    }
   }
 
   Future<void> _editName() async {
@@ -137,12 +79,8 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
 
   Future<void> _applyCardDraft(CompanionCardImportDraft draft) async {
     _nameController.text = draft.name;
-    final imported = draft.systemPromptOverride.trim().isNotEmpty
-        ? draft.systemPromptOverride.trim()
-        : draft.persona.trim();
-    if (_promptEditable && imported.isNotEmpty) {
-      _modelPromptController.text = imported;
-    }
+    _personaController.text = draft.persona.trim();
+    _overrideController.text = draft.systemPromptOverride.trim();
     setState(() {});
 
     final png = draft.avatarPngBytes;
@@ -285,31 +223,13 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
 
   Future<void> _save() async {
     if (_uploadingAvatar || _saving) return;
-    final nextPrompt = _modelPromptController.text.trim();
-    if (_promptEditable &&
-        _managed != null &&
-        nextPrompt != _loadedPrompt.trim()) {
-      setState(() => _saving = true);
-      try {
-        await LlmApiService.upsertAgentPrompt(
-          agentId: _managed!.agentId,
-          requestId: DateTime.now().microsecondsSinceEpoch.toString(),
-          baseModel: _managed!.baseModel,
-          systemPrompt: nextPrompt,
-        );
-      } catch (error) {
-        if (!mounted) return;
-        setState(() => _saving = false);
-        MoeToast.error(context, '提示词没有保存：$error');
-        return;
-      }
-    }
-    if (!mounted) return;
     Navigator.pop(
       context,
       widget.initial.copyWith(
         name: _nameController.text.trim(),
         avatarUrl: _avatarUrl.trim(),
+        persona: _personaController.text.trim(),
+        systemPromptOverride: _overrideController.text.trim(),
       ),
     );
   }
@@ -354,54 +274,62 @@ class _CompanionProfileEditPageState extends State<CompanionProfileEditPage> {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               children: [
                 _SectionCard(
-                  title: '模型提示词',
+                  title: '伙伴人设',
                   children: [
-                    Text(
-                      _modelName.isEmpty ? '当前没有选中的模型' : _modelName,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: MoeTokens.titleText,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _promptNote,
-                      style: const TextStyle(
+                    const Text(
+                      '会写进当前伙伴，不会改托管模型的系统提示词。',
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.4,
                         color: MoeTokens.hintText,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_promptLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 18),
-                        child: Center(
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      )
-                    else
-                      TextField(
-                        controller: _modelPromptController,
-                        readOnly: !_promptEditable,
-                        maxLines: 8,
-                        minLines: 4,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.45,
-                          color: _promptEditable
-                              ? MoeTokens.titleText
-                              : MoeTokens.hintText,
-                        ),
-                        decoration: MoeFieldDecoration.decorate(
-                          hintText: '这个模型没有写系统提示词',
-                        ),
+                    TextField(
+                      controller: _personaController,
+                      maxLines: 8,
+                      minLines: 4,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.45,
+                        color: MoeTokens.titleText,
                       ),
+                      decoration: MoeFieldDecoration.decorate(
+                        hintText: '人设、情景和示例对话',
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      '补充设定',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: MoeTokens.titleText,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      '作者写的额外要求，会放在提示词最后。可以留空。',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: MoeTokens.hintText,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _overrideController,
+                      maxLines: 5,
+                      minLines: 2,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.45,
+                        color: MoeTokens.titleText,
+                      ),
+                      decoration: MoeFieldDecoration.decorate(
+                        hintText: '可选的补充设定',
+                      ),
+                    ),
                   ],
                 ),
               ],

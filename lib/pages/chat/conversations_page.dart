@@ -46,6 +46,7 @@ class ConversationsPage extends StatefulWidget {
 
 class _ConversationsPageState extends State<ConversationsPage> {
   late final ConversationsViewModel _vm;
+  late final ScrollController _listScrollController;
   int _hideNoticeToken = 0;
   String? _hideNoticePeerId;
 
@@ -53,6 +54,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
   void initState() {
     super.initState();
     _vm = ConversationsViewModel();
+    _listScrollController = ScrollController()..addListener(_onListScroll);
     _vm.addListener(_onVmChanged);
     ChatPushService.unreadBySender.addListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.addListener(_onLocalThreadsTick);
@@ -63,6 +65,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
   @override
   void dispose() {
+    _listScrollController.removeListener(_onListScroll);
+    _listScrollController.dispose();
     _vm.removeListener(_onVmChanged);
     _vm.dispose();
     ChatPushService.unreadBySender.removeListener(_onPushUnread);
@@ -75,8 +79,30 @@ class _ConversationsPageState extends State<ConversationsPage> {
     if (mounted) setState(() {});
   }
 
+  void _onListScroll() {
+    if (!_listScrollController.hasClients) return;
+    final pos = _listScrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 120) {
+      unawaited(_vm.loadMore());
+    }
+  }
+
   void _onVmChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    final refreshErr = _vm.takeRefreshError();
+    if (refreshErr != null) {
+      final msg = MoeErrorCopy.toast(
+        refreshErr,
+        scene: MoeErrorScene.messages,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      });
+    }
   }
 
   void _onPushUnread() {
@@ -153,7 +179,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       'avatar': user.avatar,
                     },
                   );
-                  if (mounted) await _vm.load();
+                  if (mounted) {
+                    await _vm.refreshServerConversations(reloadFriends: true);
+                  }
                 },
               );
             },
@@ -175,7 +203,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
             child: Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: _vm.loading ? null : () => unawaited(_vm.load()),
+                onPressed: (_vm.loading || _vm.refreshing)
+                    ? null
+                    : () => unawaited(
+                          _vm.refreshServerConversations(reloadFriends: true),
+                        ),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('刷新'),
               ),
@@ -214,7 +246,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
         actions: [
           IconButton(
             tooltip: '刷新',
-            onPressed: _vm.loading ? null : () => unawaited(_vm.load()),
+            onPressed: (_vm.loading || _vm.refreshing)
+                ? null
+                : () => unawaited(
+                      _vm.refreshServerConversations(reloadFriends: true),
+                    ),
             icon: const Icon(
               Icons.refresh_rounded,
               color: MoeTokens.hintText,
@@ -244,18 +280,24 @@ class _ConversationsPageState extends State<ConversationsPage> {
     if (rows.isEmpty) {
       return _buildListEmptyState(context, searching: false);
     }
+    final showFooter = _vm.hasMore || _vm.loadMoreError != null;
     return RefreshIndicator(
-      onRefresh: _vm.load,
+      onRefresh: () => _vm.refreshServerConversations(reloadFriends: true),
       color: MoeTheme.of(context).primary,
       child: ListView.separated(
+        controller: _listScrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        itemCount: rows.length,
+        itemCount: rows.length + (showFooter ? 1 : 0),
         separatorBuilder: (_, __) => const Divider(
           height: 1,
           indent: 76,
           color: MoeTokens.surfaceBorder,
         ),
         itemBuilder: (context, i) {
+          if (i >= rows.length) {
+            return _buildLoadMoreFooter(context);
+          }
           final c = rows[i];
           final peerId = c.peerUserId.trim();
           if (peerId.isEmpty || peerId == myId) {
@@ -310,11 +352,44 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     'avatar': avatar,
                   },
                 );
-                if (mounted) await _vm.load();
+                if (mounted) {
+                  await _vm.refreshServerConversations(reloadFriends: true);
+                }
               },
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreFooter(BuildContext context) {
+    if (_vm.loadMoreError != null) {
+      final msg = MoeErrorCopy.toast(
+        _vm.loadMoreError,
+        scene: MoeErrorScene.messages,
+      );
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: TextButton(
+            onPressed: () {
+              _vm.clearLoadMoreError();
+              unawaited(_vm.loadMore());
+            },
+            child: Text(msg),
+          ),
+        ),
+      );
+    }
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       ),
     );
   }
@@ -367,7 +442,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           );
 
     return RefreshIndicator(
-      onRefresh: _vm.load,
+      onRefresh: () => _vm.refreshServerConversations(reloadFriends: true),
       color: MoeTheme.of(context).primary,
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -785,7 +860,7 @@ class _HideCapsuleNoticeState extends State<_HideCapsuleNotice>
             ),
             const SizedBox(width: 6),
             const Text(
-              '已隐藏',
+              '已隐藏（仅本机）',
               style: TextStyle(
                 color: MoeTokens.titleText,
                 fontSize: MoeTokens.textSm,

@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
 
   http: ^1.1.0
+  http_parser: ^4.1.2  # MultipartFile Content-Type（语音上传 audio/mp4 等）
   crypto: ^3.0.7  # OAuth PKCE 的 S256 challenge（原本只是传递依赖）
   shared_preferences: 2.0.15
   image_picker: ^1.1.2

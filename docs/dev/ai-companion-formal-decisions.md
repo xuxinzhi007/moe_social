@@ -8,6 +8,8 @@
 
 新会话接续时：**先读本文**，再改 Companion / Life / 酒馆相关代码。
 
+2026-11-10 起，身份卡广场与陪伴提示词的合并方向见 `ai-companion-plaza-merge-handoff.md`。改广场「使用」、托管模型系统提示词或 `buildSystemPromptWithContext` 之前先读那篇。单活跃伙伴和社交主路径不变。
+
 ---
 
 ## 1. App 整体位置

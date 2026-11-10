@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -201,9 +202,28 @@ func UploadImage(ctx context.Context, cfg ImageConfig, in UploadInput) (ImageInf
 	return UploadImageWithStore(ctx, store, in)
 }
 
+// safeOrigBaseName 取跨平台 basename。客户端 OrigName 可能带 Windows 反斜杠路径，
+// Linux 上 filepath.Base 不会按 `\` 切割，会把整段路径写进存储文件名。
+func safeOrigBaseName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+	name = strings.ReplaceAll(name, `\`, "/")
+	base := path.Base(name)
+	if base == "." || base == "/" {
+		return ""
+	}
+	return base
+}
+
 // UploadImageWithStore 使用已构造的 store 上传。
 func UploadImageWithStore(ctx context.Context, store BlobStore, in UploadInput) (ImageInfo, error) {
-	ext := strings.ToLower(filepath.Ext(in.OrigName))
+	orig := safeOrigBaseName(in.OrigName)
+	if orig == "" {
+		return ImageInfo{}, fmt.Errorf("unsupported file extension: %s", strings.TrimSpace(in.OrigName))
+	}
+	ext := strings.ToLower(path.Ext(orig))
 	if _, ok := imageExtensions[ext]; !ok {
 		if _, ok := audioExtensions[ext]; !ok {
 			return ImageInfo{}, fmt.Errorf("unsupported file extension: %s", ext)
@@ -211,7 +231,6 @@ func UploadImageWithStore(ctx context.Context, store BlobStore, in UploadInput) 
 	}
 
 	timestamp := time.Now().Unix()
-	orig := filepath.Base(in.OrigName)
 	filename := fmt.Sprintf("%d_%s", timestamp, orig)
 	ct := contentTypeForName(filename)
 

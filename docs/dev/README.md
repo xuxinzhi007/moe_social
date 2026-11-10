@@ -51,6 +51,7 @@
 |------|------|
 | [ai-companion-architecture.md](./ai-companion-architecture.md) | Companion 架构 |
 | [ai-companion-formal-decisions.md](./ai-companion-formal-decisions.md) | Companion 正式决策记录 |
+| [ai-companion-plaza-merge-handoff.md](./ai-companion-plaza-merge-handoff.md) | 身份卡广场并入陪伴的交接（2026-11-10，代码未改） |
 | [aurora-arena-ssot.md](./aurora-arena-ssot.md) | **星辉远征（Arena）域 SSOT** |
 | [aurora-living-world-plan.md](./aurora-living-world-plan.md) | 星辉活世界方案（方案已定稿，未实施） |
 

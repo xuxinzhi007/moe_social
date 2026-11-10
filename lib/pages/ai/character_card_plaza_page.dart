@@ -5,9 +5,8 @@ import '../../constants/feature_flags.dart';
 import '../../models/ai_agent.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_starter_templates.dart';
-import '../../services/llm_api_service.dart';
+import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
-import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/moe_loading.dart';
@@ -17,7 +16,6 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_motion.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
-import '../../widgets/motion/moe_sheet.dart';
 import 'agent_editor_page.dart';
 
 /// 身份卡广场：官方推荐模板 + 公开角色卡 + 我的专属卡。
@@ -256,98 +254,39 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
     ].map((part) => part.trim()).where((part) => part.isNotEmpty).join('\n');
   }
 
+  String _cardPersona(AiAgent agent) {
+    return [
+      agent.persona,
+      agent.scenario,
+      agent.exampleDialogues,
+    ].map((part) => part.trim()).where((part) => part.isNotEmpty).join('\n\n');
+  }
+
   Future<void> _applyCard(AiAgent agent) async {
-    final prompt = _cardPrompt(agent);
-    if (prompt.isEmpty) {
+    final persona = _cardPersona(agent);
+    final override = agent.systemPrompt.trim();
+    if (persona.isEmpty && override.isEmpty) {
       MoeToast.error(context, '这张卡没有可写入的人设');
       return;
     }
-    List<LlmManagedModel> models;
     try {
-      models = await LlmApiService.listManagedModels();
-    } catch (e) {
-      if (mounted) MoeToast.error(context, '读取模型失败：$e');
-      return;
-    }
-    final ready = models.where((model) => model.isReady).toList();
-    if (!mounted) return;
-    if (ready.isEmpty) {
-      MoeToast.error(
-        context,
-        '还没有可套用的模型。每人最多新建 3 个，创建后再把身份卡写进已有模型。',
-      );
-      return;
-    }
-    final picked = await MoeSheet.show<LlmManagedModel>(
-      context,
-      backgroundColor: MoeTokens.surface1,
-      builder: (sheetContext) {
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    '套到已有模型',
-                    style: TextStyle(
-                      fontSize: MoeTokens.textLg,
-                      fontWeight: FontWeight.w800,
-                      color: MoeTokens.titleText,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    '只改这个模型的系统提示词，不新建模型。',
-                    style: TextStyle(
-                      fontSize: MoeTokens.textSm,
-                      color: MoeTokens.inkMuted,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                for (final model in ready)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: MoeActionRow(
-                      icon: Icons.smart_toy_outlined,
-                      iconColor: MoeTokens.primary,
-                      backgroundColor: MoeTokens.pageBackground,
-                      borderColor: MoeTokens.surfaceBorder,
-                      title: model.modelName,
-                      subtitle: Text('基座 ${model.baseModel}'),
-                      onTap: () => Navigator.pop(sheetContext, model),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-    if (picked == null || !mounted) return;
-    try {
-      final result = await LlmApiService.upsertAgentPrompt(
-        agentId: picked.agentId,
-        requestId: LlmApiService.newRequestId(),
-        baseModel: picked.baseModel,
-        systemPrompt: prompt,
-      );
+      final current = await CompanionService().getProfile();
       if (!mounted) return;
-      if (!result.isReady) {
-        MoeToast.error(context, result.outcomeMessage);
-        return;
-      }
-      MoeToast.success(context, '已写入 ${picked.modelName}，没有新建模型');
+      final name = agent.name.trim().isNotEmpty ? agent.name.trim() : current.name;
+      final avatar = (agent.avatarPath ?? '').trim();
+      final useAvatar = avatar.startsWith('http://') || avatar.startsWith('https://');
+      final next = current.copyWith(
+        name: name,
+        avatarUrl: useAvatar ? avatar : current.avatarUrl,
+        persona: persona,
+        systemPromptOverride: override,
+        agentId: agent.id,
+      );
+      await CompanionService().updateProfile(next);
+      if (!mounted) return;
+      MoeToast.success(context, '已套用到当前伙伴，没有改模型提示词');
     } catch (e) {
-      if (mounted) MoeToast.error(context, '写入失败：$e');
+      if (mounted) MoeToast.error(context, '套用失败：$e');
     }
   }
 
