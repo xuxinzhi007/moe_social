@@ -11,11 +11,23 @@ import '../../models/reply_assist_models.dart';
 import '../../services/reply_assist_overlay_bridge.dart';
 import '../../services/reply_assist_service.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_button.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_pressable.dart';
+import '../../widgets/motion/moe_sheet.dart';
 import 'reply_assist_permission.dart';
+
+/// 仅本页使用，与桌宠悬浮层暖纸贴纸对齐，不改全局主题。
+class _ReplyAssistLook {
+  static const paper = Color(0xFFFBF6EE);
+  static const card = Color(0xFFFFFCF8);
+  static const ink = Color(0xFF5A4A4A);
+  static const stroke = Color(0xFFE8E0D4);
+  static const hint = Color(0xFF8A7E74);
+}
 
 /// Android 读屏 + 全平台粘贴/截图输入；只复制、不代发。
 class ReplyAssistPage extends StatefulWidget {
@@ -28,6 +40,7 @@ class ReplyAssistPage extends StatefulWidget {
 class _ReplyAssistPageState extends State<ReplyAssistPage>
     with WidgetsBindingObserver {
   static const _introPref = 'reply_assist_pet_intro_seen';
+  static const _adultIntimatePref = 'reply_assist_adult_intimate';
 
   final ReplyAssistService _service = ReplyAssistService();
   final TextEditingController _pasteController = TextEditingController();
@@ -42,6 +55,7 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
   bool _overlayPermissionGranted = false;
   bool _overlayVisible = false;
   ReplyAssistPermGap? _focusGap;
+  bool _adultIntimate = false;
 
   bool get _androidPetEnabled =>
       Platform.isAndroid && FeatureFlags.replyAssistPrototype;
@@ -49,6 +63,7 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
   @override
   void initState() {
     super.initState();
+    unawaited(_loadAdultIntimate());
     if (_androidPetEnabled) {
       WidgetsBinding.instance.addObserver(this);
       unawaited(_refreshAndroidStatus());
@@ -69,6 +84,86 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
     if (state == AppLifecycleState.resumed && _androidPetEnabled) {
       unawaited(_refreshAndroidStatus());
     }
+  }
+
+  Future<void> _loadAdultIntimate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool(_adultIntimatePref) ?? false;
+    if (enabled) {
+      await ReplyAssistOverlayBridge.setAdultMode(true);
+    }
+    if (!mounted) return;
+    setState(() => _adultIntimate = enabled);
+  }
+
+  Future<void> _onAdultIntimateChanged(bool enabled) async {
+    if (enabled) {
+      final confirmed = await _confirmAdultIntimate();
+      if (!confirmed || !mounted) return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_adultIntimatePref, enabled);
+    await ReplyAssistOverlayBridge.setAdultMode(enabled);
+    if (!mounted) return;
+    setState(() => _adultIntimate = enabled);
+  }
+
+  Future<bool> _confirmAdultIntimate() async {
+    if (!mounted) return false;
+    final go = await MoeSheet.show<bool>(
+      context,
+      backgroundColor: _ReplyAssistLook.card,
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '开启「成人向 / 亲密对话」',
+                style: TextStyle(
+                  fontSize: MoeTokens.textMd,
+                  fontWeight: FontWeight.w700,
+                  color: _ReplyAssistLook.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '打开后，草稿会按对话本身的语气来写，包括亲密和 18+ 内容，不会再降调、回避或改成疏导。\n\n'
+                '用法还是只复制、不代发。请确认是你本人要打开。',
+                style: TextStyle(
+                  fontSize: MoeTokens.textBase,
+                  height: 1.5,
+                  color: _ReplyAssistLook.ink,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: MoeSecondaryButton(
+                      label: '取消',
+                      expand: true,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: MoePrimaryButton(
+                      label: '确认开启',
+                      expand: true,
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    return go == true;
   }
 
   Future<void> _refreshAndroidStatus() async {
@@ -103,7 +198,7 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
   }
 
   Future<void> _openOverlaySettings() async {
-    MoeToast.info(context, '悬浮窗用于贴纸桌宠，不挡微信正常操作');
+    MoeToast.info(context, '悬浮窗用于贴纸桌宠，不挡当前聊天正常操作');
     try {
       await ReplyAssistOverlayBridge.openOverlaySettings();
     } catch (e) {
@@ -154,25 +249,56 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(_introPref) == true) return true;
     if (!mounted) return false;
-    final go = await showDialog<bool>(
-      context: context,
+    final go = await MoeSheet.show<bool>(
+      context,
+      backgroundColor: _ReplyAssistLook.card,
       builder: (ctx) {
-        return AlertDialog(
-          title: const Text('伙伴·回复参谋'),
-          content: const Text(
-            '会在微信旁显示贴纸小脸：点一下读取可见聊天，给出三条草稿。只复制、不代发。\n\n'
-            '需要无障碍（只读）和悬浮窗。',
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '伙伴·回复参谋',
+                style: TextStyle(
+                  fontSize: MoeTokens.textMd,
+                  fontWeight: FontWeight.w700,
+                  color: _ReplyAssistLook.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '会在常见聊天软件旁显示贴纸小脸：点一下读取当前可见聊天，给出三条草稿。只复制、不代发。\n\n'
+                '需要无障碍（只读）和悬浮窗。',
+                style: TextStyle(
+                  fontSize: MoeTokens.textBase,
+                  height: 1.5,
+                  color: _ReplyAssistLook.ink,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: MoeSecondaryButton(
+                      label: '取消',
+                      expand: true,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: MoePrimaryButton(
+                      label: '显示桌宠',
+                      expand: true,
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('显示桌宠'),
-            ),
-          ],
         );
       },
     );
@@ -210,6 +336,7 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
         pastedText: _pasteController.text.trim(),
         imageUrl: imageUrl,
         messages: const [],
+        adultIntimate: _adultIntimate,
       );
       if (!mounted) return;
       setState(() => _result = result);
@@ -225,7 +352,7 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
     if (!Platform.isAndroid) return;
     try {
       final raw = await ReplyAssistOverlayBridge.channel
-          .invokeMethod<Map>('readWeChatSnapshot');
+          .invokeMethod<Map>('readForegroundSnapshot');
       final map =
           raw == null ? <dynamic, dynamic>{} : Map<String, dynamic>.from(raw);
       final needsFallback = map['needs_screenshot_fallback'] == true;
@@ -254,7 +381,8 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
       final result = await _service.suggest(
         source: 'a11y',
         messages: messages,
-        appPackage: 'com.tencent.mm',
+        appPackage: map['app_package']?.toString() ?? '',
+        adultIntimate: _adultIntimate,
       );
       if (!mounted) return;
       setState(() => _result = result);
@@ -273,10 +401,14 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MoeTokens.pageBackground,
+      backgroundColor: _ReplyAssistLook.paper,
       appBar: AppBar(
         title: const Text('伙伴·回复参谋'),
         centerTitle: true,
+        backgroundColor: _ReplyAssistLook.paper,
+        foregroundColor: _ReplyAssistLook.ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: Stack(
         children: [
@@ -299,28 +431,35 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
                 ),
               ],
               const SizedBox(height: MoeTokens.spaceMd),
-              TextField(
+              const Text(
+                '粘贴可见对话',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _ReplyAssistLook.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              MoeInputField(
                 controller: _pasteController,
+                hintText: '把聊天页里最近几轮复制到这里（iOS / 降级路径）',
                 minLines: 4,
                 maxLines: 8,
-                decoration: const InputDecoration(
-                  labelText: '粘贴可见对话',
-                  hintText: '把聊天页里最近几轮复制到这里（iOS / 降级路径）',
-                  border: OutlineInputBorder(),
-                ),
+                fillColor: _ReplyAssistLook.card,
+                primaryColor: MoeTokens.primary,
               ),
               const SizedBox(height: MoeTokens.spaceSm),
               Row(
                 children: [
-                  TextButton.icon(
+                  MoeSecondaryButton(
+                    label: '相册截图',
+                    icon: Icons.photo_outlined,
                     onPressed: () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_outlined),
-                    label: const Text('相册截图'),
                   ),
-                  TextButton.icon(
+                  const SizedBox(width: 8),
+                  MoeSecondaryButton(
+                    label: '拍照',
+                    icon: Icons.photo_camera_outlined,
                     onPressed: () => _pickImage(ImageSource.camera),
-                    icon: const Icon(Icons.photo_camera_outlined),
-                    label: const Text('拍照'),
                   ),
                 ],
               ),
@@ -333,12 +472,18 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
                 const SizedBox(height: MoeTokens.spaceSm),
               ],
               const SizedBox(height: MoeTokens.spaceMd),
-              FilledButton(
+              _AdultIntimateSwitch(
+                enabled: _adultIntimate,
+                onChanged: _loading ? null : _onAdultIntimateChanged,
+              ),
+              const SizedBox(height: MoeTokens.spaceMd),
+              MoePrimaryButton(
+                label: '生成判断与三条回复',
+                isLoading: _loading,
                 onPressed: _loading
                     ? null
                     : () => _submit(
                         source: _pickedImage != null ? 'image' : 'paste'),
-                child: const Text('生成判断与三条回复'),
               ),
               const SizedBox(height: MoeTokens.spaceLg),
               if (_error != null)
@@ -351,10 +496,64 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
           if (_loading)
             const Positioned.fill(
               child: ColoredBox(
-                color: Color(0x66FFFFFF),
+                color: Color(0x99FBF6EE),
                 child: Center(child: MoeLoading()),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdultIntimateSwitch extends StatelessWidget {
+  const _AdultIntimateSwitch({
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool enabled;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: _ReplyAssistLook.card,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: _ReplyAssistLook.stroke),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '成人向 / 亲密对话',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: _ReplyAssistLook.ink,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '默认关闭，按稳妥来写。打开前会再确认一次；打开后按对方实际语气，包括 18+。',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: _ReplyAssistLook.hint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: enabled,
+            onChanged: onChanged,
+            activeThumbColor: MoeTokens.primary,
+          ),
         ],
       ),
     );
@@ -371,26 +570,35 @@ class _PrivacyBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(MoeTokens.spaceMd),
       decoration: BoxDecoration(
-        color: MoeTokens.surface1,
+        color: _ReplyAssistLook.card,
         borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        border: Border.all(color: MoeTokens.surfaceBorder),
+        border: Border.all(color: _ReplyAssistLook.stroke),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             '安心表达 · 只给草稿',
-            style: TextStyle(fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: _ReplyAssistLook.ink,
+            ),
           ),
           const SizedBox(height: 6),
           const Text(
             '点按才读屏；不会代发消息；不会后台连续偷读。请自行复制后发送。',
-            style: TextStyle(fontSize: 13, height: 1.4),
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: _ReplyAssistLook.hint,
+            ),
           ),
           if (onReadFromBall != null) ...[
             const SizedBox(height: 8),
-            TextButton(
-                onPressed: onReadFromBall, child: const Text('用最近一次读屏生成（面板）')),
+            MoeSecondaryButton(
+              label: '用最近一次读屏生成（面板）',
+              onPressed: onReadFromBall,
+            ),
           ],
         ],
       ),
@@ -424,14 +632,20 @@ class _AndroidControls extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(MoeTokens.spaceMd),
       decoration: BoxDecoration(
-        color: MoeTokens.surface1,
+        color: _ReplyAssistLook.card,
         borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        border: Border.all(color: MoeTokens.surfaceBorder),
+        border: Border.all(color: _ReplyAssistLook.stroke),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('贴纸桌宠（微信白名单 · 侧载内测）'),
+          const Text(
+            '贴纸桌宠（常见聊天软件 · 侧载内测）',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: _ReplyAssistLook.ink,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -462,7 +676,10 @@ class _AndroidControls extends StatelessWidget {
           ),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(onPressed: onRefresh, child: const Text('刷新状态')),
+            child: MoeSecondaryButton(
+              label: '刷新状态',
+              onPressed: onRefresh,
+            ),
           ),
         ],
       ),
@@ -553,9 +770,9 @@ class _ResultPanel extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: MoeTokens.surface1,
+                  color: _ReplyAssistLook.card,
                   borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                  border: Border.all(color: MoeTokens.surfaceBorder),
+                  border: Border.all(color: _ReplyAssistLook.stroke),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,9 +802,9 @@ class _JudgeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: MoeTokens.surface1,
+        color: _ReplyAssistLook.card,
         borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-        border: Border.all(color: MoeTokens.surfaceBorder),
+        border: Border.all(color: _ReplyAssistLook.stroke),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -20,6 +20,7 @@ class ReplyAssistDotsView @JvmOverloads constructor(
         color = 0xFF5E6AD2.toInt()
     }
     private var t = 0f
+    private var paused = false
     private val animator = ValueAnimator.ofFloat(0f, (Math.PI * 2).toFloat()).apply {
         duration = 1100
         repeatCount = ValueAnimator.INFINITE
@@ -30,9 +31,26 @@ class ReplyAssistDotsView @JvmOverloads constructor(
         }
     }
 
+    fun pause() {
+        paused = true
+        if (animator.isStarted) animator.cancel()
+    }
+
+    fun resume() {
+        paused = false
+        startIfVisible()
+    }
+
+    private fun startIfVisible() {
+        if (paused) return
+        if (isAttachedToWindow && visibility == VISIBLE && !animator.isStarted) {
+            animator.start()
+        }
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (visibility == VISIBLE) animator.start()
+        startIfVisible()
     }
 
     override fun onDetachedFromWindow() {
@@ -43,7 +61,7 @@ class ReplyAssistDotsView @JvmOverloads constructor(
     override fun onVisibilityChanged(changedView: View, visibility: Int) {
         super.onVisibilityChanged(changedView, visibility)
         if (visibility == VISIBLE) {
-            if (!animator.isStarted) animator.start()
+            startIfVisible()
         } else {
             animator.cancel()
         }

@@ -8,5 +8,4 @@
     android:canRetrieveWindowContent="true"
     android:canPerformGestures="false"
     android:canTakeScreenshot="false"
-    android:canRequestFilterKeyEvents="false"
-    android:packageNames="com.tencent.mm" />
+    android:canRequestFilterKeyEvents="false" />

@@ -40,6 +40,12 @@ func RegisterChatStreamRoute(s *khttp.Server, app *companionapp.AppService) {
 	r.GET("/api/companion/chat/context", func(ctx khttp.Context) error {
 		return handleChatContext(ctx, app)
 	})
+	r.DELETE("/api/companion/chat/history", func(ctx khttp.Context) error {
+		return handleClearChatHistory(ctx, app)
+	})
+	r.POST("/api/companion/chat/history/opening", func(ctx khttp.Context) error {
+		return handleSeedOpening(ctx, app)
+	})
 }
 
 func rootCause(err error) string {
@@ -65,6 +71,47 @@ func handleChatContext(ctx khttp.Context, app *companionapp.AppService) error {
 		return err
 	}
 	return ctx.Result(http.StatusOK, usage)
+}
+
+func handleClearChatHistory(ctx khttp.Context, app *companionapp.AppService) error {
+	userID, err := actorUserID(ctx.Request().Context())
+	if err != nil {
+		return err
+	}
+	if err := app.ClearChatHistory(ctx.Request().Context(), userID); err != nil {
+		return err
+	}
+	return ctx.Result(http.StatusOK, map[string]any{"ok": true})
+}
+
+type seedOpeningRequest struct {
+	Text string `json:"text"`
+}
+
+func handleSeedOpening(ctx khttp.Context, app *companionapp.AppService) error {
+	userID, err := actorUserID(ctx.Request().Context())
+	if err != nil {
+		return err
+	}
+	var req seedOpeningRequest
+	if err := json.NewDecoder(ctx.Request().Body).Decode(&req); err != nil {
+		return kerrors.BadRequest("INVALID_REQUEST", "请求格式无效")
+	}
+	log, err := app.SeedOpeningMessage(ctx.Request().Context(), userID, req.Text)
+	if err != nil {
+		return err
+	}
+	if log == nil {
+		return ctx.Result(http.StatusOK, map[string]any{"message": nil})
+	}
+	return ctx.Result(http.StatusOK, map[string]any{
+		"message": map[string]any{
+			"id":         log.ID,
+			"role":       log.Role,
+			"content":    log.Content,
+			"created_at": log.CreatedAt,
+		},
+	})
 }
 
 func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {

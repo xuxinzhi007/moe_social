@@ -51,13 +51,18 @@ func (s *AppService) Suggest(ctx context.Context, userID uint, in *replyassistv1
 			Text: m.GetText(),
 		})
 	}
-	result, err := engine.Suggest(ctx, userID, replyassistbiz.SuggestInput{
-		Source:     in.GetSource(),
-		Messages:   msgs,
-		PastedText: in.GetPastedText(),
-		ImageURL:   in.GetImageUrl(),
-		AppPackage: in.GetAppPackage(),
-	})
+	input := replyassistbiz.SuggestInput{
+		Source:        in.GetSource(),
+		Messages:      msgs,
+		PastedText:    in.GetPastedText(),
+		ImageURL:      in.GetImageUrl(),
+		AppPackage:    in.GetAppPackage(),
+		AdultIntimate: in.GetAdultIntimate(),
+	}
+	if t := in.GetTargetMessage(); t != nil {
+		input.TargetMessage = replyassistbiz.ChatMessage{Role: t.GetRole(), Text: t.GetText()}
+	}
+	result, err := engine.Suggest(ctx, userID, input)
 	if err != nil {
 		return nil, kerrors.BadRequest("REPLY_ASSIST_FAILED", err.Error())
 	}

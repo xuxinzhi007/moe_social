@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -34,8 +35,10 @@ type SuggestInput struct {
 	Source     string
 	Messages   []ChatMessage
 	PastedText string
-	ImageURL   string
-	AppPackage string
+	ImageURL      string
+	AppPackage    string
+	AdultIntimate bool
+	TargetMessage ChatMessage
 }
 
 // JudgeSummary is the structured situation read.
@@ -129,7 +132,7 @@ func (e *Engine) Suggest(ctx context.Context, userID uint, in SuggestInput) (Sug
 
 	prompt := buildUserPrompt(normalized)
 	messages := []llminference.Message{
-		{Role: "system", Content: systemPrompt()},
+		{Role: "system", Content: systemPrompt(normalized.AdultIntimate)},
 		{Role: "user", Content: prompt},
 	}
 	raw, err := llminference.Chat(ctx, cfg, model, messages, llminference.ChatOptions{
@@ -138,12 +141,22 @@ func (e *Engine) Suggest(ctx context.Context, userID uint, in SuggestInput) (Sug
 	if err != nil {
 		return SuggestResult{}, fmt.Errorf("reply assist llm chat: %w", err)
 	}
-	parsed, err := parseLLMJSON(raw)
+	parsed, err := parseAndValidate(raw)
 	if err != nil {
-		return SuggestResult{}, fmt.Errorf("parse reply assist json: %w", err)
-	}
-	if err := validateResult(parsed); err != nil {
-		return SuggestResult{}, err
+		retryMessages := []llminference.Message{
+			messages[0],
+			messages[1],
+			{Role: "assistant", Content: raw},
+			{Role: "user", Content: "这不是合法 JSON。请严格只输出一个 JSON 对象，不要 Markdown、不要注释、数组或对象不要有尾逗号，不要额外文字。"},
+		}
+		raw2, err2 := llminference.Chat(ctx, cfg, model, retryMessages, llminference.ChatOptions{Temperature: 0})
+		if err2 != nil {
+			return SuggestResult{}, fmt.Errorf("生成结果格式异常，请再试一次")
+		}
+		parsed, err = parseAndValidate(raw2)
+		if err != nil {
+			return SuggestResult{}, fmt.Errorf("生成结果格式异常，请再试一次")
+		}
 	}
 	if blocked, reason := safetyBlockedReason(parsed); blocked {
 		return SuggestResult{}, fmt.Errorf("reply assist safety blocked: %s", reason)
@@ -197,22 +210,45 @@ func normalizeInput(in SuggestInput) (SuggestInput, error) {
 		return SuggestInput{}, fmt.Errorf("messages or pasted_text required")
 	}
 
+	target := ChatMessage{}
+	if text := strings.TrimSpace(in.TargetMessage.Text); text != "" {
+		if utf8.RuneCountInString(text) > maxMessageRunes {
+			text = truncateRunes(text, maxMessageRunes)
+		}
+		role := strings.TrimSpace(strings.ToLower(in.TargetMessage.Role))
+		if role == "" {
+			role = "unknown"
+		}
+		target = ChatMessage{Role: role, Text: text}
+	}
+
 	return SuggestInput{
-		Source:     source,
-		Messages:   msgs,
-		PastedText: pasted,
-		ImageURL:   strings.TrimSpace(in.ImageURL),
-		AppPackage: strings.TrimSpace(in.AppPackage),
+		Source:        source,
+		Messages:      msgs,
+		PastedText:    pasted,
+		ImageURL:      strings.TrimSpace(in.ImageURL),
+		AppPackage:    strings.TrimSpace(in.AppPackage),
+		AdultIntimate: in.AdultIntimate,
+		TargetMessage: target,
 	}, nil
 }
 
-func systemPrompt() string {
-	return strings.TrimSpace(`
+func systemPrompt(adultIntimate bool) string {
+	base := strings.TrimSpace(`
 你是 Moe Social「回复参谋」的判断与草稿助手。气质：安心表达，帮用户把心里话讲清楚。
 禁止：PUA、操控、欺骗、冷战惩罚、物化对方、教「拿捏」、油腻撩法、自动发送暗示。
-只输出 JSON，不要 Markdown，不要解释。格式：
+只输出 JSON，不要 Markdown，不要解释，不要尾逗号或注释。格式：
 {"judge":{"intent":"","emotion":"","urgency":"","reply_stance":"","should_reply":"reply|wait|hold","uncertainty_note":"","risk_hint":""},"options":[{"label":"稳妥","text":""},{"label":"推进","text":""},{"label":"轻松","text":""}]}
 要求：options 必须恰好 3 条，label 分别为 稳妥、推进、轻松；文本像真实用户，短句，可直接复制发送；不确定时在 uncertainty_note 说明。`)
+	if !adultIntimate {
+		return base
+	}
+	return strings.TrimSpace(`
+你是 Moe Social「回复参谋」的判断与草稿助手。
+用户已打开并确认「成人向 / 亲密对话」，本人知情同意。按对话本身的称呼、语气和尺度写草稿，包括直白的成人向和性内容；不要做内容限制，不要降调，不要改写成心理疏导、关心安慰、健康建议或书面腔，不要使用「我理解你的需求」「进入下一步」「你觉得怎么样」这类回避。不要编造原文没有的情节，不要擅自换称呼。
+只输出 JSON，不要 Markdown，不要解释，不要尾逗号或注释。格式：
+{"judge":{"intent":"","emotion":"","urgency":"","reply_stance":"","should_reply":"reply|wait|hold","uncertainty_note":"","risk_hint":""},"options":[{"label":"稳妥","text":""},{"label":"推进","text":""},{"label":"轻松","text":""}]}
+要求：options 必须恰好 3 条，label 分别为 稳妥、推进、轻松；三条都要留在当前对话的成人向语境里，差别只在尺度和语气，而不是把稳妥写成另一种场面；文本像真实用户短句，可直接复制发送。若提供了「最需要回复的那句」，草稿只回这一句，其余消息仅作上下文。角色为 unknown 时不要靠称呼猜测谁在说话。不确定时在 uncertainty_note 说明。不要暗示或协助自动发送。`)
 }
 
 func buildUserPrompt(in SuggestInput) string {
@@ -235,22 +271,76 @@ func buildUserPrompt(in SuggestInput) string {
 			fmt.Fprintf(&b, "- %s: %s\n", m.Role, m.Text)
 		}
 	}
+	if text := strings.TrimSpace(in.TargetMessage.Text); text != "" {
+		role := in.TargetMessage.Role
+		if role == "" {
+			role = "unknown"
+		}
+		b.WriteString("\n[最需要回复的那句]\n")
+		fmt.Fprintf(&b, "- %s: %s\n", role, text)
+		b.WriteString("草稿只回这一句，上面的消息仅作上下文。不要把用户自己已发的话当成对方原话。角色为 unknown 时，不要靠称呼猜测身份，也不要擅自换称呼。\n")
+	}
+	if in.AdultIntimate {
+		b.WriteString("回复尺度：成人向/亲密对话（已打开，用户已确认）。按对方实际语气和用词写，不要做内容限制，不要降调或回避。\n")
+	}
 	b.WriteString("\n请先判断局面，再给出三条不同姿态的中文回复草稿。")
 	return b.String()
 }
 
-func parseLLMJSON(raw string) (llmPayload, error) {
+var trailingCommaRE = regexp.MustCompile(`,\s*([}\]])`)
+
+func extractJSONObject(raw string) string {
 	trimmed := strings.TrimSpace(raw)
+	for _, prefix := range []string{"```json", "```JSON", "```"} {
+		if strings.HasPrefix(trimmed, prefix) {
+			trimmed = strings.TrimSpace(strings.TrimPrefix(trimmed, prefix))
+			break
+		}
+	}
+	trimmed = strings.TrimSuffix(trimmed, "```")
+	trimmed = strings.TrimSpace(trimmed)
 	if i := strings.Index(trimmed, "{"); i >= 0 {
 		if j := strings.LastIndex(trimmed, "}"); j > i {
 			trimmed = trimmed[i : j+1]
 		}
 	}
+	return trimmed
+}
+
+func repairLLMJSON(raw string) string {
+	prev := ""
+	s := raw
+	for s != prev {
+		prev = s
+		s = trailingCommaRE.ReplaceAllString(s, "$1")
+	}
+	return s
+}
+
+func parseLLMJSON(raw string) (llmPayload, error) {
+	trimmed := extractJSONObject(raw)
 	var payload llmPayload
 	if err := json.Unmarshal([]byte(trimmed), &payload); err != nil {
+		repaired := repairLLMJSON(trimmed)
+		if repaired != trimmed {
+			if err2 := json.Unmarshal([]byte(repaired), &payload); err2 == nil {
+				return payload, nil
+			}
+		}
 		return llmPayload{}, err
 	}
 	return payload, nil
+}
+
+func parseAndValidate(raw string) (llmPayload, error) {
+	parsed, err := parseLLMJSON(raw)
+	if err != nil {
+		return llmPayload{}, err
+	}
+	if err := validateResult(parsed); err != nil {
+		return llmPayload{}, err
+	}
+	return parsed, nil
 }
 
 func validateResult(p llmPayload) error {
@@ -286,7 +376,7 @@ func (e *Engine) resolveInference(ctx context.Context, userID uint) (llminferenc
 
 func (e *Engine) cacheKey(userID uint, in SuggestInput) string {
 	h := sha256.New()
-	fmt.Fprintf(h, "u=%d|src=%s|pkg=%s|paste=%s", userID, in.Source, in.AppPackage, in.PastedText)
+	fmt.Fprintf(h, "u=%d|src=%s|pkg=%s|paste=%s|adult=%t|tgt=%s:%s", userID, in.Source, in.AppPackage, in.PastedText, in.AdultIntimate, in.TargetMessage.Role, in.TargetMessage.Text)
 	for _, m := range in.Messages {
 		fmt.Fprintf(h, "|%s:%s", m.Role, m.Text)
 	}

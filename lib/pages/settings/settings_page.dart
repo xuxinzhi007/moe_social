@@ -233,7 +233,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (FeatureFlags.replyAssistPrototype)
         {
           'title': '伙伴·回复参谋',
-          'description': '微信旁贴纸桌宠，读屏给草稿，只复制不代发',
+          'description': '聊天软件旁贴纸桌宠，读屏给草稿，只复制不代发',
           'icon': Icons.chat_bubble_outline_rounded,
           'color': MoeTokens.primary,
           'module': 'AI 与助手',
@@ -553,7 +553,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   MoeMenuItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     title: '伙伴·回复参谋',
-                    subtitle: '微信旁贴纸桌宠，读屏给草稿，只复制不代发',
+                    subtitle: '聊天软件旁贴纸桌宠，读屏给草稿，只复制不代发',
                     color: MoeTokens.primary,
                     onTap: () => Navigator.pushNamed(
                       context,

@@ -12,12 +12,16 @@ class OverlaySnapshot {
     required this.reason,
     required this.appPackage,
     required this.messages,
+    this.adultIntimate = false,
+    this.targetMessage,
   });
 
   final bool needsScreenshotFallback;
   final String reason;
   final String appPackage;
   final List<ReplyAssistChatMessage> messages;
+  final bool adultIntimate;
+  final ReplyAssistChatMessage? targetMessage;
 }
 
 OverlaySnapshot parseOverlaySnapshot(Object? raw) {
@@ -47,7 +51,30 @@ OverlaySnapshot parseOverlaySnapshot(Object? raw) {
     reason: map['reason']?.toString() ?? '',
     appPackage: map['app_package']?.toString() ?? '',
     messages: messages,
+    adultIntimate: map['adult_intimate'] == true,
+    targetMessage: _parseMessage(map['target_message']) ??
+        _parseTargetFromMessages(messagesRaw),
   );
+}
+
+ReplyAssistChatMessage? _parseMessage(Object? raw) {
+  if (raw is! Map) return null;
+  final text = raw['text']?.toString() ?? '';
+  if (text.isEmpty) return null;
+  return ReplyAssistChatMessage(
+    role: raw['role']?.toString() ?? 'unknown',
+    text: text,
+  );
+}
+
+ReplyAssistChatMessage? _parseTargetFromMessages(Object? raw) {
+  if (raw is! List) return null;
+  for (final item in raw) {
+    if (item is Map && item['target'] == true) {
+      return _parseMessage(item);
+    }
+  }
+  return null;
 }
 
 /// 启动时挂上 Native→Dart `onOverlaySuggest`，让桌宠当场闭环。
@@ -97,6 +124,13 @@ class ReplyAssistOverlayBridge {
     return await channel.invokeMethod<bool>('toggleOverlay') ?? false;
   }
 
+  /// 把回复参谋页上的「成人向 / 亲密对话」开关同步给原生，供浮窗请求携带。
+  static Future<void> setAdultMode(bool enabled) async {
+    try {
+      await channel.invokeMethod<void>('setAdultMode', enabled);
+    } catch (_) {}
+  }
+
   static Future<dynamic> _onMethodCall(MethodCall call) async {
     if (call.method != 'onOverlaySuggest') {
       throw MissingPluginException(call.method);
@@ -108,20 +142,20 @@ class ReplyAssistOverlayBridge {
   static Future<Map<String, dynamic>> handleOverlaySuggest(Object? raw) async {
     final snap = parseOverlaySnapshot(raw);
     if (snap.needsScreenshotFallback || snap.messages.isEmpty) {
-      final notWeChat = snap.reason == 'not_wechat';
       return <String, dynamic>{
         'ok': false,
         'fallback': snap.reason.isEmpty ? 'empty_tree' : snap.reason,
-        'needs_screenshot_fallback': !notWeChat,
-        'message': notWeChat ? '现在不在微信聊天页～' : '读不到字，去 App 贴图～',
+        'needs_screenshot_fallback': true,
+        'message': '读不到字，去 App 贴图～',
       };
     }
     try {
       final result = await _service.suggest(
         source: 'a11y',
         messages: snap.messages,
-        appPackage:
-            snap.appPackage.isEmpty ? 'com.tencent.mm' : snap.appPackage,
+        appPackage: snap.appPackage,
+        adultIntimate: snap.adultIntimate,
+        targetMessage: snap.targetMessage,
       );
       if (result.needsScreenshotFallback || result.options.isEmpty) {
         return <String, dynamic>{

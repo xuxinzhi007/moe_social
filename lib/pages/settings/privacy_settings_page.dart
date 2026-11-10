@@ -351,7 +351,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage>
                 MoeMenuItem(
                   icon: Icons.layers_outlined,
                   title: '悬浮窗',
-                  subtitle: '贴纸桌宠层，不挡微信正常操作',
+                  subtitle: '贴纸桌宠层，不挡当前聊天正常操作',
                   color: MoeTokens.secondary,
                   onTap: _openOverlaySettings,
                   trailing: _chip(

@@ -1,12 +1,14 @@
 package com.example.moe_social
 
 import android.accessibilityservice.AccessibilityService
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import android.widget.Toast
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONArray
@@ -14,13 +16,12 @@ import org.json.JSONObject
 
 /**
  * 读屏回复参谋 — 只读 UI 树，不点击、不输入、不代发。
- * 包名白名单：微信。点按贴纸桌宠触发一次读屏，当场出复制气泡。
+ * 不写死聊天应用白名单；点按贴纸桌宠时读取当前前台聊天窗口可见文本。
  */
 class ReplyAssistAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "ReplyAssistA11y"
-        private const val WECHAT_PACKAGE = "com.tencent.mm"
         private const val SUGGEST_TIMEOUT_MS = 25_000L
 
         @Volatile
@@ -47,12 +48,21 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         }
     }
 
+    private data class WindowRoot(
+        val root: AccessibilityNodeInfo,
+        val pkg: String,
+        val active: Boolean,
+        val focused: Boolean,
+        val area: Int,
+    )
+
     private val mainHandler = Handler(Looper.getMainLooper())
     private var petOverlay: ReplyAssistPetOverlay? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+        ReplyAssistFlutterHost.ensureChannel(this)
         Log.i(TAG, "ReplyAssist 无障碍已连接（只读模式）")
     }
 
@@ -90,14 +100,19 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         val layer = overlay()
         if (layer.isBusy()) return
         layer.showListening()
-        val snapshot = readWeChatSnapshot()
+        // 先让「正在看」画出来，再在下一帧读树，减轻点按时主线程掉帧。
+        mainHandler.post { continueAfterListening(layer) }
+    }
+
+    private fun continueAfterListening(layer: ReplyAssistPetOverlay) {
+        if (!layer.isVisible() || !layer.isBusy()) return
+        val snapshot = readForegroundSnapshot()
         ReplyAssistBridge.lastSnapshot = snapshot
-        if (!layer.isVisible()) return
         val reason = snapshot.optString("reason")
         val count = snapshot.optJSONArray("messages")?.length() ?: 0
         if (snapshot.optBoolean("needs_screenshot_fallback") || count == 0) {
             val msg = when (reason) {
-                "not_wechat" -> getString(R.string.reply_assist_fallback_not_wechat)
+                "own_app", "not_chat" -> getString(R.string.reply_assist_fallback_not_chat)
                 else -> getString(R.string.reply_assist_fallback_empty)
             }
             layer.showFallback(msg)
@@ -106,7 +121,16 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
 
         layer.showThinking()
         val token = layer.beginRequest()
-        val channel = ReplyAssistBridge.channel
+        requestOverlaySuggest(layer, token, snapshot)
+    }
+
+    /** 请求挂在无障碍服务上：用缓存引擎的通道，不依赖 MainActivity 还活着。 */
+    private fun requestOverlaySuggest(
+        layer: ReplyAssistPetOverlay,
+        token: Int,
+        snapshot: JSONObject,
+    ) {
+        val channel = ReplyAssistFlutterHost.ensureChannel(this)
         if (channel == null) {
             degradeOpenApp(layer)
             return
@@ -191,52 +215,172 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         layer.showOptions(options.take(3))
     }
 
-    /** 主动读取当前前台微信窗口可见文本（best-effort）。 */
-    fun readWeChatSnapshot(): JSONObject {
-        val root = rootInActiveWindow
-        if (root == null) {
+    /** 主动读取当前前台聊天窗口可见文本（best-effort，不限定聊天应用）。 */
+    fun readForegroundSnapshot(): JSONObject {
+        val picked = resolveForegroundRoot()
+        if (picked == null) {
             return emptySnapshot(needsFallback = true, reason = "no_root")
         }
-        val pkg = root.packageName?.toString().orEmpty()
-        if (pkg != WECHAT_PACKAGE) {
+        val (root, pkg, skipReason) = picked
+        if (skipReason != null) {
             root.recycle()
-            return emptySnapshot(needsFallback = false, reason = "not_wechat")
+            return emptySnapshot(
+                needsFallback = false,
+                reason = skipReason,
+                appPackage = pkg,
+            )
         }
         val lines = mutableListOf<JSONObject>()
-        collectTextNodes(root, lines)
+        val rootBounds = Rect()
+        root.getBoundsInScreen(rootBounds)
+        val screenWidth = rootBounds.width().takeIf { it > 0 }
+            ?: resources.displayMetrics.widthPixels
+        val headerHeight = (88 * resources.displayMetrics.density).toInt()
+        collectTextNodes(root, lines, screenWidth, rootBounds.top, headerHeight)
         root.recycle()
 
         if (lines.isEmpty()) {
-            return emptySnapshot(needsFallback = true, reason = "empty_tree")
+            return emptySnapshot(
+                needsFallback = true,
+                reason = "empty_tree",
+                appPackage = pkg,
+            )
         }
+        val kept = lines.takeLast(24)
+        val targetIndex = ReplyAssistSnapshotPolicy.pickTargetIndex(
+            kept.map { it.optString("role") },
+        )
         val messages = JSONArray()
-        lines.takeLast(24).forEach { messages.put(it) }
-        return JSONObject()
+        kept.forEachIndexed { index, item ->
+            if (index == targetIndex) {
+                item.put("target", true)
+            }
+            messages.put(item)
+        }
+        val json = JSONObject()
             .put("needs_screenshot_fallback", false)
-            .put("app_package", WECHAT_PACKAGE)
+            .put("app_package", pkg)
+            .put("adult_intimate", ReplyAssistAdultSettings.isEnabled(this))
             .put("messages", messages)
+        if (targetIndex >= 0) {
+            json.put("target_message", JSONObject(kept[targetIndex].toString()))
+        }
+        return json
     }
 
-    private fun collectTextNodes(node: AccessibilityNodeInfo, out: MutableList<JSONObject>) {
-        val text = node.text?.toString()?.trim().orEmpty()
-        if (text.isNotEmpty() && text.length in 1..500) {
-            out.add(
-                JSONObject()
-                    .put("role", "unknown")
-                    .put("text", text),
+    /**
+     * 兼容旧 MethodChannel / Flutter 调用名；实现与 [readForegroundSnapshot] 相同。
+     */
+    fun readWeChatSnapshot(): JSONObject = readForegroundSnapshot()
+
+    /**
+     * 从可交互窗口里挑真正的前台应用窗，跳过输入法、系统窗和 Moe 自己。
+     */
+    private fun resolveForegroundRoot(): Triple<AccessibilityNodeInfo, String, String?>? {
+        val self = packageName
+        val ranked = mutableListOf<WindowRoot>()
+        val skipped = mutableListOf<WindowRoot>()
+        val windowList = try {
+            windows
+        } catch (_: Exception) {
+            emptyList()
+        }
+        for (window in windowList) {
+            if (window.type != AccessibilityWindowInfo.TYPE_APPLICATION) continue
+            val root = window.root ?: continue
+            val pkg = root.packageName?.toString().orEmpty()
+            val bounds = Rect()
+            window.getBoundsInScreen(bounds)
+            val item = WindowRoot(
+                root = root,
+                pkg = pkg,
+                active = window.isActive,
+                focused = window.isFocused,
+                area = (bounds.width() * bounds.height()).coerceAtLeast(0),
             )
+            if (ReplyAssistSnapshotPolicy.shouldSkipPackage(pkg, self)) {
+                skipped.add(item)
+            } else {
+                ranked.add(item)
+            }
+        }
+
+        val best = ranked.maxWithOrNull(
+            compareBy<WindowRoot> { it.active }
+                .thenBy { it.focused }
+                .thenBy { it.area },
+        )
+        recycleRoots(ranked, except = best?.root)
+        recycleRoots(skipped, except = null)
+        if (best != null) {
+            return Triple(best.root, best.pkg, null)
+        }
+
+        val fallback = rootInActiveWindow ?: return null
+        val pkg = fallback.packageName?.toString().orEmpty()
+        return Triple(fallback, pkg, ReplyAssistSnapshotPolicy.skipReason(pkg, self))
+    }
+
+    private fun recycleRoots(items: List<WindowRoot>, except: AccessibilityNodeInfo?) {
+        items.forEach { item ->
+            if (item.root !== except) {
+                item.root.recycle()
+            }
+        }
+    }
+
+    private fun collectTextNodes(
+        node: AccessibilityNodeInfo,
+        out: MutableList<JSONObject>,
+        screenWidth: Int,
+        windowTop: Int,
+        headerHeight: Int,
+    ) {
+        val editable = node.isEditable
+        val password = try {
+            node.isPassword
+        } catch (_: Exception) {
+            false
+        }
+        val raw = node.text?.toString()
+        val bounds = Rect()
+        node.getBoundsInScreen(bounds)
+        val inHeader = ReplyAssistSnapshotPolicy.isLikelyHeader(bounds.top, windowTop, headerHeight)
+        if (!inHeader && ReplyAssistSnapshotPolicy.shouldKeepNodeText(raw, editable, password)) {
+            val text = raw!!.trim()
+            val role = ReplyAssistSnapshotPolicy.inferRole(bounds.left, bounds.right, screenWidth)
+            val existing = ReplyAssistSnapshotPolicy.shouldReplaceExisting(
+                out.map { it.optString("text") },
+                text,
+            )
+            if (existing >= 0) {
+                val keepRole = if (role != "unknown") role else out[existing].optString("role")
+                out.removeAt(existing)
+                out.add(JSONObject().put("role", keepRole).put("text", text))
+            } else {
+                out.add(JSONObject().put("role", role).put("text", text))
+            }
         }
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
-            collectTextNodes(child, out)
+            collectTextNodes(child, out, screenWidth, windowTop, headerHeight)
             child.recycle()
         }
     }
 
-    private fun emptySnapshot(needsFallback: Boolean, reason: String): JSONObject {
-        return JSONObject()
+    private fun emptySnapshot(
+        needsFallback: Boolean,
+        reason: String,
+        appPackage: String = "",
+    ): JSONObject {
+        val json = JSONObject()
             .put("needs_screenshot_fallback", needsFallback)
             .put("reason", reason)
             .put("messages", JSONArray())
+        if (appPackage.isNotEmpty()) {
+            json.put("app_package", appPackage)
+        }
+        json.put("adult_intimate", ReplyAssistAdultSettings.isEnabled(this))
+        return json
     }
 }

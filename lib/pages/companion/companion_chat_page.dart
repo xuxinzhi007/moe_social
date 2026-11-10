@@ -11,7 +11,9 @@ import '../../constants/feature_flags.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../pages/ai/ai_provider_profiles_page.dart';
 import '../../providers/companion_presence_provider.dart';
+import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_cloud_config_service.dart';
+import '../../services/ai_starter_templates.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_provider_usage_service.dart';
 import '../../services/ai_tts_helper.dart';
@@ -262,7 +264,33 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     } catch (_) {}
   }
 
+  Future<String> _openingForCurrentCompanion() async {
+    final agentId = _profile.agentId.trim();
+    if (agentId.isEmpty) return '';
+    try {
+      final mine = await AiAgentCloudService().getAgents();
+      for (final agent in mine) {
+        if (agent.id == agentId) return agent.openingMessage.trim();
+      }
+    } catch (_) {}
+    try {
+      final published = await AiAgentCloudService().fetchPublicAgents();
+      for (final agent in published) {
+        if (agent.id == agentId) return agent.openingMessage.trim();
+      }
+    } catch (_) {}
+    for (final template in AiStarterTemplates.agentTemplates) {
+      final agent = AiStarterTemplates.buildAgentFromTemplate(
+        template,
+        modelName: 'template',
+      );
+      if (agent.id == agentId) return agent.openingMessage.trim();
+    }
+    return '';
+  }
+
   Future<void> _loadInitialData() async {
+
     try {
       final snapshot = await CompanionService().getSnapshot();
       List<CompanionChatLogData> history = const [];
@@ -279,6 +307,19 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             ),
           )
           .toList(growable: true);
+      _profile = snapshot.profile;
+      if (initialItems.isEmpty) {
+        try {
+          final opening = await _openingForCurrentCompanion();
+          if (opening.isNotEmpty) {
+            final seeded = await CompanionService().seedOpeningMessage(opening);
+            final text = (seeded?.content.trim().isNotEmpty ?? false)
+                ? seeded!.content.trim()
+                : opening;
+            initialItems.add(_ChatItem(role: 'assistant', content: text));
+          }
+        } catch (_) {}
+      }
       if (initialItems.isEmpty && snapshot.state.greeting.isNotEmpty) {
         initialItems.add(
           _ChatItem(

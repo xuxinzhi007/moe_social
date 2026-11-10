@@ -1699,6 +1699,20 @@ func (s *fakeStore) GetChatLogByID(
 	return nil, nil
 }
 
+func (s *fakeStore) ClearMainChatLogs(_ context.Context, userID uint) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	kept := s.logs[:0]
+	for _, row := range s.logs {
+		if row.UserID != userID || row.HeroID != "" {
+			kept = append(kept, row)
+		}
+	}
+	s.logs = kept
+	return nil
+}
+
 func (s *fakeStore) ClaimNextMemoryExtractionJob(
 	_ context.Context,
 	now, leaseUntil time.Time,
@@ -1931,4 +1945,48 @@ func (s *fakeLifeStore) ListRecentEventLogsByEntity(
 		out = out[:limit]
 	}
 	return out, nil
+}
+
+func TestClearChatHistoryLeavesHeroLogs(t *testing.T) {
+	store := newFakeStore()
+	store.logs = []model.CompanionChatLog{
+		{ID: 1, UserID: 7, HeroID: "", Role: "user", Content: "旧对话"},
+		{ID: 2, UserID: 7, HeroID: "hero-a", Role: "user", Content: "英雄对话"},
+		{ID: 3, UserID: 8, HeroID: "", Role: "user", Content: "别人的对话"},
+	}
+	engine := &Engine{store: store}
+	if err := engine.ClearChatHistory(context.Background(), 7); err != nil {
+		t.Fatalf("ClearChatHistory() error = %v", err)
+	}
+	if _, err := engine.SeedOpeningMessage(context.Background(), 7, "  你好，我是新角色。  "); err != nil {
+		t.Fatalf("SeedOpeningMessage() error = %v", err)
+	}
+	main, err := store.ListRecentChatLogs(context.Background(), 7, 10)
+	if err != nil {
+		t.Fatalf("ListRecentChatLogs() error = %v", err)
+	}
+	if len(main) != 1 || main[0].Role != "assistant" || main[0].Content != "你好，我是新角色。" {
+		t.Fatalf("main logs = %#v", main)
+	}
+	hero, err := store.ListRecentHeroChatLogs(context.Background(), 7, "hero-a", 10)
+	if err != nil {
+		t.Fatalf("ListRecentHeroChatLogs() error = %v", err)
+	}
+	if len(hero) != 1 || hero[0].Content != "英雄对话" {
+		t.Fatalf("hero logs = %#v", hero)
+	}
+	other, err := store.ListRecentChatLogs(context.Background(), 8, 10)
+	if err != nil {
+		t.Fatalf("other logs error = %v", err)
+	}
+	if len(other) != 1 || other[0].Content != "别人的对话" {
+		t.Fatalf("other logs = %#v", other)
+	}
+	seeded, err := engine.SeedOpeningMessage(context.Background(), 7, "第二次不应写入")
+	if err != nil {
+		t.Fatalf("second SeedOpeningMessage() error = %v", err)
+	}
+	if seeded != nil {
+		t.Fatalf("second seed should be a no-op, got %#v", seeded)
+	}
 }

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Moe Social</string>
-    <string name="reply_assist_accessibility_description">Moe 回复参谋：仅在您点按贴纸小脸时读取微信聊天页可见文字，用于生成回复草稿。不会代发消息、不会自动点击或输入。</string>
+    <string name="reply_assist_accessibility_description">Moe 回复参谋：仅在您点按贴纸小脸时读取当前前台聊天界面可见文字，用于生成回复草稿。不会代发消息、不会自动点击或输入。</string>
     <string name="reply_assist_copy">复制</string>
     <string name="reply_assist_listening">正在看聊天…</string>
     <string name="reply_assist_thinking">想怎么回比较安心…</string>
     <string name="reply_assist_copied">已复制 · 去贴就好</string>
     <string name="reply_assist_fallback_empty">读不到字，去 App 贴图～</string>
-    <string name="reply_assist_fallback_not_wechat">现在不在微信聊天页～</string>
+    <string name="reply_assist_fallback_not_chat">现在不像聊天页，读不到字～</string>
     <string name="reply_assist_open_app">请先打开 Moe，让回复参谋在线</string>
     <string name="reply_assist_timeout">想太久了，再点一次～</string>
     <string name="reply_assist_pet_cd">Moe 回复参谋桌宠</string>

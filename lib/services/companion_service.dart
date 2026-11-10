@@ -1027,6 +1027,28 @@ class CompanionService {
         .toList(growable: false);
   }
 
+  Future<void> clearChatHistory() async {
+    _requireUserId();
+    await ApiService.delete('/api/companion/chat/history');
+  }
+
+  Future<CompanionChatLogData?> seedOpeningMessage(String text) async {
+    _requireUserId();
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return null;
+    final result = await ApiService.post(
+      '/api/companion/chat/history/opening',
+      body: {'text': trimmed},
+    );
+    final raw = result['message'];
+    final nested = result['data'];
+    final message = raw is Map
+        ? raw
+        : (nested is Map && nested['message'] is Map ? nested['message'] : null);
+    if (message is! Map) return null;
+    return CompanionChatLogData.fromMap(Map<String, dynamic>.from(message));
+  }
+
   String _readMarkerKey(String userId) => 'companion_chat_read_at_$userId';
 
   Future<DateTime?> loadChatReadAt() async {

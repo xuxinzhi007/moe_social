@@ -2,6 +2,7 @@ package com.example.moe_social
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
 import android.os.Build
@@ -29,8 +30,15 @@ class MainActivity : FlutterActivity() {
     private var lastImeIdLogged: String? = null
     private var lastIsAdbLogged: Boolean? = null
 
+    override fun provideFlutterEngine(context: Context): FlutterEngine? {
+        return FlutterEngineCache.getInstance().get(ReplyAssistFlutterHost.ENGINE_ID)
+    }
+
+    override fun shouldDestroyEngineWithHost(): Boolean = false
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        ReplyAssistFlutterHost.bind(this, flutterEngine)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.moe_social/feishu").setMethodCallHandler { call, result ->
             when (call.method) {
@@ -179,75 +187,11 @@ class MainActivity : FlutterActivity() {
             }
         })
 
-        val replyChannel = MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            ReplyAssistBridge.CHANNEL,
-        )
-        ReplyAssistBridge.channel = replyChannel
-        replyChannel.setMethodCallHandler { call, result ->
-            when (call.method) {
-                "isAccessibilityEnabled" -> {
-                    result.success(ReplyAssistAccessibilityService.isServiceEnabled(this))
-                }
-                "isOverlayVisible" -> {
-                    val svc = ReplyAssistAccessibilityService.getInstance()
-                    result.success(svc?.isOverlayVisible() == true)
-                }
-                "isOverlayPermissionGranted" -> {
-                    result.success(canDrawOverlays())
-                }
-                "openAccessibilitySettings" -> {
-                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    result.success(true)
-                }
-                "openOverlaySettings" -> {
-                    openOverlayPermissionSettings()
-                    result.success(true)
-                }
-                "toggleOverlay" -> {
-                    if (!canDrawOverlays()) {
-                        result.error("OVERLAY_OFF", "需要悬浮窗权限", null)
-                        return@setMethodCallHandler
-                    }
-                    val svc = ReplyAssistAccessibilityService.getInstance()
-                    if (svc == null) {
-                        result.error("A11Y_OFF", "请先开启 Moe 回复参谋无障碍", null)
-                        return@setMethodCallHandler
-                    }
-                    result.success(svc.toggleOverlay())
-                }
-                "readWeChatSnapshot" -> {
-                    val svc = ReplyAssistAccessibilityService.getInstance()
-                    val json = svc?.readWeChatSnapshot() ?: ReplyAssistBridge.lastSnapshot
-                    result.success(ReplyAssistBridge.jsonToMap(json))
-                }
-                else -> result.notImplemented()
-            }
-        }
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-        if (ReplyAssistBridge.channel != null) {
-            ReplyAssistBridge.channel = null
-        }
+        // 引擎和回复参谋通道留给无障碍服务继续用，不随 Activity 断开。
         super.cleanUpFlutterEngine(flutterEngine)
-    }
-
-    private fun canDrawOverlays(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(this)
-        } else {
-            true
-        }
-    }
-
-    private fun openOverlayPermissionSettings() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:$packageName"),
-        )
-        startActivity(intent)
     }
 
     private fun isFeishuInstalled(): Boolean {

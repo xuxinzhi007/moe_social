@@ -419,6 +419,12 @@ func (s *store) ListRecentChatLogs(ctx context.Context, userID uint, limit int) 
 	return rows, nil
 }
 
+func (s *store) ClearMainChatLogs(ctx context.Context, userID uint) error {
+	return s.db.WithContext(ctx).
+		Where("user_id = ? AND hero_id = ''", userID).
+		Delete(&model.CompanionChatLog{}).Error
+}
+
 func (s *store) ListRecentHeroChatLogs(
 	ctx context.Context,
 	userID uint,

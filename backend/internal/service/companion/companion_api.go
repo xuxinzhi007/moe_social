@@ -259,6 +259,22 @@ func (s *AppService) ListChatHistory(ctx context.Context, userID uint, in *compa
 	}, nil
 }
 
+func (s *AppService) ClearChatHistory(ctx context.Context, userID uint) error {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return err
+	}
+	return engine.ClearChatHistory(ctx, userID)
+}
+
+func (s *AppService) SeedOpeningMessage(ctx context.Context, userID uint, text string) (*companionbiz.ChatLog, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	return engine.SeedOpeningMessage(ctx, userID, text)
+}
+
 func (s *AppService) ListRelationshipEvents(
 	ctx context.Context,
 	userID uint,

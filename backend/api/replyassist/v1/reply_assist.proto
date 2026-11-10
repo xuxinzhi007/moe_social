@@ -22,6 +22,10 @@ message ReplyAssistSuggestRequest {
   // MVP：客户端可传截图 URL 或留空；服务端仍以文本判读为主。
   string image_url = 4;
   string app_package = 5;
+  // 打开后按对话本身的亲密/成人向语气写草稿；默认 false，保持稳妥口径。
+  bool adult_intimate = 6;
+  // 读屏标出的最需要回复的那一句；有则草稿只回这一句，其余消息仅作上下文。
+  ReplyAssistChatMessage target_message = 7;
 }
 
 message ReplyAssistJudgeSummary {

@@ -13,6 +13,8 @@ class ReplyAssistService {
     String pastedText = '',
     String? imageUrl,
     String appPackage = '',
+    bool adultIntimate = false,
+    ReplyAssistChatMessage? targetMessage,
   }) async {
     final body = <String, dynamic>{
       'source': source,
@@ -20,6 +22,8 @@ class ReplyAssistService {
       'pasted_text': pastedText,
       if (imageUrl != null && imageUrl.isNotEmpty) 'image_url': imageUrl,
       if (appPackage.isNotEmpty) 'app_package': appPackage,
+      'adult_intimate': adultIntimate,
+      if (targetMessage != null) 'target_message': targetMessage.toJson(),
     };
     final json = await ApiService.post('/api/reply-assist/suggest', body: body);
     if (!ApiResponse.isSuccess(json)) {

@@ -42,7 +42,7 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     '社区「AI 助手」浮标是贴纸桌宠的前身，不再作为第二套长期悬浮。'
-                    '微信旁救场请用伙伴·回复参谋；App 内陪聊请用 AI 伙伴。',
+                    '聊天软件里救场请用伙伴·回复参谋；App 内陪聊请用 AI 伙伴。',
                     style: TextStyle(color: Colors.grey[700], height: 1.5),
                   ),
                   if (FeatureFlags.replyAssistPrototype) ...[

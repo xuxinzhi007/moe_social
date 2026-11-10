@@ -48,6 +48,8 @@ type Store interface {
 	// ListRecentHeroChatLogs 只读指定英雄的闲聊记录（hero_id 命名空间，与主伙伴隔离）。
 	ListRecentHeroChatLogs(ctx context.Context, userID uint, heroID string, limit int) ([]model.CompanionChatLog, error)
 	GetChatLogByID(ctx context.Context, userID, chatLogID uint) (*model.CompanionChatLog, error)
+	// ClearMainChatLogs 只清主伙伴记录，不动英雄闲聊。
+	ClearMainChatLogs(ctx context.Context, userID uint) error
 	ClaimNextMemoryExtractionJob(
 		ctx context.Context,
 		now, leaseUntil time.Time,

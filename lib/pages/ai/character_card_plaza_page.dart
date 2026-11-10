@@ -7,6 +7,7 @@ import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/moe_loading.dart';
@@ -16,6 +17,7 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_motion.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/motion/moe_sheet.dart';
 import 'agent_editor_page.dart';
 
 /// 身份卡广场：官方推荐模板 + 公开角色卡 + 我的专属卡。
@@ -265,13 +267,45 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
   Future<void> _applyCard(AiAgent agent) async {
     final persona = _cardPersona(agent);
     final override = agent.systemPrompt.trim();
-    if (persona.isEmpty && override.isEmpty) {
+    final opening = agent.openingMessage.trim();
+    if (persona.isEmpty && override.isEmpty && opening.isEmpty && agent.name.trim().isEmpty) {
       MoeToast.error(context, '这张卡没有可写入的人设');
       return;
     }
     try {
       final current = await CompanionService().getProfile();
       if (!mounted) return;
+      final history = await CompanionService().listChatHistory(limit: 1);
+      if (!mounted) return;
+      final hasHistory = history.isNotEmpty;
+      final switching = current.agentId != agent.id;
+      var clearHistory = false;
+      if (hasHistory && switching) {
+        final decision = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('要换到这张卡了'),
+            content: const Text('当前伙伴已经有聊天记录。换卡后要保留，还是清空后重新开始？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'keep'),
+                child: const Text('保留记录'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'clear'),
+                child: const Text('清空记录'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        if (decision == null) return;
+        clearHistory = decision == 'clear';
+      }
       final name = agent.name.trim().isNotEmpty ? agent.name.trim() : current.name;
       final avatar = (agent.avatarPath ?? '').trim();
       final useAvatar = avatar.startsWith('http://') || avatar.startsWith('https://');
@@ -283,8 +317,18 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
         agentId: agent.id,
       );
       await CompanionService().updateProfile(next);
+      if (clearHistory) {
+        await CompanionService().clearChatHistory();
+      }
+      if (opening.isNotEmpty && (clearHistory || !hasHistory)) {
+        await CompanionService().seedOpeningMessage(opening);
+      }
       if (!mounted) return;
-      MoeToast.success(context, '已套用到当前伙伴，没有改模型提示词');
+      if (clearHistory) {
+        MoeToast.success(context, '已套用到当前伙伴，聊天记录已清空');
+      } else {
+        MoeToast.success(context, '已套用到当前伙伴，没有改模型提示词');
+      }
     } catch (e) {
       if (mounted) MoeToast.error(context, '套用失败：$e');
     }

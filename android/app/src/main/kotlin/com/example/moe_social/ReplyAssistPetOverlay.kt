@@ -1,13 +1,17 @@
 package com.example.moe_social
 
 import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.PowerManager
 import android.graphics.PixelFormat
 import android.graphics.Point
+import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -16,6 +20,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.LinearLayout
@@ -25,7 +30,10 @@ import kotlin.math.hypot
 
 /**
  * 贴纸桌宠 WindowManager 层：拖/点分离，点开气泡、再点或点空白收回。
- * 不抢焦点，窗外触摸交给微信。
+ * 不抢焦点，窗外触摸交给下层应用。
+ *
+ * 展开时先 measure/layout，再按小脸屏幕锚点一次写入窗口位置；
+ * 限位只约束小脸，避免整窗被气泡撑大后被系统推到中间。
  */
 class ReplyAssistPetOverlay(
     private val context: Context,
@@ -58,8 +66,23 @@ class ReplyAssistPetOverlay(
     private var downParamY = 0
     private var faceAnchorX = 0
     private var faceAnchorY = 0
+    private var hasFaceAnchor = false
+    private var windowOriginX = 0
+    private var windowOriginY = 0
 
-    private var breathe: ObjectAnimator? = null
+    private var idleBounce: ObjectAnimator? = null
+    private var thinkDots: ReplyAssistDotsView? = null
+    private var screenInteractive = true
+    private var screenReceiverRegistered = false
+
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(c: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> pauseAllMotion()
+                Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT -> resumeAllMotion()
+            }
+        }
+    }
 
     fun isVisible(): Boolean = visible
 
@@ -93,8 +116,10 @@ class ReplyAssistPetOverlay(
         thinkRow = view.findViewById(R.id.reply_assist_think_row)
         thinkText = view.findViewById(R.id.reply_assist_think_text)
         copiedView = view.findViewById(R.id.reply_assist_copied)
+        thinkDots = view.findViewById(R.id.reply_assist_think_dots)
         bindFaceTouch(face)
         bindOutsideTouch(view)
+        registerScreenReceiver()
 
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -114,7 +139,7 @@ class ReplyAssistPetOverlay(
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = (screen.x - dp(60)).coerceAtLeast(0)
+            x = (screen.x - dp(56)).coerceAtLeast(0)
             y = dp(120)
         }
         params = lp
@@ -125,8 +150,8 @@ class ReplyAssistPetOverlay(
 
     fun hide() {
         requestToken += 1
-        breathe?.cancel()
-        breathe = null
+        stopIdleMotion()
+        unregisterScreenReceiver()
         val view = root
         if (view != null) {
             try {
@@ -140,6 +165,7 @@ class ReplyAssistPetOverlay(
         thinkRow = null
         thinkText = null
         copiedView = null
+        thinkDots = null
         params = null
         visible = false
         phase = Phase.IDLE
@@ -150,7 +176,7 @@ class ReplyAssistPetOverlay(
         rememberFaceAnchor()
         phase = Phase.LISTENING
         face?.expression = ReplyAssistPetExpression.LISTENING
-        stopBreathe()
+        stopIdleMotion()
         copiedView?.visibility = View.GONE
         optionsStack?.visibility = View.GONE
         thinkText?.text = context.getString(R.string.reply_assist_listening)
@@ -163,7 +189,7 @@ class ReplyAssistPetOverlay(
         rememberFaceAnchor()
         phase = Phase.THINKING
         face?.expression = ReplyAssistPetExpression.THINKING
-        stopBreathe()
+        stopIdleMotion()
         copiedView?.visibility = View.GONE
         optionsStack?.visibility = View.GONE
         thinkText?.text = context.getString(R.string.reply_assist_thinking)
@@ -176,7 +202,7 @@ class ReplyAssistPetOverlay(
         rememberFaceAnchor()
         phase = Phase.FALLBACK
         face?.expression = ReplyAssistPetExpression.THINKING
-        stopBreathe()
+        stopIdleMotion()
         optionsStack?.visibility = View.GONE
         copiedView?.visibility = View.GONE
         thinkText?.text = message
@@ -189,7 +215,7 @@ class ReplyAssistPetOverlay(
         rememberFaceAnchor()
         phase = Phase.READY
         face?.expression = ReplyAssistPetExpression.READY
-        stopBreathe()
+        stopIdleMotion()
         thinkRow?.visibility = View.GONE
         copiedView?.visibility = View.GONE
         val stack = optionsStack ?: return
@@ -208,12 +234,12 @@ class ReplyAssistPetOverlay(
         stack.alpha = 0f
         stack.visibility = View.VISIBLE
         stack.animate().alpha(1f).setDuration(220).start()
-        updateStackGravity()
         relayoutKeepingFaceAnchor()
     }
 
     fun collapse() {
         requestToken += 1
+        rememberFaceAnchor()
         phase = Phase.IDLE
         face?.expression = ReplyAssistPetExpression.IDLE
         thinkRow?.visibility = View.GONE
@@ -222,7 +248,7 @@ class ReplyAssistPetOverlay(
             it.removeAllViews()
             it.visibility = View.GONE
         }
-        startBreathe()
+        startIdleMotion()
         relayoutKeepingFaceAnchor()
     }
 
@@ -244,6 +270,7 @@ class ReplyAssistPetOverlay(
 
     private val hideCopied = Runnable {
         if (phase != Phase.SUCCESS) return@Runnable
+        rememberFaceAnchor()
         copiedView?.visibility = View.GONE
         phase = Phase.READY
         face?.expression = ReplyAssistPetExpression.READY
@@ -273,16 +300,15 @@ class ReplyAssistPetOverlay(
                     if (dragging) {
                         lp.x = downParamX + dx.toInt()
                         lp.y = downParamY + dy.toInt()
-                        clampToScreen()
+                        clampFaceToScreen()
                         root?.let { wm.updateViewLayout(it, lp) }
                     }
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     if (dragging) {
-                        updateStackGravity()
-                        clampToScreen()
-                        root?.let { wm.updateViewLayout(it, lp) }
+                        rememberFaceAnchor()
+                        relayoutKeepingFaceAnchor()
                     } else if (event.actionMasked == MotionEvent.ACTION_UP) {
                         onFaceClick()
                     }
@@ -322,56 +348,121 @@ class ReplyAssistPetOverlay(
 
     private fun rememberFaceAnchor() {
         val f = face ?: return
+        val lp = params ?: return
+        val view = root ?: return
         val loc = IntArray(2)
         f.getLocationOnScreen(loc)
-        if (loc[0] != 0 || loc[1] != 0 || f.width > 0) {
+        if (loc[0] != 0 || loc[1] != 0 || f.isLaidOut) {
             faceAnchorX = loc[0]
             faceAnchorY = loc[1]
+            hasFaceAnchor = true
+        }
+        val rootLoc = IntArray(2)
+        view.getLocationOnScreen(rootLoc)
+        if (view.width > 0 || rootLoc[0] != 0 || rootLoc[1] != 0) {
+            windowOriginX = rootLoc[0] - lp.x
+            windowOriginY = rootLoc[1] - lp.y
         }
     }
 
     private fun relayoutKeepingFaceAnchor() {
         val view = root ?: return
         val lp = params ?: return
-        view.post {
-            if (root !== view) return@post
-            updateStackGravity()
-            val f = face ?: return@post
-            val loc = IntArray(2)
-            f.getLocationOnScreen(loc)
-            if (faceAnchorX != 0 || faceAnchorY != 0) {
-                lp.x -= loc[0] - faceAnchorX
-                lp.y -= loc[1] - faceAnchorY
-            }
-            clampToScreen()
-            try {
-                wm.updateViewLayout(view, lp)
-            } catch (_: Exception) {
-            }
+        val f = face ?: return
+
+        updateStackGravity()
+        measureOverlay(view)
+
+        // 气泡在顶边放不下时，把窗口整体下移，避免裁切；小脸可以略微下移。
+        val bounds = visibleBounds()
+        if (lp.y + windowOriginY < bounds.top) {
+            lp.y = bounds.top - windowOriginY
+        }
+
+        clampFaceToScreen()
+        try {
+            wm.updateViewLayout(view, lp)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun measureOverlay(view: View) {
+        val lp = params ?: return
+        val f = face ?: return
+        val widthSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        view.measure(widthSpec, heightSpec)
+        val maxW = (visibleBounds().width() * 0.72f).toInt().coerceAtLeast(dp(200))
+        var w = view.measuredWidth.coerceAtLeast(1)
+        var h = view.measuredHeight.coerceAtLeast(1)
+        if (w > maxW) {
+            view.measure(
+                View.MeasureSpec.makeMeasureSpec(maxW, View.MeasureSpec.EXACTLY),
+                heightSpec,
+            )
+            w = view.measuredWidth.coerceAtMost(maxW).coerceAtLeast(1)
+            h = view.measuredHeight.coerceAtLeast(1)
+        }
+        view.layout(0, 0, w, h)
+        lp.width = w
+        lp.height = h
+        if (hasFaceAnchor) {
+            lp.x = faceAnchorX - windowOriginX - f.left
+            lp.y = faceAnchorY - windowOriginY - f.top
         }
     }
 
     private fun updateStackGravity() {
         val view = root as? LinearLayout ?: return
-        val screen = screenSize()
+        val screen = visibleBounds()
         val f = face
-        val loc = IntArray(2)
-        f?.getLocationOnScreen(loc)
-        val cx = if (f != null) loc[0] + f.width / 2 else (params?.x ?: 0)
-        val onRight = cx > screen.x / 2
+        val faceW = f?.width ?: dp(44)
+        val cx = if (f != null && (faceAnchorX != 0 || f.width > 0)) {
+            faceAnchorX + faceW / 2
+        } else {
+            (params?.x ?: 0) + faceW / 2
+        }
+        val onRight = cx > (screen.left + screen.right) / 2
         val g = if (onRight) Gravity.END else Gravity.START
         view.gravity = g
         optionsStack?.gravity = g
     }
 
-    private fun clampToScreen() {
+    private fun clampFaceToScreen() {
         val lp = params ?: return
-        val view = root ?: return
-        val screen = screenSize()
-        val w = if (view.width > 0) view.width else dp(60)
-        val h = if (view.height > 0) view.height else dp(60)
-        lp.x = lp.x.coerceIn(0, (screen.x - w).coerceAtLeast(0))
-        lp.y = lp.y.coerceIn(0, (screen.y - h).coerceAtLeast(0))
+        val f = face ?: return
+        val bounds = visibleBounds()
+        val faceW = if (f.width > 0) f.width else dp(44)
+        val faceH = if (f.height > 0) f.height else dp(44)
+        val faceLeft = f.left
+        val faceTop = f.top
+        val faceScreenX = lp.x + windowOriginX + faceLeft
+        val faceScreenY = lp.y + windowOriginY + faceTop
+        val clampedX = faceScreenX.coerceIn(bounds.left, (bounds.right - faceW).coerceAtLeast(bounds.left))
+        val clampedY = faceScreenY.coerceIn(bounds.top, (bounds.bottom - faceH).coerceAtLeast(bounds.top))
+        lp.x += clampedX - faceScreenX
+        lp.y += clampedY - faceScreenY
+    }
+
+    private fun visibleBounds(): Rect {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val metrics = wm.currentWindowMetrics
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars(),
+            )
+            val b = metrics.bounds
+            return Rect(
+                b.left + insets.left,
+                b.top + insets.top,
+                b.right - insets.right,
+                b.bottom - insets.bottom,
+            )
+        }
+        val rect = Rect()
+        root?.getWindowVisibleDisplayFrame(rect)
+        if (rect.width() > 0 && rect.height() > 0) return rect
+        val p = screenSize()
+        return Rect(0, 0, p.x, p.y)
     }
 
     private fun screenSize(): Point {
@@ -386,27 +477,67 @@ class ReplyAssistPetOverlay(
         }
     }
 
-    private fun startBreathe() {
+    private fun pauseAllMotion() {
+        screenInteractive = false
+        stopIdleMotion()
+        face?.pauseAnimations()
+        thinkDots?.pause()
+    }
+
+    private fun resumeAllMotion() {
+        if (screenInteractive) return
+        screenInteractive = true
+        face?.resumeAnimations()
+        thinkDots?.resume()
+        if (visible && phase == Phase.IDLE) startIdleMotion()
+    }
+
+    private fun registerScreenReceiver() {
+        if (screenReceiverRegistered) return
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        val app = context.applicationContext
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            app.registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            app.registerReceiver(screenReceiver, filter)
+        }
+        screenReceiverRegistered = true
+        val pm = app.getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (!pm.isInteractive) pauseAllMotion()
+    }
+
+    private fun unregisterScreenReceiver() {
+        if (!screenReceiverRegistered) return
+        try {
+            context.applicationContext.unregisterReceiver(screenReceiver)
+        } catch (_: Exception) {
+        }
+        screenReceiverRegistered = false
+    }
+
+    private fun startIdleMotion() {
+        if (!screenInteractive) return
         val f = face ?: return
-        stopBreathe()
-        val anim = ObjectAnimator.ofPropertyValuesHolder(
-            f,
-            PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.06f, 1f),
-            PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.06f, 1f),
-        ).apply {
-            duration = 2400
+        stopIdleMotion()
+        val dy = -2.4f * density
+        val anim = ObjectAnimator.ofFloat(f, "bounceOffset", 0f, dy, 0f).apply {
+            duration = 2600
             repeatCount = ObjectAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
         }
-        breathe = anim
+        idleBounce = anim
         anim.start()
     }
 
-    private fun stopBreathe() {
-        breathe?.cancel()
-        breathe = null
-        face?.scaleX = 1f
-        face?.scaleY = 1f
+    private fun stopIdleMotion() {
+        idleBounce?.cancel()
+        idleBounce = null
+        face?.bounceOffset = 0f
     }
 
     private fun dp(value: Int): Int = (value * density).toInt()

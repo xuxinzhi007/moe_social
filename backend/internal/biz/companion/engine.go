@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"backend/model"
 	"backend/pkg/llminference"
@@ -884,6 +885,45 @@ func (e *Engine) ListChatHistory(ctx context.Context, userID uint, limit int) ([
 		out = append(out, modelToChatLog(&r))
 	}
 	return out, nil
+}
+
+// ClearChatHistory 清空当前账号的主伙伴聊天记录，不影响英雄闲聊。
+func (e *Engine) ClearChatHistory(ctx context.Context, userID uint) error {
+	if err := e.store.ClearMainChatLogs(ctx, userID); err != nil {
+		return fmt.Errorf("clear companion chat history for user %d: %w", userID, err)
+	}
+	return nil
+}
+
+const companionOpeningRuneLimit = 2000
+
+// SeedOpeningMessage 仅在还没有主伙伴聊天记录时，把身份卡开场白写成第一条助手消息。
+func (e *Engine) SeedOpeningMessage(ctx context.Context, userID uint, text string) (*ChatLog, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil, nil
+	}
+	existing, err := e.store.ListRecentChatLogs(ctx, userID, 1)
+	if err != nil {
+		return nil, fmt.Errorf("check companion chat history for user %d: %w", userID, err)
+	}
+	if len(existing) > 0 {
+		return nil, nil
+	}
+	if n := utf8.RuneCountInString(text); n > companionOpeningRuneLimit {
+		text = string([]rune(text)[:companionOpeningRuneLimit])
+	}
+	row := &model.CompanionChatLog{
+		UserID:  userID,
+		HeroID:  "",
+		Role:    "assistant",
+		Content: text,
+	}
+	if err := e.store.AppendChatLog(ctx, row); err != nil {
+		return nil, fmt.Errorf("seed companion opening for user %d: %w", userID, err)
+	}
+	out := modelToChatLog(row)
+	return &out, nil
 }
 
 // ListRelationshipEvents returns the newest meaningful bond events.
