@@ -12,7 +12,6 @@ import '../../models/ai_provider_profile.dart';
 import '../../pages/ai/ai_provider_profiles_page.dart';
 import '../../providers/companion_presence_provider.dart';
 import '../../services/ai_agent_cloud_service.dart';
-import '../../services/ai_cloud_config_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_provider_usage_service.dart';
@@ -20,12 +19,11 @@ import '../../services/ai_tts_helper.dart';
 import '../../services/companion_model_presence.dart';
 import '../../services/companion_service.dart';
 import '../../services/comfy_draw_preferences.dart';
-import '../../services/llm_api_service.dart';
 import '../../services/companion_interaction_coordinator.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
-import '../../widgets/ai/ai_sheet.dart';
+import '../../widgets/ai/chat_model_picker.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/ai/message_bubble.dart';
@@ -290,7 +288,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   }
 
   Future<void> _loadInitialData() async {
-
     try {
       final snapshot = await CompanionService().getSnapshot();
       List<CompanionChatLogData> history = const [];
@@ -1181,91 +1178,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   }
 
   Future<void> _pickChatModel() async {
-    List<LlmCatalogModel> models;
-    try {
-      models = await LlmApiService.fetchCatalog();
-    } catch (error) {
-      if (!mounted) return;
-      MoeToast.error(context, '模型列表读取失败：$error');
-      return;
-    }
-    models = models.where((item) => item.name.isNotEmpty).toList();
-    if (!mounted) return;
-    if (models.isEmpty) {
-      MoeToast.error(context, '小主机上没有可读到的模型');
-      return;
-    }
-    final bases = models.where((item) => !item.derived).toList();
-    final mine = models.where((item) => item.derived).toList();
-    final selected = await AiSheet.show<String>(
+    final selected = await ChatModelPicker.pickAndSave(
       context: context,
-      title: '切换模型',
-      subtitle: '在聊天里换。基座提示词只能看，自己的模型可以改。',
-      initialChildSize: 0.62,
-      minChildSize: 0.32,
-      maxChildSize: 0.9,
-      child: Column(
-        children: [
-          if (bases.isNotEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(4, 4, 4, 6),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('小主机上的模型'),
-              ),
-            ),
-          for (final model in bases)
-            MoeActionRow(
-              icon: Icons.memory_rounded,
-              title: model.name,
-              selected: model.name == _chatModel,
-              subtitle: Text(
-                [
-                  if (model.contextLength > 0) '上下文 ${model.contextLength}',
-                  model.thinking ? '可以思考' : '没有思考能力',
-                  '提示词只能看',
-                ].join(' · '),
-              ),
-              onTap: () => Navigator.of(context).pop(model.name),
-            ),
-          if (mine.isNotEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(4, 12, 4, 6),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('我的模型'),
-              ),
-            ),
-          for (final model in mine)
-            MoeActionRow(
-              icon: Icons.tune_rounded,
-              title: model.name,
-              selected: model.name == _chatModel,
-              subtitle: Text(
-                [
-                  if (model.contextLength > 0) '上下文 ${model.contextLength}',
-                  '可以改提示词',
-                ].join(' · '),
-              ),
-              onTap: () => Navigator.of(context).pop(model.name),
-            ),
-        ],
-      ),
+      currentModel: _chatModel,
     );
-    if (selected == null || selected == _chatModel || !mounted) return;
-    try {
-      final cloud = AiCloudConfigService();
-      final snapshot = await cloud.fetch();
-      final preferences =
-          Map<String, dynamic>.from(snapshot?.preferences ?? {});
-      preferences['builtin_chat_model'] = selected;
-      await cloud.savePreferences(preferences);
-    } catch (error) {
-      if (!mounted) return;
-      MoeToast.error(context, '模型没有切换成功：$error');
-      return;
-    }
-    if (!mounted) return;
+    if (selected == null || !mounted) return;
     setState(() => _chatModel = selected);
     MoeToast.success(context, '已切换到 $selected');
     unawaited(_loadChatContext());

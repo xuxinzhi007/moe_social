@@ -7,10 +7,17 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/feature_flags.dart';
+import '../../models/ai_provider_profile.dart';
 import '../../models/reply_assist_models.dart';
+import '../../pages/ai/ai_provider_profiles_page.dart';
+import '../../services/ai_cloud_config_service.dart';
+import '../../services/ai_provider_service.dart';
+import '../../services/chat_model_selection.dart';
+import '../../services/llm_api_service.dart';
 import '../../services/reply_assist_overlay_bridge.dart';
 import '../../services/reply_assist_service.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/ai/chat_model_picker.dart';
 import '../../widgets/moe_button.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_input_field.dart';
@@ -56,6 +63,9 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
   bool _overlayVisible = false;
   ReplyAssistPermGap? _focusGap;
   bool _adultIntimate = false;
+  bool _modelLoading = true;
+  String _builtinChatModel = '';
+  ChatModelSelectionDisplay? _modelDisplay;
 
   bool get _androidPetEnabled =>
       Platform.isAndroid && FeatureFlags.replyAssistPrototype;
@@ -64,24 +74,25 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
   void initState() {
     super.initState();
     unawaited(_loadAdultIntimate());
+    unawaited(_loadChatModelSelection());
+    WidgetsBinding.instance.addObserver(this);
     if (_androidPetEnabled) {
-      WidgetsBinding.instance.addObserver(this);
       unawaited(_refreshAndroidStatus());
     }
   }
 
   @override
   void dispose() {
-    if (_androidPetEnabled) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
+    WidgetsBinding.instance.removeObserver(this);
     _pasteController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _androidPetEnabled) {
+    if (state != AppLifecycleState.resumed) return;
+    unawaited(_loadChatModelSelection());
+    if (_androidPetEnabled) {
       unawaited(_refreshAndroidStatus());
     }
   }
@@ -94,6 +105,67 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
     }
     if (!mounted) return;
     setState(() => _adultIntimate = enabled);
+  }
+
+  Future<void> _loadChatModelSelection() async {
+    String? builtin;
+    String? serverDefault;
+    AiProviderProfile? customProvider;
+    try {
+      final snapshot = await AiCloudConfigService().fetch();
+      builtin = ChatModelSelection.builtinModelFromPreferences(
+        snapshot?.preferences,
+      );
+    } catch (_) {}
+    try {
+      final selection = await AiProviderService().resolveActiveProvider();
+      if (!selection.profile.isBuiltinBackend) {
+        customProvider = selection.profile;
+      }
+    } catch (_) {}
+    try {
+      final config = await LlmApiService.getConfig();
+      serverDefault = ChatModelSelection.serverDefaultFromConfig(config);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _modelLoading = false;
+      _builtinChatModel = builtin ?? '';
+      _modelDisplay = ChatModelSelection.resolve(
+        activeProvider: customProvider,
+        builtinChatModel: builtin,
+        serverDefaultModel: serverDefault,
+      );
+    });
+  }
+
+  Future<void> _pickChatModel() async {
+    final selected = await ChatModelPicker.pickAndSave(
+      context: context,
+      currentModel: _builtinChatModel,
+    );
+    if (selected == null || !mounted) return;
+    final usingCustom = _modelDisplay?.usesCustomProvider == true;
+    final source = usingCustom ? _modelDisplay!.title : selected;
+    await _loadChatModelSelection();
+    if (!mounted) return;
+    if (usingCustom) {
+      MoeToast.success(
+        context,
+        '已记下 $selected。当前仍走来源模型 $source，改回来源后才会用它。',
+      );
+    } else {
+      MoeToast.success(context, '已切换到 $selected');
+    }
+  }
+
+  Future<void> _openProviderSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const AiProviderProfilesPage(),
+      ),
+    );
+    if (mounted) unawaited(_loadChatModelSelection());
   }
 
   Future<void> _onAdultIntimateChanged(bool enabled) async {
@@ -477,6 +549,18 @@ class _ReplyAssistPageState extends State<ReplyAssistPage>
                 onChanged: _loading ? null : _onAdultIntimateChanged,
               ),
               const SizedBox(height: MoeTokens.spaceMd),
+              _ChatModelCard(
+                loading: _modelLoading,
+                display: _modelDisplay,
+                onSwitchModel:
+                    _loading ? null : () => unawaited(_pickChatModel()),
+                onChangeProvider: !_modelLoading &&
+                        _modelDisplay?.usesCustomProvider == true &&
+                        !_loading
+                    ? () => unawaited(_openProviderSettings())
+                    : null,
+              ),
+              const SizedBox(height: MoeTokens.spaceMd),
               MoePrimaryButton(
                 label: '生成判断与三条回复',
                 isLoading: _loading,
@@ -554,6 +638,108 @@ class _AdultIntimateSwitch extends StatelessWidget {
             onChanged: onChanged,
             activeThumbColor: MoeTokens.primary,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatModelCard extends StatelessWidget {
+  const _ChatModelCard({
+    required this.loading,
+    required this.display,
+    required this.onSwitchModel,
+    this.onChangeProvider,
+  });
+
+  final bool loading;
+  final ChatModelSelectionDisplay? display;
+  final VoidCallback? onSwitchModel;
+  final VoidCallback? onChangeProvider;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = loading
+        ? '正在读取当前模型'
+        : (display?.title ?? ChatModelSelection.unsetFallbackLabel);
+    final subtitle = loading
+        ? ChatModelSelection.sharedWithCompanionHint
+        : (display?.subtitle ?? ChatModelSelection.sharedWithCompanionHint);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: _ReplyAssistLook.card,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: _ReplyAssistLook.stroke),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MoePressable(
+            onTap: onSwitchModel,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '当前模型',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _ReplyAssistLook.ink,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.expand_more_rounded,
+                  size: 20,
+                  color: onSwitchModel == null
+                      ? _ReplyAssistLook.hint
+                      : MoeTokens.primary,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          MoePressable(
+            onTap: onSwitchModel,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: MoeTokens.textMd,
+                          fontWeight: FontWeight.w700,
+                          color: MoeTokens.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: _ReplyAssistLook.hint,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (onChangeProvider != null) ...[
+            const SizedBox(height: 10),
+            MoeSecondaryButton(
+              label: '更换模型来源',
+              icon: Icons.tune_rounded,
+              onPressed: onChangeProvider,
+            ),
+          ],
         ],
       ),
     );

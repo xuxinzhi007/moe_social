@@ -180,8 +180,9 @@ class ReplyAssistPetOverlay(
         copiedView?.visibility = View.GONE
         optionsStack?.visibility = View.GONE
         thinkText?.text = context.getString(R.string.reply_assist_listening)
-        thinkRow?.visibility = View.VISIBLE
+        thinkRow?.visibility = View.INVISIBLE
         relayoutKeepingFaceAnchor()
+        thinkRow?.visibility = View.VISIBLE
     }
 
     fun showThinking() {
@@ -193,8 +194,9 @@ class ReplyAssistPetOverlay(
         copiedView?.visibility = View.GONE
         optionsStack?.visibility = View.GONE
         thinkText?.text = context.getString(R.string.reply_assist_thinking)
-        thinkRow?.visibility = View.VISIBLE
+        thinkRow?.visibility = View.INVISIBLE
         relayoutKeepingFaceAnchor()
+        thinkRow?.visibility = View.VISIBLE
     }
 
     fun showFallback(message: String) {
@@ -206,8 +208,9 @@ class ReplyAssistPetOverlay(
         optionsStack?.visibility = View.GONE
         copiedView?.visibility = View.GONE
         thinkText?.text = message
-        thinkRow?.visibility = View.VISIBLE
+        thinkRow?.visibility = View.INVISIBLE
         relayoutKeepingFaceAnchor()
+        thinkRow?.visibility = View.VISIBLE
     }
 
     fun showOptions(options: List<Pair<String, String>>) {
@@ -232,9 +235,10 @@ class ReplyAssistPetOverlay(
             stack.addView(row)
         }
         stack.alpha = 0f
+        stack.visibility = View.INVISIBLE
+        relayoutKeepingFaceAnchor()
         stack.visibility = View.VISIBLE
         stack.animate().alpha(1f).setDuration(220).start()
-        relayoutKeepingFaceAnchor()
     }
 
     fun collapse() {
@@ -260,10 +264,13 @@ class ReplyAssistPetOverlay(
         face?.expression = ReplyAssistPetExpression.SUCCESS
         copiedView?.apply {
             alpha = 0f
+            visibility = View.INVISIBLE
+        }
+        relayoutKeepingFaceAnchor()
+        copiedView?.apply {
             visibility = View.VISIBLE
             animate().alpha(1f).setDuration(160).start()
         }
-        relayoutKeepingFaceAnchor()
         mainHandler.removeCallbacks(hideCopied)
         mainHandler.postDelayed(hideCopied, 1800)
     }
@@ -371,18 +378,42 @@ class ReplyAssistPetOverlay(
         val f = face ?: return
 
         updateStackGravity()
+        applyVerticalOrder(panelAbove = true)
         measureOverlay(view)
 
-        // 气泡在顶边放不下时，把窗口整体下移，避免裁切；小脸可以略微下移。
-        val bounds = visibleBounds()
-        if (lp.y + windowOriginY < bounds.top) {
-            lp.y = bounds.top - windowOriginY
+        // 上方放不下气泡时，改到小脸下面展开，不要把小脸整窗下推。
+        if (hasFaceAnchor) {
+            val faceH = if (f.height > 0) f.height else dp(44)
+            val panelH = (lp.height - faceH).coerceAtLeast(0)
+            val bounds = visibleBounds()
+            val spaceAbove = faceAnchorY - bounds.top
+            val spaceBelow = bounds.bottom - (faceAnchorY + faceH)
+            if (panelH > spaceAbove + dp(8) && spaceBelow > spaceAbove) {
+                applyVerticalOrder(panelAbove = false)
+                measureOverlay(view)
+            }
         }
 
         clampFaceToScreen()
         try {
             wm.updateViewLayout(view, lp)
         } catch (_: Exception) {
+        }
+    }
+
+    private fun applyVerticalOrder(panelAbove: Boolean) {
+        val root = this.root as? LinearLayout ?: return
+        val faceView = face ?: return
+        val index = root.indexOfChild(faceView)
+        if (index < 0) return
+        if (panelAbove) {
+            if (index != root.childCount - 1) {
+                root.removeView(faceView)
+                root.addView(faceView)
+            }
+        } else if (index != 0) {
+            root.removeView(faceView)
+            root.addView(faceView, 0)
         }
     }
 

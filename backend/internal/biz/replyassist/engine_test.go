@@ -71,6 +71,14 @@ func TestSystemPromptAdultIntimate(t *testing.T) {
 	if strings.Contains(on, "气质：安心表达") || strings.Contains(on, "禁止：PUA") {
 		t.Fatal("adult prompt should not keep the default soft tone or leftover bans")
 	}
+	for _, p := range []string{off, on} {
+		if !strings.Contains(p, "供用户复制发送") || !strings.Contains(p, "禁止替对方续写") {
+			t.Fatal("prompt should lock drafts to the user's own voice")
+		}
+	}
+	if strings.Contains(on, "避免过度亲密") && !strings.Contains(on, `risk_hint 不要写「避免过度亲密」`) {
+		t.Fatal("adult prompt should not encourage intimacy restrictions")
+	}
 }
 
 func TestBuildUserPromptAdultIntimate(t *testing.T) {
@@ -81,6 +89,15 @@ func TestBuildUserPromptAdultIntimate(t *testing.T) {
 	}
 	if !strings.Contains(on, "回复尺度：成人向/亲密对话（已打开，用户已确认）") {
 		t.Fatal("adult user prompt should mention opened scale")
+	}
+	if strings.Contains(on, "按对方实际语气和用词写") {
+		t.Fatal("adult user prompt should not ask to write in the peer's voice")
+	}
+	if !strings.Contains(on, "用用户自己的口吻回复") {
+		t.Fatal("adult user prompt should keep the user's voice")
+	}
+	if !strings.Contains(off, "不要写成对方在说话") || !strings.Contains(on, "不要写成对方在说话") {
+		t.Fatal("user prompt should explain self/peer and forbid writing as the peer")
 	}
 }
 
@@ -93,8 +110,8 @@ func TestBuildUserPromptTargetMessage(t *testing.T) {
 	if !strings.Contains(out, "[最需要回复的那句]") || !strings.Contains(out, "- peer: 好坏…") {
 		t.Fatal("user prompt should highlight target_message")
 	}
-	if !strings.Contains(out, "草稿只回这一句") {
-		t.Fatal("user prompt should say to reply only to the target line")
+	if !strings.Contains(out, "草稿只回这一句") || !strings.Contains(out, "用用户的口吻回复这一句") {
+		t.Fatal("user prompt should say to reply only to the target line in the user's voice")
 	}
 }
 
@@ -115,9 +132,9 @@ func TestNormalizeInputTargetMessage(t *testing.T) {
 func TestCacheKeyDiffersByTargetMessage(t *testing.T) {
 	e := &Engine{}
 	in := SuggestInput{Source: "a11y", PastedText: "回来啦"}
-	a := e.cacheKey(1, in)
+	a := e.cacheKey(1, in, "qwen2.5:3b-instruct")
 	in.TargetMessage = ChatMessage{Role: "peer", Text: "好坏…"}
-	b := e.cacheKey(1, in)
+	b := e.cacheKey(1, in, "qwen2.5:3b-instruct")
 	if a == b {
 		t.Fatal("cache key should change when target_message is set")
 	}
@@ -126,9 +143,9 @@ func TestCacheKeyDiffersByTargetMessage(t *testing.T) {
 func TestCacheKeyDiffersByAdultIntimate(t *testing.T) {
 	e := &Engine{}
 	in := SuggestInput{Source: "a11y", PastedText: "回来啦"}
-	a := e.cacheKey(1, in)
+	a := e.cacheKey(1, in, "qwen2.5:3b-instruct")
 	in.AdultIntimate = true
-	b := e.cacheKey(1, in)
+	b := e.cacheKey(1, in, "qwen2.5:3b-instruct")
 	if a == b {
 		t.Fatal("cache key should change when adult_intimate is on")
 	}
@@ -180,9 +197,44 @@ func TestParseLLMJSONMarkdownFence(t *testing.T) {
 	}
 }
 
+func TestParseLLMJSONStripsThinkTags(t *testing.T) {
+	raw := "<think>先分析谁在说话</think>" + sampleSuggestJSON(false, false, false)
+	got, err := parseLLMJSON(raw)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if err := validateResult(got); err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+	if got.Options[0].Text != "一" {
+		t.Fatalf("did not strip think tags: %+v", got)
+	}
+}
 func TestParseAndValidateRejectsBadPayload(t *testing.T) {
 	_, err := parseAndValidate(`{"judge":{"intent":""},"options":[]}`)
 	if err == nil {
 		t.Fatal("expected validation error")
+	}
+}
+
+func TestCacheKeyDiffersByModel(t *testing.T) {
+	e := &Engine{}
+	in := SuggestInput{Source: "a11y", PastedText: "回来啦"}
+	a := e.cacheKey(1, in, "qwen2.5:3b-instruct")
+	b := e.cacheKey(1, in, "some-chat-model")
+	if a == b {
+		t.Fatal("cache key should change when the model changes")
+	}
+}
+
+func TestShouldCacheResultSkipsHold(t *testing.T) {
+	if shouldCacheResult(SuggestResult{Judge: JudgeSummary{ShouldReply: "hold"}}) {
+		t.Fatal("hold results should not be cached")
+	}
+	if shouldCacheResult(SuggestResult{Judge: JudgeSummary{ShouldReply: "HOLD"}}) {
+		t.Fatal("HOLD results should not be cached")
+	}
+	if !shouldCacheResult(SuggestResult{Judge: JudgeSummary{ShouldReply: "reply"}}) {
+		t.Fatal("reply results should stay cacheable")
 	}
 }

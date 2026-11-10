@@ -235,9 +235,14 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         root.getBoundsInScreen(rootBounds)
         val screenWidth = rootBounds.width().takeIf { it > 0 }
             ?: resources.displayMetrics.widthPixels
-        val headerHeight = (88 * resources.displayMetrics.density).toInt()
-        collectTextNodes(root, lines, screenWidth, rootBounds.top, headerHeight)
+        val headerHeight = (112 * resources.displayMetrics.density).toInt()
+        val headerTitles = mutableSetOf<String>()
+        collectHeaderTitles(root, rootBounds.top, headerHeight, headerTitles)
+        collectTextNodes(root, lines, screenWidth, rootBounds.top, headerHeight, headerTitles)
         root.recycle()
+        if (headerTitles.isNotEmpty()) {
+            Log.i(TAG, "读屏标题过滤: ${headerTitles.joinToString()}")
+        }
 
         if (lines.isEmpty()) {
             return emptySnapshot(
@@ -329,13 +334,70 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun collectHeaderTitles(
+        node: AccessibilityNodeInfo,
+        windowTop: Int,
+        headerHeight: Int,
+        out: MutableSet<String>,
+    ) {
+        val visible = try {
+            node.isVisibleToUser
+        } catch (_: Exception) {
+            true
+        }
+        if (!visible) return
+        val bounds = Rect()
+        node.getBoundsInScreen(bounds)
+        val text = node.text?.toString()?.trim().orEmpty()
+        val desc = try {
+            node.contentDescription?.toString()?.trim().orEmpty()
+        } catch (_: Exception) {
+            ""
+        }
+        val viewId = try {
+            node.viewIdResourceName
+        } catch (_: Exception) {
+            null
+        }
+        val inHeader = ReplyAssistSnapshotPolicy.isLikelyHeader(
+            bounds.top,
+            windowTop,
+            headerHeight,
+        ) || (
+            bounds.height() in 1..headerHeight &&
+                bounds.top >= windowTop &&
+                bounds.bottom <= windowTop + headerHeight
+        )
+        val toolbar = ReplyAssistSnapshotPolicy.isToolbarLike(
+            node.className?.toString(),
+            viewId,
+        )
+        if (inHeader || toolbar) {
+            if (text.isNotEmpty()) out.add(text)
+            if (desc.isNotEmpty() && desc.length <= 40) out.add(desc)
+        }
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            collectHeaderTitles(child, windowTop, headerHeight, out)
+            child.recycle()
+        }
+    }
+
     private fun collectTextNodes(
         node: AccessibilityNodeInfo,
         out: MutableList<JSONObject>,
         screenWidth: Int,
         windowTop: Int,
         headerHeight: Int,
+        headerTitles: Set<String>,
     ) {
+        val visible = try {
+            node.isVisibleToUser
+        } catch (_: Exception) {
+            true
+        }
+        if (!visible) return
+
         val editable = node.isEditable
         val password = try {
             node.isPassword
@@ -345,9 +407,19 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         val raw = node.text?.toString()
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
+        // 整块都在标题栏里的节点不再往下走，避免把昵称串进对话。
+        if (bounds.height() in 1..headerHeight &&
+            bounds.top >= windowTop &&
+            bounds.bottom <= windowTop + headerHeight
+        ) {
+            return
+        }
         val inHeader = ReplyAssistSnapshotPolicy.isLikelyHeader(bounds.top, windowTop, headerHeight)
-        if (!inHeader && ReplyAssistSnapshotPolicy.shouldKeepNodeText(raw, editable, password)) {
-            val text = raw!!.trim()
+        if (!inHeader &&
+            ReplyAssistSnapshotPolicy.shouldKeepNodeText(raw, editable, password) &&
+            !ReplyAssistSnapshotPolicy.shouldDropAsHeaderTitle(raw!!.trim(), headerTitles)
+        ) {
+            val text = raw.trim()
             val role = ReplyAssistSnapshotPolicy.inferRole(bounds.left, bounds.right, screenWidth)
             val existing = ReplyAssistSnapshotPolicy.shouldReplaceExisting(
                 out.map { it.optString("text") },
@@ -363,7 +435,7 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         }
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
-            collectTextNodes(child, out, screenWidth, windowTop, headerHeight)
+            collectTextNodes(child, out, screenWidth, windowTop, headerHeight, headerTitles)
             child.recycle()
         }
     }

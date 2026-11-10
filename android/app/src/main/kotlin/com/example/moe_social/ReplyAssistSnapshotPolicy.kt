@@ -128,6 +128,29 @@ object ReplyAssistSnapshotPolicy {
         return nodeTop - windowTop < headerHeightPx
     }
 
+    /** 工具栏/会话标题节点，用来收集需要从正文里剔除的标题文案。 */
+    fun isToolbarLike(className: String?, viewId: String?): Boolean {
+        val cls = className.orEmpty()
+        if (cls.contains("Toolbar") ||
+            cls.contains("ActionBar") ||
+            cls.contains("TitleBar") ||
+            cls.endsWith("TitleView")
+        ) {
+            return true
+        }
+        val id = viewId.orEmpty().lowercase().substringAfter('/')
+        if (id.isEmpty()) return false
+        return id.contains("title") ||
+            id.endsWith("chat_name") ||
+            id.endsWith("conversation_name") ||
+            id == "ivtitlename"
+    }
+
+    fun shouldDropAsHeaderTitle(text: String, headerTitles: Set<String>): Boolean {
+        val t = text.trim()
+        return t.isNotEmpty() && t in headerTitles
+    }
+
     /**
      * 最需要回的一句：优先对方最后一条；没有 peer 时用最后一条 unknown，不用自己的话。
      * 返回下标，没有则 -1。

@@ -150,6 +150,7 @@ class ReplyAssistOverlayBridge {
       };
     }
     try {
+      _logSnapshotRoles(snap);
       final result = await _service.suggest(
         source: 'a11y',
         messages: snap.messages,
@@ -179,5 +180,31 @@ class ReplyAssistOverlayBridge {
         'message': e.toString(),
       };
     }
+  }
+}
+
+void _logSnapshotRoles(OverlaySnapshot snap) {
+  var self = 0, peer = 0, unknown = 0;
+  final lines = <String>[];
+  for (final m in snap.messages) {
+    if (m.role == 'self') {
+      self++;
+    } else if (m.role == 'peer') {
+      peer++;
+    } else {
+      unknown++;
+    }
+    final text = m.text.length > 40 ? '${m.text.substring(0, 40)}…' : m.text;
+    lines.add('${m.role}: $text');
+  }
+  final target = snap.targetMessage;
+  final targetText = target == null
+      ? '无'
+      : '${target.role}「${target.text}」';
+  debugPrint(
+    '📖 读屏 ${snap.messages.length} 条：self $self / peer $peer / unknown $unknown，target=$targetText',
+  );
+  for (final line in lines) {
+    debugPrint('  $line');
   }
 }

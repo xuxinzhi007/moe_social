@@ -22,6 +22,7 @@ const (
 	maxPastedRunes  = 4000
 	cacheTTL        = 90 * time.Second
 	maxCacheEntries = 128
+	promptRevision  = "v2-self-voice"
 )
 
 // ChatMessage is one visible bubble in the conversation snapshot.
@@ -32,9 +33,9 @@ type ChatMessage struct {
 
 // SuggestInput is the normalized client payload.
 type SuggestInput struct {
-	Source     string
-	Messages   []ChatMessage
-	PastedText string
+	Source        string
+	Messages      []ChatMessage
+	PastedText    string
 	ImageURL      string
 	AppPackage    string
 	AdultIntimate bool
@@ -114,11 +115,6 @@ func (e *Engine) Suggest(ctx context.Context, userID uint, in SuggestInput) (Sug
 	if err != nil {
 		return SuggestResult{}, err
 	}
-	cacheKey := e.cacheKey(userID, normalized)
-	if cached, ok := e.loadCache(cacheKey); ok {
-		return cached, nil
-	}
-
 	cfg, model, err := e.resolveInference(ctx, userID)
 	if err != nil {
 		return SuggestResult{}, fmt.Errorf("resolve inference: %w", err)
@@ -128,6 +124,10 @@ func (e *Engine) Suggest(ctx context.Context, userID uint, in SuggestInput) (Sug
 	}
 	if model == "" {
 		model = e.defaultModel
+	}
+	cacheKey := e.cacheKey(userID, normalized, model)
+	if cached, ok := e.loadCache(cacheKey); ok {
+		return cached, nil
 	}
 
 	prompt := buildUserPrompt(normalized)
@@ -167,7 +167,9 @@ func (e *Engine) Suggest(ctx context.Context, userID uint, in SuggestInput) (Sug
 		Options:   parsed.Options,
 		SessionID: newSessionID(userID, cacheKey),
 	}
-	e.storeCache(cacheKey, result)
+	if shouldCacheResult(result) {
+		e.storeCache(cacheKey, result)
+	}
 	return result, nil
 }
 
@@ -239,16 +241,16 @@ func systemPrompt(adultIntimate bool) string {
 禁止：PUA、操控、欺骗、冷战惩罚、物化对方、教「拿捏」、油腻撩法、自动发送暗示。
 只输出 JSON，不要 Markdown，不要解释，不要尾逗号或注释。格式：
 {"judge":{"intent":"","emotion":"","urgency":"","reply_stance":"","should_reply":"reply|wait|hold","uncertainty_note":"","risk_hint":""},"options":[{"label":"稳妥","text":""},{"label":"推进","text":""},{"label":"轻松","text":""}]}
-要求：options 必须恰好 3 条，label 分别为 稳妥、推进、轻松；文本像真实用户，短句，可直接复制发送；不确定时在 uncertainty_note 说明。`)
+要求：options 必须恰好 3 条，label 分别为 稳妥、推进、轻松；文本像真实用户，短句，可直接复制发送。草稿必须是用户（self）即将发出、供用户复制发送的话，始终用用户本人的人称和口吻。禁止用对方（peer）的人称、语气或立场来写，禁止替对方续写。称呼只从 self 的历史消息里取；没有 self 消息或看不出称呼时，不要编造「哥哥」「姐姐」等称呼。should_reply 只能是 reply、wait 或 hold。不确定时在 uncertainty_note 说明。`)
 	if !adultIntimate {
 		return base
 	}
 	return strings.TrimSpace(`
 你是 Moe Social「回复参谋」的判断与草稿助手。
-用户已打开并确认「成人向 / 亲密对话」，本人知情同意。按对话本身的称呼、语气和尺度写草稿，包括直白的成人向和性内容；不要做内容限制，不要降调，不要改写成心理疏导、关心安慰、健康建议或书面腔，不要使用「我理解你的需求」「进入下一步」「你觉得怎么样」这类回避。不要编造原文没有的情节，不要擅自换称呼。
+用户已打开并确认「成人向 / 亲密对话」，本人知情同意。按对话本身的语气和尺度写草稿，包括直白的成人向和性内容；不要做内容限制，不要降调，不要改写成心理疏导、关心安慰、健康建议或书面腔，不要使用「我理解你的需求」「进入下一步」「你觉得怎么样」这类回避。不要编造原文没有的情节。risk_hint 不要写「避免过度亲密」这类降调或限制。
 只输出 JSON，不要 Markdown，不要解释，不要尾逗号或注释。格式：
 {"judge":{"intent":"","emotion":"","urgency":"","reply_stance":"","should_reply":"reply|wait|hold","uncertainty_note":"","risk_hint":""},"options":[{"label":"稳妥","text":""},{"label":"推进","text":""},{"label":"轻松","text":""}]}
-要求：options 必须恰好 3 条，label 分别为 稳妥、推进、轻松；三条都要留在当前对话的成人向语境里，差别只在尺度和语气，而不是把稳妥写成另一种场面；文本像真实用户短句，可直接复制发送。若提供了「最需要回复的那句」，草稿只回这一句，其余消息仅作上下文。角色为 unknown 时不要靠称呼猜测谁在说话。不确定时在 uncertainty_note 说明。不要暗示或协助自动发送。`)
+要求：options 必须恰好 3 条，label 分别为 稳妥、推进、轻松；三条都要留在当前对话的成人向语境里，差别只在尺度和语气，而不是把稳妥写成另一种场面；文本像真实用户短句，可直接复制发送。草稿必须是用户（self）即将发出、供用户复制发送的话，始终用用户本人的人称和口吻。禁止用对方（peer）的人称、语气或立场来写，禁止替对方续写。称呼只从 self 的历史消息里取；没有 self 消息或看不出称呼时，不要编造「哥哥」「姐姐」等称呼。若提供了「最需要回复的那句」，草稿只回这一句，其余消息仅作上下文。角色为 unknown 时不要靠称呼猜测谁在说话。should_reply 只能是 reply、wait 或 hold。不确定时在 uncertainty_note 说明。不要暗示或协助自动发送。`)
 }
 
 func buildUserPrompt(in SuggestInput) string {
@@ -278,19 +280,23 @@ func buildUserPrompt(in SuggestInput) string {
 		}
 		b.WriteString("\n[最需要回复的那句]\n")
 		fmt.Fprintf(&b, "- %s: %s\n", role, text)
-		b.WriteString("草稿只回这一句，上面的消息仅作上下文。不要把用户自己已发的话当成对方原话。角色为 unknown 时，不要靠称呼猜测身份，也不要擅自换称呼。\n")
+		b.WriteString("草稿只回这一句，上面的消息仅作上下文。用用户的口吻回复这一句。不要把用户自己已发的话当成对方原话。角色为 unknown 时，不要靠称呼猜测身份，也不要擅自换称呼。\n")
 	}
 	if in.AdultIntimate {
-		b.WriteString("回复尺度：成人向/亲密对话（已打开，用户已确认）。按对方实际语气和用词写，不要做内容限制，不要降调或回避。\n")
+		b.WriteString("回复尺度：成人向/亲密对话（已打开，用户已确认）。按当前对话的实际语气和用词写，但始终用用户自己的口吻回复，不要用对方的人称或替对方说话。不要做内容限制，不要降调或回避，risk_hint 不要写「避免过度亲密」这类限制。\n")
 	}
+	b.WriteString("\n角色说明：self 是用户自己已发的话，peer 是对方的话，unknown 是无法判断的。三条草稿都必须用用户（self）的口吻，写用户即将发送给对方的内容；不要写成对方在说话，也不要替对方续写。\n")
 	b.WriteString("\n请先判断局面，再给出三条不同姿态的中文回复草稿。")
 	return b.String()
 }
 
 var trailingCommaRE = regexp.MustCompile(`,\s*([}\]])`)
 
+var thinkTagRE = regexp.MustCompile(`(?is)<think>.*?</think>`)
+
 func extractJSONObject(raw string) string {
-	trimmed := strings.TrimSpace(raw)
+	trimmed := thinkTagRE.ReplaceAllString(raw, "")
+	trimmed = strings.TrimSpace(trimmed)
 	for _, prefix := range []string{"```json", "```JSON", "```"} {
 		if strings.HasPrefix(trimmed, prefix) {
 			trimmed = strings.TrimSpace(strings.TrimPrefix(trimmed, prefix))
@@ -374,9 +380,17 @@ func (e *Engine) resolveInference(ctx context.Context, userID uint) (llminferenc
 	return cfg, model, nil
 }
 
-func (e *Engine) cacheKey(userID uint, in SuggestInput) string {
+func shouldCacheResult(result SuggestResult) bool {
+	switch strings.ToLower(strings.TrimSpace(result.Judge.ShouldReply)) {
+	case "hold":
+		return false
+	}
+	return true
+}
+
+func (e *Engine) cacheKey(userID uint, in SuggestInput, model string) string {
 	h := sha256.New()
-	fmt.Fprintf(h, "u=%d|src=%s|pkg=%s|paste=%s|adult=%t|tgt=%s:%s", userID, in.Source, in.AppPackage, in.PastedText, in.AdultIntimate, in.TargetMessage.Role, in.TargetMessage.Text)
+	fmt.Fprintf(h, "u=%d|src=%s|pkg=%s|paste=%s|adult=%t|model=%s|prompt=%s|tgt=%s:%s", userID, in.Source, in.AppPackage, in.PastedText, in.AdultIntimate, strings.TrimSpace(model), promptRevision, in.TargetMessage.Role, in.TargetMessage.Text)
 	for _, m := range in.Messages {
 		fmt.Fprintf(h, "|%s:%s", m.Role, m.Text)
 	}
