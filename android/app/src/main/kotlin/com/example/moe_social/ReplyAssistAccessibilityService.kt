@@ -22,7 +22,7 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "ReplyAssistA11y"
-        private const val SUGGEST_TIMEOUT_MS = 25_000L
+        private const val SUGGEST_TIMEOUT_MS = 60_000L
 
         @Volatile
         private var instance: ReplyAssistAccessibilityService? = null
@@ -58,6 +58,8 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var petOverlay: ReplyAssistPetOverlay? = null
+    private var scanOverlay: ReplyAssistScanOverlay? = null
+    private var pendingSuggest: (() -> Unit)? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -67,6 +69,8 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        pendingSuggest = null
+        dismissScan()
         petOverlay?.hide()
         petOverlay = null
         instance = null
@@ -82,18 +86,14 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
     }
 
     fun toggleOverlay(): Boolean {
-        val overlay = petOverlay ?: ReplyAssistPetOverlay(this, ::onFaceActivate).also {
-            petOverlay = it
-        }
+        val overlay = petOverlay ?: attachPet(ReplyAssistPetOverlay(this, ::onFaceActivate))
         return overlay.toggle()
     }
 
     fun isOverlayVisible(): Boolean = petOverlay?.isVisible() == true
 
     private fun overlay(): ReplyAssistPetOverlay {
-        return petOverlay ?: ReplyAssistPetOverlay(this, ::onFaceActivate).also {
-            petOverlay = it
-        }
+        return petOverlay ?: attachPet(ReplyAssistPetOverlay(this, ::onFaceActivate))
     }
 
     private fun onFaceActivate() {
@@ -104,12 +104,19 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         mainHandler.post { continueAfterListening(layer) }
     }
 
+    private fun attachPet(layer: ReplyAssistPetOverlay): ReplyAssistPetOverlay {
+        layer.onScanShouldStop = { onPetScanShouldStop(layer) }
+        petOverlay = layer
+        return layer
+    }
+
     private fun continueAfterListening(layer: ReplyAssistPetOverlay) {
         if (!layer.isVisible() || !layer.isBusy()) return
         val snapshot = readForegroundSnapshot()
         ReplyAssistBridge.lastSnapshot = snapshot
         val reason = snapshot.optString("reason")
-        val count = snapshot.optJSONArray("messages")?.length() ?: 0
+        val messages = snapshot.optJSONArray("messages")
+        val count = messages?.length() ?: 0
         if (snapshot.optBoolean("needs_screenshot_fallback") || count == 0) {
             val msg = when (reason) {
                 "own_app", "not_chat" -> getString(R.string.reply_assist_fallback_not_chat)
@@ -119,21 +126,100 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
             return
         }
 
-        layer.showThinking()
+        pendingSuggest = null
+        dismissScan()
         val token = layer.beginRequest()
-        requestOverlaySuggest(layer, token, snapshot)
+        if (!requestOverlaySuggest(layer, token, snapshot)) {
+            return
+        }
+
+        val bubbles = extractScanBubbles(messages)
+        val faceCenter = layer.faceCenterOnScreen()
+        if (bubbles.isEmpty() || faceCenter == null || !layer.isScreenInteractive()) {
+            enterThinking(layer, token)
+            return
+        }
+
+        val scan = scanOverlay ?: ReplyAssistScanOverlay(this).also { scanOverlay = it }
+        val started = scan.play(bubbles, faceCenter) {
+            if (!layer.isCurrentRequest(token) || !layer.isVisible()) return@play
+            enterThinking(layer, token)
+        }
+        if (started) {
+            layer.raiseWindow()
+            layer.faceCenterOnScreen()?.let { scan.updateFaceCenter(it) }
+        } else {
+            enterThinking(layer, token)
+        }
     }
 
-    /** 请求挂在无障碍服务上：用缓存引擎的通道，不依赖 MainActivity 还活着。 */
+    private fun extractScanBubbles(messages: JSONArray?): List<ReplyAssistScanOverlay.Bubble> {
+        if (messages == null) return emptyList()
+        val headerHeight = (112 * resources.displayMetrics.density).toInt()
+        val bubbles = mutableListOf<ReplyAssistScanOverlay.Bubble>()
+        for (i in 0 until messages.length()) {
+            val item = messages.optJSONObject(i) ?: continue
+            if (!item.has("left") || !item.has("top") || !item.has("right") || !item.has("bottom")) {
+                continue
+            }
+            val left = item.optInt("left")
+            val top = item.optInt("top")
+            val right = item.optInt("right")
+            val bottom = item.optInt("bottom")
+            if (right <= left || bottom <= top) continue
+            // 标题栏里的框不再画，即使文案过滤漏网。
+            if (top < headerHeight) continue
+            bubbles.add(
+                ReplyAssistScanOverlay.Bubble(
+                    bounds = Rect(left, top, right, bottom),
+                    isTarget = item.optBoolean("target"),
+                ),
+            )
+        }
+        return bubbles
+    }
+
+    private fun enterThinking(layer: ReplyAssistPetOverlay, token: Int) {
+        if (!layer.isCurrentRequest(token) || !layer.isVisible()) return
+        layer.showThinking()
+        flushPendingSuggest()
+    }
+
+    private fun shouldDeferSuggestResult(layer: ReplyAssistPetOverlay): Boolean {
+        return scanOverlay?.isPlaying() == true || (layer.isBusy() && !layer.isThinking())
+    }
+
+    private fun flushPendingSuggest() {
+        val pending = pendingSuggest
+        pendingSuggest = null
+        pending?.invoke()
+    }
+
+    private fun onPetScanShouldStop(layer: ReplyAssistPetOverlay) {
+        val playing = scanOverlay?.isPlaying() == true
+        dismissScan()
+        if (playing && layer.isVisible() && layer.isBusy() && !layer.isThinking()) {
+            layer.showThinking()
+            flushPendingSuggest()
+        } else if (!playing || !layer.isVisible() || !layer.isBusy()) {
+            pendingSuggest = null
+        }
+    }
+
+    private fun dismissScan() {
+        scanOverlay?.dismiss()
+    }
+
+    /** 请求挂在无障碍服务上：用缓存引擎的通道，不依赖 MainActivity 还活着。成功发出请求返回 true。 */
     private fun requestOverlaySuggest(
         layer: ReplyAssistPetOverlay,
         token: Int,
         snapshot: JSONObject,
-    ) {
+    ): Boolean {
         val channel = ReplyAssistFlutterHost.ensureChannel(this)
         if (channel == null) {
             degradeOpenApp(layer)
-            return
+            return false
         }
 
         val payload = ReplyAssistBridge.jsonToMap(snapshot)
@@ -144,8 +230,9 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
                 object : MethodChannel.Result {
                     override fun success(result: Any?) {
                         mainHandler.post {
-                            if (!layer.isCurrentRequest(token)) return@post
-                            applySuggestResult(layer, result)
+                            deliverSuggest(layer, token) {
+                                applySuggestResult(layer, result)
+                            }
                         }
                     }
 
@@ -155,18 +242,20 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
                         errorDetails: Any?,
                     ) {
                         mainHandler.post {
-                            if (!layer.isCurrentRequest(token)) return@post
-                            layer.showFallback(
-                                errorMessage?.takeIf { it.isNotBlank() }
-                                    ?: getString(R.string.reply_assist_open_app),
-                            )
+                            deliverSuggest(layer, token) {
+                                layer.showFallback(
+                                    errorMessage?.takeIf { it.isNotBlank() }
+                                        ?: getString(R.string.reply_assist_open_app),
+                                )
+                            }
                         }
                     }
 
                     override fun notImplemented() {
                         mainHandler.post {
-                            if (!layer.isCurrentRequest(token)) return@post
-                            degradeOpenApp(layer)
+                            deliverSuggest(layer, token) {
+                                degradeOpenApp(layer)
+                            }
                         }
                     }
                 },
@@ -174,7 +263,7 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             Log.w(TAG, "onOverlaySuggest failed", e)
             degradeOpenApp(layer)
-            return
+            return false
         }
 
         mainHandler.postDelayed({
@@ -182,6 +271,20 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
                 layer.showFallback(getString(R.string.reply_assist_timeout))
             }
         }, SUGGEST_TIMEOUT_MS)
+        return true
+    }
+
+    private fun deliverSuggest(layer: ReplyAssistPetOverlay, token: Int, apply: () -> Unit) {
+        if (!layer.isCurrentRequest(token)) return
+        if (shouldDeferSuggestResult(layer)) {
+            pendingSuggest = {
+                if (layer.isCurrentRequest(token) && layer.isVisible()) {
+                    apply()
+                }
+            }
+            return
+        }
+        apply()
     }
 
     private fun degradeOpenApp(layer: ReplyAssistPetOverlay) {
@@ -428,9 +531,9 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
             if (existing >= 0) {
                 val keepRole = if (role != "unknown") role else out[existing].optString("role")
                 out.removeAt(existing)
-                out.add(JSONObject().put("role", keepRole).put("text", text))
+                out.add(messageJson(keepRole, text, bounds))
             } else {
-                out.add(JSONObject().put("role", role).put("text", text))
+                out.add(messageJson(role, text, bounds))
             }
         }
         for (i in 0 until node.childCount) {
@@ -438,6 +541,16 @@ class ReplyAssistAccessibilityService : AccessibilityService() {
             collectTextNodes(child, out, screenWidth, windowTop, headerHeight, headerTitles)
             child.recycle()
         }
+    }
+
+    private fun messageJson(role: String, text: String, bounds: Rect): JSONObject {
+        return JSONObject()
+            .put("role", role)
+            .put("text", text)
+            .put("left", bounds.left)
+            .put("top", bounds.top)
+            .put("right", bounds.right)
+            .put("bottom", bounds.bottom)
     }
 
     private fun emptySnapshot(

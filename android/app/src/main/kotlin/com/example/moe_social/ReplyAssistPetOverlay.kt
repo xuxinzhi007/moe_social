@@ -75,6 +75,9 @@ class ReplyAssistPetOverlay(
     private var screenInteractive = true
     private var screenReceiverRegistered = false
 
+    /** 桌宠被收起、隐藏或息屏时回调，用于撤掉全屏扫描层。 */
+    var onScanShouldStop: (() -> Unit)? = null
+
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -86,6 +89,8 @@ class ReplyAssistPetOverlay(
 
     fun isVisible(): Boolean = visible
 
+    fun isScreenInteractive(): Boolean = screenInteractive
+
     fun isBusy(): Boolean = phase == Phase.LISTENING || phase == Phase.THINKING
 
     fun isThinking(): Boolean = phase == Phase.THINKING
@@ -96,6 +101,47 @@ class ReplyAssistPetOverlay(
     }
 
     fun isCurrentRequest(token: Int): Boolean = token == requestToken
+
+    /** 识屏球当前屏幕中心；未布局或已隐藏时返回 null。 */
+    fun faceCenterOnScreen(): Point? {
+        val f = face ?: return null
+        if (!visible) return null
+        val w = when {
+            f.width > 0 -> f.width
+            f.measuredWidth > 0 -> f.measuredWidth
+            else -> dp(44)
+        }
+        val h = when {
+            f.height > 0 -> f.height
+            f.measuredHeight > 0 -> f.measuredHeight
+            else -> dp(44)
+        }
+        val loc = IntArray(2)
+        f.getLocationOnScreen(loc)
+        if (f.isLaidOut || loc[0] != 0 || loc[1] != 0) {
+            return Point(loc[0] + w / 2, loc[1] + h / 2)
+        }
+        val lp = params ?: return null
+        val x = lp.x + windowOriginX + f.left + w / 2
+        val y = lp.y + windowOriginY + f.top + h / 2
+        return Point(x, y)
+    }
+
+    /** 把桌宠窗口提到最前，让扫描框飞向小脸时脸仍叠在扫描层之上。 */
+    fun raiseWindow() {
+        val view = root ?: return
+        val lp = params ?: return
+        if (!visible) return
+        try {
+            wm.removeViewImmediate(view)
+            wm.addView(view, lp)
+        } catch (_: Exception) {
+            try {
+                wm.updateViewLayout(view, lp)
+            } catch (_: Exception) {
+            }
+        }
+    }
 
     fun toggle(): Boolean {
         return if (visible) {
@@ -152,6 +198,9 @@ class ReplyAssistPetOverlay(
         requestToken += 1
         stopIdleMotion()
         unregisterScreenReceiver()
+        visible = false
+        phase = Phase.IDLE
+        onScanShouldStop?.invoke()
         val view = root
         if (view != null) {
             try {
@@ -167,8 +216,6 @@ class ReplyAssistPetOverlay(
         copiedView = null
         thinkDots = null
         params = null
-        visible = false
-        phase = Phase.IDLE
     }
 
     fun showListening() {
@@ -253,6 +300,7 @@ class ReplyAssistPetOverlay(
             it.visibility = View.GONE
         }
         startIdleMotion()
+        onScanShouldStop?.invoke()
         relayoutKeepingFaceAnchor()
     }
 
@@ -513,6 +561,7 @@ class ReplyAssistPetOverlay(
         stopIdleMotion()
         face?.pauseAnimations()
         thinkDots?.pause()
+        onScanShouldStop?.invoke()
     }
 
     private fun resumeAllMotion() {
