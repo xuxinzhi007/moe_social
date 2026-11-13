@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moe Social 架构图</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #020617;
+      --card: #0f172a;
+      --line: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --cyan: #22d3ee;
+      --emerald: #34d399;
+      --violet: #a78bfa;
+      --orange: #fb923c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 48px; }
+    header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+    h1 i {
+      display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 99px;
+      background: var(--emerald); box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15);
+    }
+    .sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    header a { color: var(--cyan); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; }
+    .board {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: auto;
+    }
+    svg { display: block; min-width: 1080px; }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 16px 22px;
+      margin-top: 14px; color: var(--muted); font-size: 12px;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 8px; }
+    .sw { width: 28px; height: 0; border-top-width: 2px; border-top-style: solid; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .card h2 { margin: 0 0 8px; font-size: 14px; font-weight: 500; }
+    .card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+    footer { margin-top: 18px; color: #64748b; font-size: 12px; font-family: "JetBrains Mono", ui-monospace, monospace; }
+    @media (max-width: 800px) { .cards { grid-template-columns: 1fr; } header { flex-direction: column; align-items: flex-start; } }
+    @media (prefers-reduced-motion: reduce) { h1 i { box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1><i></i>Moe Social 请求路径</h1>
+        <p class="sub">分层架构图。实线是同步调用，虚线是 WebSocket 或 tick。颜色表示所在层，不表示重要性。</p>
+      </div>
+      <a href="README.md">返回导览</a>
+    </header>
+
+    <div class="board">
+      <svg viewBox="0 0 1080 620" role="img" aria-label="Moe Social 从 Flutter 到 Kratos 再到数据库的分层图">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5" />
+          </pattern>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+          </marker>
+          <marker id="arrow-ws" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c" />
+          </marker>
+        </defs>
+        <rect width="1080" height="620" fill="url(#grid)" />
+
+        <!-- arrows behind boxes -->
+        <g fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)">
+          <path d="M156 112 H210" />
+          <path d="M510 112 H560" />
+          <path d="M730 154 V186 H490 V214" />
+          <path d="M490 282 V330 H151 V352" />
+          <path d="M266 375 H306" />
+          <path d="M536 375 H576" />
+          <path d="M806 375 H846" />
+          <path d="M961 410 V476" />
+        </g>
+        <g fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow-ws)">
+          <path d="M691 410 V470" />
+          <path d="M900 210 V48 H510 V70" />
+        </g>
+        <text x="742" y="42" fill="#fb923c" font-size="11" font-family="JetBrains Mono, monospace">/ws/*</text>
+        <text x="704" y="448" fill="#fb923c" font-size="11" font-family="JetBrains Mono, monospace">tick</text>
+        <text x="498" y="204" fill="#94a3b8" font-size="11" font-family="JetBrains Mono, monospace">HTTP</text>
+
+        <!-- client band -->
+        <rect x="20" y="48" width="700" height="124" rx="12" fill="rgba(8,51,68,0.35)" stroke="#22d3ee" stroke-dasharray="8 4" />
+        <text x="32" y="68" fill="#22d3ee" font-size="11" font-family="JetBrains Mono, monospace">CLIENT</text>
+        <rect x="36" y="78" width="120" height="68" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5" />
+        <text x="96" y="116" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="Noto Sans SC, sans-serif">用户</text>
+        <rect x="210" y="70" width="300" height="84" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5" />
+        <text x="360" y="104" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="Noto Sans SC, sans-serif">Flutter 壳</text>
+        <text x="360" y="126" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Noto Sans SC, sans-serif">首页 · 好友 · AI伙伴 · 社区 · 我的</text>
+        <rect x="560" y="70" width="340" height="84" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5" />
+        <text x="730" y="104" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="Noto Sans SC, sans-serif">域服务</text>
+        <text x="730" y="126" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="JetBrains Mono, monospace">Post · Chat · Companion · Life</text>
+
+        <!-- ingress -->
+        <rect x="360" y="214" width="260" height="68" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.5" />
+        <text x="490" y="244" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="Noto Sans SC, sans-serif">Kratos :8888</text>
+        <text x="490" y="264" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="JetBrains Mono, monospace">cmd/moe-social</text>
+        <rect x="760" y="214" width="280" height="68" rx="28" fill="#0f172a" stroke="#fb923c" stroke-width="1.5" />
+        <text x="900" y="244" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="Noto Sans SC, sans-serif">WebSocket</text>
+        <text x="900" y="264" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="JetBrains Mono, monospace">chat · life · companion</text>
+
+        <!-- process band -->
+        <rect x="20" y="324" width="1040" height="100" rx="12" fill="rgba(6,78,59,0.28)" stroke="#34d399" stroke-dasharray="8 4" />
+        <text x="32" y="344" fill="#34d399" font-size="11" font-family="JetBrains Mono, monospace">PROCESS</text>
+        <rect x="36" y="352" width="230" height="58" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.5" />
+        <text x="151" y="386" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="JetBrains Mono, monospace">protohttp</text>
+        <rect x="306" y="352" width="230" height="58" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.5" />
+        <text x="421" y="386" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="JetBrains Mono, monospace">service</text>
+        <rect x="576" y="352" width="230" height="58" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.5" />
+        <text x="691" y="386" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="JetBrains Mono, monospace">biz</text>
+        <rect x="846" y="352" width="190" height="58" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.5" />
+        <text x="941" y="386" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="JetBrains Mono, monospace">data</text>
+
+        <!-- stores -->
+        <rect x="576" y="470" width="230" height="64" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5 4" />
+        <text x="691" y="498" text-anchor="middle" fill="#e2e8f0" font-size="14" font-family="Noto Sans SC, sans-serif">Life 内存</text>
+        <text x="691" y="516" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Noto Sans SC, sans-serif">tick 推进，库只做存档</text>
+        <g stroke="#a78bfa" stroke-width="1.5" fill="#0f172a">
+          <ellipse cx="941" cy="492" rx="54" ry="16" />
+          <path d="M887 492 V548 A54 16 0 0 0 995 548 V492" />
+          <ellipse cx="941" cy="548" rx="54" ry="16" fill="none" />
+        </g>
+        <text x="941" y="528" text-anchor="middle" fill="#e2e8f0" font-size="13" font-family="JetBrains Mono, monospace">MySQL</text>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <span><i class="sw" style="border-color:#94a3b8"></i>同步调用</span>
+      <span><i class="sw" style="border-color:#fb923c;border-top-style:dashed"></i>WebSocket / tick</span>
+      <span><i class="sw" style="border-color:#22d3ee"></i>客户端</span>
+      <span><i class="sw" style="border-color:#34d399"></i>进程内</span>
+      <span><i class="sw" style="border-color:#a78bfa"></i>状态</span>
+    </div>
+
+    <div class="cards">
+      <article class="card">
+        <h2>客户端</h2>
+        <ul>
+          <li>页面只调用域服务，不直接调 ApiService。</li>
+          <li>主壳五个目的地，其余页面从这里进去。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h2>进程</h2>
+        <ul>
+          <li>单进程 HTTP，没有对外 gRPC。</li>
+          <li>契约在 proto，生成后由 protohttp 接入。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h2>旁路</h2>
+        <ul>
+          <li>私信、生命、伙伴走 WebSocket，不走上面的同步链。</li>
+          <li>管理台前端在独立仓库。</li>
+        </ul>
+      </article>
+    </div>
+    <footer>2026-11-13 · 分层图，不是第二份接口说明 · 对照 architecture.md</footer>
+  </div>
+</body>
+</html>

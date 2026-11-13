@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>设计稿 · Moe Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="atlas.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <p class="mark">Moe <span>atlas</span></p>
+      <p>当前壳的实物页。色值以代码为准。</p>
+      <nav>
+        <a href="design.html" aria-current="page">设计稿</a>
+        <a href="architecture.html">架构稿</a>
+        <a href="relationships.html">关系稿</a>
+        <a href="design.md">Markdown</a>
+      </nav>
+      <p class="meta">MoeTokens<br />2026-11-13</p>
+    </aside>
+    <main class="sheet">
+      <p class="eyebrow">设计稿 · 萌系心情社交</p>
+      <h1>五栏壳，云母底，鸢尾主色。</h1>
+      <p class="lede">读者先看这张实物，再去改页面。底栏、三条路径和色板都来自现在的 App，不是一份新视觉提案。文字对照 <a href="design.md">design.md</a>。</p>
+
+      <div class="stage">
+        <div class="phone" aria-label="首页示意">
+          <div class="phone-top"><span>9:41</span><span>首页</span></div>
+          <article class="card">
+            <div class="who"><div class="dot"></div>小星</div>
+            <p>今天的云很轻，想把这句话留下来。</p>
+            <span class="pill">心情 · 平静</span>
+          </article>
+          <article class="card">
+            <div class="who"><div class="dot" style="background:linear-gradient(135deg,#64d2c8,#7c8cf8)"></div>澜星</div>
+            <p>评论和点赞留在卡片上，不另开一条产品线。</p>
+            <button class="cta" type="button">记录心情</button>
+          </article>
+          <div class="tabs">
+            <span class="on">首页</span><span>好友</span><span>AI伙伴</span><span>社区</span><span>我的</span>
+          </div>
+        </div>
+        <div class="paths">
+          <div class="path"><b>记录心情</b><span>CreatePostPage。文案、附件、心情、话题，一屏完成。</span></div>
+          <div class="path"><b>浏览互动</b><span>HomePage 进动态详情和评论。失败要能重试。</span></div>
+          <div class="path"><b>建立关系</b><span>消息中心进私信和好友。未读和断线要对用户可见。</span></div>
+          <p class="callout">技能条文写主 Tab 不超过 4 个。MainPage 实际是 5 个，以代码为准。星辉远征开关关闭，不进底栏。</p>
+        </div>
+      </div>
+
+      <h2>色票</h2>
+      <div class="plates">
+        <figure class="plate"><div class="fill" style="background:#5E6AD2"></div><figcaption><strong>primary</strong><code>#5E6AD2</code><em>品牌鸢尾，主按钮</em></figcaption></figure>
+        <figure class="plate"><div class="fill" style="background:#7C8CF8"></div><figcaption><strong>secondary</strong><code>#7C8CF8</code><em>雾蓝，次级</em></figcaption></figure>
+        <figure class="plate"><div class="fill" style="background:#64D2C8"></div><figcaption><strong>accent</strong><code>#64D2C8</code><em>青瓷，少量点缀</em></figcaption></figure>
+        <figure class="plate"><div class="fill" style="background:#F6F7FB;border-bottom:1px solid #E6E8F0"></div><figcaption><strong>pageBackground</strong><code>#F6F7FB</code><em>页面底，不用纯白铺满</em></figcaption></figure>
+        <figure class="plate"><div class="fill" style="background:#FFFFFF;border-bottom:1px solid #E6E8F0"></div><figcaption><strong>cardBackground</strong><code>#FFFFFF</code><em>卡片表面</em></figcaption></figure>
+        <figure class="plate"><div class="fill" style="background:#181A20"></div><figcaption><strong>inkDark</strong><code>#181A20</code><em>标题墨色</em></figcaption></figure>
+      </div>
+
+      <h2>字号</h2>
+      <div class="scale">
+        <div class="scale-row"><p class="type-sample" style="font-size:28px">记录心情</p><p class="type-meta">text3xl · 28</p><span></span></div>
+        <div class="scale-row"><p class="type-sample" style="font-size:20px">今天的动态</p><p class="type-meta">textXl · 20</p><span></span></div>
+        <div class="scale-row"><p class="type-sample" style="font-size:15px;font-family:var(--text);letter-spacing:0">把这句话留下来，给以后的自己看。</p><p class="type-meta">textMd · 15</p><span></span></div>
+        <div class="scale-row"><p class="type-sample" style="font-size:12px;color:#646A7A;font-family:var(--text);letter-spacing:0">辅助说明</p><p class="type-meta">textSm · 12</p><span></span></div>
+      </div>
+
+      <h2>圆角与间距</h2>
+      <div class="plates">
+        <figure class="plate"><div class="fill" style="background:#F6F7FB;display:grid;place-items:center"><div style="width:72px;height:48px;background:#fff;border:1px solid #E6E8F0;border-radius:12px"></div></div><figcaption><strong>radiusMd</strong><code>12</code><em>小控件</em></figcaption></figure>
+        <figure class="plate"><div class="fill" style="background:#F6F7FB;display:grid;place-items:center"><div style="width:88px;height:56px;background:#fff;border:1px solid #E6E8F0;border-radius:20px"></div></div><figcaption><strong>radiusXl</strong><code>20</code><em>卡片</em></figcaption></figure>
+        <figure class="plate"><div class="fill" style="background:#F6F7FB;display:grid;place-items:center"><div style="width:104px;height:36px;background:linear-gradient(135deg,#5E6AD2,#6E7AE2);border-radius:999px"></div></div><figcaption><strong>radiusFull</strong><code>9999</code><em>胶囊</em></figcaption></figure>
+      </div>
+      <div class="scale" style="margin-top:16px">
+        <div class="scale-row"><span>spaceSm 8</span><div class="bar" style="width:32px"></div><code>8</code></div>
+        <div class="scale-row"><span>spaceLg 16</span><div class="bar" style="width:64px"></div><code>16</code></div>
+        <div class="scale-row"><span>space2xl 24</span><div class="bar" style="width:96px"></div><code>24</code></div>
+        <div class="scale-row"><span>space3xl 32</span><div class="bar" style="width:128px"></div><code>32</code></div>
+      </div>
+
+      <p class="callout">语义色只用于状态：成功 #16A34A，危险 #E11D48，警告 #D97706。docs/DESIGN_SYSTEM.md 里的 #7F7FD5 已过时。</p>
+      <footer class="foot">页面骨架用 MoePageScaffold。按压用 MoePressable。同一能力只留一个主入口。</footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -10,6 +10,7 @@
 | [prd-companion.md](./prd-companion.md) | AI 伙伴（Hub / 聊天 / 记忆 / 主动消息 / LLM 配置） | P1 |
 | [prd-arena.md](./prd-arena.md) | 星辉远征（养成 / 爬塔 / 召唤 / 图鉴 / 星晶 / 营地） | P1 |
 | [prd-commerce.md](./prd-commerce.md) | VIP / 钱包 / 礼物 / 签到成就 / 装扮 | P2 |
+| [prd-settings.md](./prd-settings.md) | 设置（账号、通知、AI 入口、设备、高级选项、关于） | 支撑面 |
 
 相关分析文档（同链路产出）：
 

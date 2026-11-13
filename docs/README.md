@@ -12,6 +12,7 @@
 | 我想… | 去看 |
 |--------|------|
 | **第一次把项目跑起来** | [CONTRIBUTING.md](./CONTRIBUTING.md) · [dev/环境配置说明.md](./dev/环境配置说明.md) · [dev/ports.md](./dev/ports.md) |
+| **先看当前壳、分层和对象关系** | [atlas/README.md](./atlas/README.md)（设计 / 架构 / 关系，各有 md 与 html） |
 | **了解产品要做什么** | [product/product-positioning.md](./product/product-positioning.md) · [product/prd/](./product/prd/) |
 | **改后端 / 加接口** | [dev/new-api-kratos.md](./dev/new-api-kratos.md) · [../backend/LAYOUT.md](../backend/LAYOUT.md) |
 | **改 Flutter 页面** | [../AGENTS.md](../AGENTS.md) · [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) |
@@ -31,6 +32,7 @@ docs/
 ├── README.md          ← 本文件（总索引）
 ├── CONTRIBUTING.md    ← 开发者路由页
 ├── index.html         ← 浏览器导航
+├── atlas/             ← 当前壳 / 分层 / 对象关系导览（md + html，不替代下面的 SSOT）
 ├── DESIGN_SYSTEM.md   ← Flutter 设计系统 SSOT
 ├── dev/               ← 开发、联调、Kratos、推理/记忆 SSOT
 ├── product/           ← 产品方案、PRD 与 UI

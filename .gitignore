@@ -187,17 +187,14 @@ moe-avatar/node_modules/
 moe-avatar/**/node_modules/
 moe-avatar/editor/node_modules/
 
+.agents/skills/data-workflow/
 # >>> data-workflow >>>
 # data-workflow 产物。运行记录是本机工作记忆，不进版本库。
 .*/skills/data-workflow/config.yaml
 .*/skills/data-workflow/origin
 
-# 一次运行的产物（run.json / decision.md / check.md / verify.log）。
+# 一次运行的产物（run.json / decision.md / check.md / verify.log / confess/）。
 # 想让团队看到进度，就删掉下面这一行。
 specs/
-# 产品/技术评估文档在 docs/specs，必须入仓（上面的 specs/ 会误伤）
-!docs/specs/
-!docs/specs/**
 # 没有门禁时不要把 hooks.json 提交给团队：它指向的脚本可能不在同级仓库里。
 # <<< data-workflow <<<
-.agents/skills/data-workflow/

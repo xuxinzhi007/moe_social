@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>关系稿 · Moe Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="atlas.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <p class="mark">Moe <span>atlas</span></p>
+      <p>三套对象。中间只有一座桥。</p>
+      <nav>
+        <a href="design.html">设计稿</a>
+        <a href="architecture.html">架构稿</a>
+        <a href="relationships.html" aria-current="page">关系稿</a>
+        <a href="relationships.md">Markdown</a>
+      </nav>
+      <p class="meta">backend/model<br />一人一条伙伴</p>
+    </aside>
+    <main class="sheet">
+      <p class="eyebrow">关系稿 · 身份</p>
+      <h1>用户、伙伴、居民，不是同一行。</h1>
+      <p class="lede">社交图里的好友，和世界里两个居民的关系，用的不是一张表。伙伴可以记下某个居民的编号，头像仍然分开。字段见 <a href="relationships.md">relationships.md</a>。</p>
+
+      <div class="planes">
+        <section class="plane social">
+          <header>社交 · user</header>
+          <div class="body">
+            <div class="node"><b>User</b><span>username、moe_no、email 唯一</span></div>
+            <div class="node"><b>Post · Comment · Like</b><span>内容挂在用户上。点赞指向帖或评论</span></div>
+            <div class="node"><b>Follow</b><span>关注者指向被关注者，一对唯一</span></div>
+            <div class="node"><b>FriendRequest</b><span>pending / accepted / rejected。同意后互相关注</span></div>
+            <div class="node"><b>PrivateMessage</b><span>写入时记下保存天数，到期物理删除</span></div>
+            <div class="node"><b>Group</b><span>创建者是用户。成员角色 admin / member</span></div>
+          </div>
+        </section>
+        <section class="plane companion">
+          <header>伙伴 · companion_profiles</header>
+          <div class="body">
+            <div class="node"><b>CompanionProfile</b><span>UserID 唯一。现在一人一条活跃档案</span></div>
+            <div class="node"><b>亲密度</b><span>等级 1–10，分数 0–100</span></div>
+            <div class="node"><b>CompanionMemory</b><span>同一用户。HeroID 空串是主伙伴</span></div>
+          </div>
+        </section>
+        <section class="plane life">
+          <header>生命 · life_entities</header>
+          <div class="body">
+            <div class="node"><b>LifeWorld</b><span>名字唯一</span></div>
+            <div class="node"><b>LifeEntity</b><span>WorldID 存世界名，不是世界表的数字主键</span></div>
+            <div class="node"><b>LifeRelationship</b><span>同一世界里的两个居民。默认 friend，另有亲密度</span></div>
+            <div class="node"><b>运行时</b><span>内存 tick。库是存档。/ws/life 按世界推送</span></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="bridge"><b>桥。</b> CompanionProfile.LifeEntityID 默认 0，非 0 时指向一个居民。关系层头像和居民形象是两套字段。机器人用户仍是一条 user，用 IsBot 和 BotAgentKey 标出来。</div>
+
+      <h2>不要混用</h2>
+      <table>
+        <tr><th>说这个词</th><th>指</th><th>不要当成</th></tr>
+        <tr><td>用户</td><td>user</td><td>伙伴、居民、管理台账号</td></tr>
+        <tr><td>好友</td><td>申请接受后的互相关注</td><td>LifeRelationship</td></tr>
+        <tr><td>伙伴</td><td>companion_profiles 一行</td><td>酒馆多角色、Life 居民</td></tr>
+        <tr><td>居民</td><td>life_entities 一行</td><td>用户的社交身份</td></tr>
+        <tr><td>世界</td><td>life_worlds 的名字</td><td>社区群组</td></tr>
+      </table>
+      <footer class="foot">钱包和 VIP 挂在用户上，不在这三张图的中心。多角色以后是多行加活跃标记，不要再写死全局只有一个伙伴。</footer>
+    </main>
+  </div>
+</body>
+</html>
